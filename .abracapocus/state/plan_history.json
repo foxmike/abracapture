@@ -349,5 +349,106 @@
       "version": "task-a.4",
       "created_at": "2026-08-15T22:28:06.937092"
     }
+  },
+  {
+    "created_at": "2026-08-15T23:26:26.932022",
+    "project_name": "abracapture",
+    "goal": "Create SourceDescriptor, the value type that classifies a PipeWire node into one of the Abracapture source categories and carries stable identity and format metadata.\n\nSTRICT FILE SCOPE: Create or modify ONLY the files listed in this task's allowed_write_paths.\n\nBefore editing, inspect:\n- PipeWire node property keys in pipewire/keys.h (PW_KEY_MEDIA_CLASS, PW_KEY_NODE_NAME, PW_KEY_APP_NAME, PW_KEY_DEVICE_ID, etc.)\n- spa/param/audio/format.h for spa_audio_info_raw fields\n- Any existing src/pipewire/ headers for project type conventions\n\nDo not infer APIs, schemas, behavior, or file contents; inspect the referenced files first.\n\nImplementation:\n1. SourceDescriptor.hpp \u2014 define an enum class SourceCategory { ApplicationPlayback, OutputMonitor, HardwareInput, Other }. Declare a SourceDescriptor struct with fields: uint32_t nodeId, SourceCategory category, std::string displayName, std::string appName, std::string mediaClass, std::string nodeName, std::optional<uint32_t> deviceId, std::optional<uint32_t> sampleRate, std::optional<uint32_t> channels. Declare a free function SourceCategory classifyMediaClass(std::string_view mediaClass) that maps PipeWire media.class strings to the enum. Declare bool isCapturableSource(SourceCategory cat).\n2. SourceDescriptor.cpp \u2014 implement classifyMediaClass: \"Stream/Output/Audio\" and \"Stream/Output/Video\" \u2192 ApplicationPlayback; \"Audio/Sink\" with monitor semantics \u2192 OutputMonitor; \"Audio/Source\" and \"Audio/Source/Virtual\" \u2192 HardwareInput; everything else \u2192 Other. Implement isCapturableSource to return true for ApplicationPlayback, OutputMonitor, and HardwareInput. Provide operator== for SourceDescriptor based on nodeId.\n\nConstraints:\n- SourceDescriptor must be a plain value type, no inheritance hierarchy.\n- classifyMediaClass must handle unknown media.class strings gracefully (return Other, no throw).\n- Do not depend on PipeWireContext or any runtime PipeWire connection; this is a pure data/classification module.",
+    "plan_template": {
+      "project_name": "abracapture",
+      "summary": "Task run: Define source descriptors and source classification",
+      "phases": [
+        {
+          "name": "B",
+          "objective": "Create SourceDescriptor, the value type that classifies a PipeWire node into one of the Abracapture source categories and carries stable identity and format metadata.\n\nSTRICT FILE SCOPE: Create or modify ONLY the files listed in this task's allowed_write_paths.\n\nBefore editing, inspect:\n- PipeWire node property keys in pipewire/keys.h (PW_KEY_MEDIA_CLASS, PW_KEY_NODE_NAME, PW_KEY_APP_NAME, PW_KEY_DEVICE_ID, etc.)\n- spa/param/audio/format.h for spa_audio_info_raw fields\n- Any existing src/pipewire/ headers for project type conventions\n\nDo not infer APIs, schemas, behavior, or file contents; inspect the referenced files first.\n\nImplementation:\n1. SourceDescriptor.hpp \u2014 define an enum class SourceCategory { ApplicationPlayback, OutputMonitor, HardwareInput, Other }. Declare a SourceDescriptor struct with fields: uint32_t nodeId, SourceCategory category, std::string displayName, std::string appName, std::string mediaClass, std::string nodeName, std::optional<uint32_t> deviceId, std::optional<uint32_t> sampleRate, std::optional<uint32_t> channels. Declare a free function SourceCategory classifyMediaClass(std::string_view mediaClass) that maps PipeWire media.class strings to the enum. Declare bool isCapturableSource(SourceCategory cat).\n2. SourceDescriptor.cpp \u2014 implement classifyMediaClass: \"Stream/Output/Audio\" and \"Stream/Output/Video\" \u2192 ApplicationPlayback; \"Audio/Sink\" with monitor semantics \u2192 OutputMonitor; \"Audio/Source\" and \"Audio/Source/Virtual\" \u2192 HardwareInput; everything else \u2192 Other. Implement isCapturableSource to return true for ApplicationPlayback, OutputMonitor, and HardwareInput. Provide operator== for SourceDescriptor based on nodeId.\n\nConstraints:\n- SourceDescriptor must be a plain value type, no inheritance hierarchy.\n- classifyMediaClass must handle unknown media.class strings gracefully (return Other, no throw).\n- Do not depend on PipeWireContext or any runtime PipeWire connection; this is a pure data/classification module.",
+          "status": "completed",
+          "tasks": [
+            {
+              "task": {
+                "task_id": "b.2",
+                "title": "Define source descriptors and source classification",
+                "description": "Create SourceDescriptor, the value type that classifies a PipeWire node into one of the Abracapture source categories and carries stable identity and format metadata.\n\nSTRICT FILE SCOPE: Create or modify ONLY the files listed in this task's allowed_write_paths.\n\nBefore editing, inspect:\n- PipeWire node property keys in pipewire/keys.h (PW_KEY_MEDIA_CLASS, PW_KEY_NODE_NAME, PW_KEY_APP_NAME, PW_KEY_DEVICE_ID, etc.)\n- spa/param/audio/format.h for spa_audio_info_raw fields\n- Any existing src/pipewire/ headers for project type conventions\n\nDo not infer APIs, schemas, behavior, or file contents; inspect the referenced files first.\n\nImplementation:\n1. SourceDescriptor.hpp \u2014 define an enum class SourceCategory { ApplicationPlayback, OutputMonitor, HardwareInput, Other }. Declare a SourceDescriptor struct with fields: uint32_t nodeId, SourceCategory category, std::string displayName, std::string appName, std::string mediaClass, std::string nodeName, std::optional<uint32_t> deviceId, std::optional<uint32_t> sampleRate, std::optional<uint32_t> channels. Declare a free function SourceCategory classifyMediaClass(std::string_view mediaClass) that maps PipeWire media.class strings to the enum. Declare bool isCapturableSource(SourceCategory cat).\n2. SourceDescriptor.cpp \u2014 implement classifyMediaClass: \"Stream/Output/Audio\" and \"Stream/Output/Video\" \u2192 ApplicationPlayback; \"Audio/Sink\" with monitor semantics \u2192 OutputMonitor; \"Audio/Source\" and \"Audio/Source/Virtual\" \u2192 HardwareInput; everything else \u2192 Other. Implement isCapturableSource to return true for ApplicationPlayback, OutputMonitor, and HardwareInput. Provide operator== for SourceDescriptor based on nodeId.\n\nConstraints:\n- SourceDescriptor must be a plain value type, no inheritance hierarchy.\n- classifyMediaClass must handle unknown media.class strings gracefully (return Other, no throw).\n- Do not depend on PipeWireContext or any runtime PipeWire connection; this is a pure data/classification module.",
+                "phase": "B",
+                "dependencies": [],
+                "exclusivity_category": null,
+                "max_in_category": null,
+                "status": "completed",
+                "acceptance_criteria": [
+                  "src/pipewire/SourceDescriptor.hpp declares SourceCategory enum with ApplicationPlayback, OutputMonitor, HardwareInput, Other values",
+                  "src/pipewire/SourceDescriptor.hpp declares SourceDescriptor struct with nodeId, category, displayName, appName, mediaClass, nodeName fields",
+                  "src/pipewire/SourceDescriptor.cpp implements classifyMediaClass mapping media.class strings to SourceCategory values",
+                  "classifyMediaClass returns SourceCategory::Other for unrecognized media.class strings without throwing",
+                  "SourceDescriptor does not include or depend on PipeWireContext.hpp",
+                  "g++ -std=c++20 -fsyntax-only src/pipewire/SourceDescriptor.hpp succeeds or the file is parseable as valid C++20",
+                  "No file outside the task's allowed_write_paths is created or modified"
+                ],
+                "created_at": "2026-08-15T23:25:24.178645",
+                "selected_backend": "codex_cli",
+                "model": "gpt-5.6-terra",
+                "provider": null,
+                "task_timeout_seconds": 900.0,
+                "verification_profile": "focused",
+                "verification_commands": [
+                  {
+                    "name": "syntax_check",
+                    "command": [
+                      "g++",
+                      "-std=c++20",
+                      "-fsyntax-only",
+                      "src/pipewire/SourceDescriptor.cpp",
+                      "-I",
+                      "src"
+                    ]
+                  },
+                  {
+                    "name": "has_source_category_enum",
+                    "command": [
+                      "bash",
+                      "-c",
+                      "grep -q 'SourceCategory' src/pipewire/SourceDescriptor.hpp"
+                    ]
+                  }
+                ],
+                "allowed_write_paths": [
+                  "src/pipewire/SourceDescriptor.hpp",
+                  "src/pipewire/SourceDescriptor.cpp"
+                ],
+                "forbidden_changes": [
+                  "modify files outside src/pipewire/SourceDescriptor.{hpp,cpp}",
+                  "include or depend on PipeWireContext.hpp",
+                  "add runtime PipeWire API calls or link-time PipeWire dependencies",
+                  "modify CMakeLists.txt or build configuration"
+                ],
+                "allowed_symbols": [
+                  "SourceCategory",
+                  "SourceDescriptor",
+                  "classifyMediaClass",
+                  "isCapturableSource"
+                ],
+                "decision_budget": {
+                  "allowed": [
+                    "choose struct vs class for SourceDescriptor",
+                    "choose string matching strategy for media.class classification"
+                  ],
+                  "forbidden": [
+                    "introduce inheritance hierarchy for source types",
+                    "add PipeWire runtime API calls",
+                    "design the capture or catalog layer"
+                  ]
+                },
+                "forbidden_patterns_override": null
+              },
+              "dependencies": [],
+              "status": "completed"
+            }
+          ],
+          "completed": true,
+          "completed_at": "2026-08-15T23:26:26.822699",
+          "human_checkpoint": null
+        }
+      ],
+      "version": "task-b.2",
+      "created_at": "2026-08-15T23:25:24.337767"
+    }
   }
 ]

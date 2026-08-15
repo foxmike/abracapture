@@ -1,17 +1,17 @@
 {
   "project_name": "abracapture",
-  "plan_version": "task-b.2",
+  "plan_version": "task-b.3",
   "active_phase": "B",
   "default_backend": "codex_cli",
   "routing_mode": "manual",
   "tasks": [
     {
-      "task_id": "b.2",
-      "title": "Define source descriptors and source classification",
+      "task_id": "b.3",
+      "title": "Normalize PipeWire application and device metadata",
       "phase": "B",
-      "status": "completed",
+      "status": "planned",
       "backend": "codex_cli",
-      "last_run": "2026-08-15T23:26:26.853414",
+      "last_run": null,
       "notes": ""
     }
   ],
