@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "task_id": "d.1",
+  "phase": "D",
+  "phase_id": "d",
+  "title": "Implement WAV lossless master writer",
+  "description": "Create WavWriter, a libsndfile-backed lossless WAV master writer that accepts interleaved audio buffers, preserves the negotiated source sample rate and bit depth, and writes RF64 when the file exceeds 4 GiB.\n\nBefore editing, inspect:\n- Any existing src/recording/ directory layout for naming conventions\n- The project CMakeLists.txt for libsndfile linkage\n\nDo not infer APIs, schemas, behavior, or file contents; inspect the referenced files first.\n\nImplementation requirements:\n1. Declare class WavWriter in WavWriter.hpp with at minimum: open(path, channels, sampleRate, sampleFormat), write(const float*, frameCount), finalize(), abort(), and isOpen(). Store conversion provenance metadata (native vs quantized vs resampled) as a field retrievable via a provenance() accessor.\n2. Implement WavWriter in WavWriter.cpp using libsndfile (sf_open, sf_writef_float / sf_writef_int / sf_writef_double as appropriate). On open(), select the SF_FORMAT that matches the negotiated source format. Use SF_FORMAT_RF64 when cumulative byte count will exceed 4 GiB (track running byte count and switch format before the 4 GiB boundary, or open as RF64 from the start when the caller signals unbounded length). On finalize(), flush and close the SNDFILE handle; on abort(), close and delete the partial file.\n3. sampleFormat should be an enum (e.g., SampleFormat) defined in or near WavWriter.hpp covering at least Int16, Int24, Int32, Float32, Float64.\n4. Do not perform blocking I/O inside a PipeWire realtime callback; WavWriter::write() is expected to be called from a non-realtime writer thread.\n5. Handle disk-full: if sf_writef returns fewer frames than requested, set an error state queryable via lastError().\n\nSTRICT FILE SCOPE: Create or modify ONLY the files listed in this task's allowed_write_paths.",
+  "acceptance_criteria": [
+    "src/recording/WavWriter.hpp exists and declares WavWriter class with open, write, finalize, abort, isOpen, provenance, and lastError public interface",
+    "src/recording/WavWriter.cpp exists and uses libsndfile sf_open / sf_writef / sf_close for WAV writing",
+    "WavWriter stores and exposes conversion provenance metadata (native, quantized, resampled)",
+    "WavWriter handles RF64 for files that may exceed 4 GiB",
+    "WavWriter::abort() closes the handle and removes the partial file",
+    "Disk-full condition (short sf_writef return) sets a queryable error state",
+    "No file outside the task's allowed_write_paths is created or modified"
+  ],
+  "selected_backend": "codex_cli",
+  "verification_profile": "focused",
+  "allowed_write_paths": [
+    "src/recording/WavWriter.hpp",
+    "src/recording/WavWriter.cpp"
+  ],
+  "forbidden_changes": [
+    "modify any file outside src/recording/WavWriter.hpp and src/recording/WavWriter.cpp",
+    "add PipeWire realtime callback logic",
+    "modify CMakeLists.txt",
+    "modify src/recording/FlacWriter.hpp or FlacWriter.cpp",
+    "modify src/recording/RecordingSink.hpp or RecordingSink.cpp",
+    "modify src/recording/OutputPathPolicy.hpp or OutputPathPolicy.cpp"
+  ],
+  "allowed_symbols": [
+    "WavWriter",
+    "SampleFormat",
+    "ConversionProvenance",
+    "open",
+    "write",
+    "finalize",
+    "abort",
+    "isOpen",
+    "provenance",
+    "lastError"
+  ],
+  "decision_budget": {
+    "allowed": [
+      "define SampleFormat enum locally or in a shared recording header within allowed_write_paths",
+      "define ConversionProvenance enum locally",
+      "choose RF64 strategy: open as RF64 from start when unbounded, or reopen on threshold"
+    ],
+    "forbidden": [
+      "introduce new third-party dependencies beyond libsndfile",
+      "create a base class hierarchy for writers",
+      "add threading or synchronization primitives"
+    ]
+  },
+  "dependencies": [],
+  "task_timeout_seconds": 900,
+  "model": "gpt-5.6-terra",
+  "verification_commands": [
+    {
+      "name": "syntax_check",
+      "command": [
+        "bash",
+        "-c",
+        "g++ -std=c++20 -fsyntax-only src/recording/WavWriter.cpp -I src $(pkg-config --cflags sndfile)"
+      ]
+    },
+    {
+      "name": "has_rf64_support",
+      "command": [
+        "bash",
+        "-c",
+        "grep -qE 'RF64|SF_FORMAT_RF64' src/recording/WavWriter.cpp"
+      ]
+    }
+  ]
+}

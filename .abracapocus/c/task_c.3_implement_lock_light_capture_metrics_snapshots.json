@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "task_id": "c.3",
+  "phase": "C",
+  "phase_id": "c",
+  "title": "Implement lock-light capture metrics snapshots",
+  "description": "Create a lightweight metrics snapshot structure and updater that the realtime PipeWire callback can write to without blocking, and that the UI or session layer can read atomically.\n\nBefore editing, inspect:\n- Any existing headers under src/audio/ for naming conventions and namespace.\n- The realtime callback constraints documented in the phase C risk notes: publish must not block or allocate.\n\nDo not infer APIs, schemas, behavior, or file contents; inspect the referenced files first.\n\nImplement CaptureMetrics with:\n- A plain-old-data snapshot struct (CaptureMetricsSnapshot) containing: frames captured, peak sample value (per channel or mono), RMS level, overflow count, underrun count, xrun count, and a monotonic timestamp.\n- An atomic publisher that the realtime callback can update with a single relaxed or release store (no mutex, no allocation). Use a double-buffer, sequence-lock, or atomic struct swap pattern.\n- A reader method that the non-realtime side calls to get the latest consistent snapshot. The reader may spin-retry on a sequence counter but must not block the writer.\n- Keep the struct trivially copyable and small enough for cache-line-friendly access.\n- Do not include Qt, PipeWire, libsndfile, or FLAC headers. This is a pure C++ concurrency primitive.\n\nSTRICT FILE SCOPE: Create or modify ONLY the files listed in this task's allowed_write_paths.",
+  "acceptance_criteria": [
+    "src/audio/CaptureMetrics.hpp exists and declares CaptureMetricsSnapshot and an atomic publisher/reader class",
+    "src/audio/CaptureMetrics.cpp exists and compiles cleanly",
+    "CaptureMetricsSnapshot is trivially copyable (static_assert or equivalent enforced in code)",
+    "The publish/update path uses no std::mutex, no dynamic allocation, and no blocking calls",
+    "The read path returns a consistent snapshot without blocking the writer",
+    "Snapshot includes at minimum: frames captured, peak level, overflow count, underrun count, and timestamp fields",
+    "No #include of Qt, PipeWire, libsndfile, or FLAC headers appears in either file",
+    "g++ -std=c++20 -fsyntax-only src/audio/CaptureMetrics.cpp -I src passes or cmake --build build compiles the unit",
+    "No file outside the task's allowed_write_paths is created or modified"
+  ],
+  "selected_backend": "codex_cli",
+  "verification_profile": "focused",
+  "allowed_write_paths": [
+    "src/audio/CaptureMetrics.hpp",
+    "src/audio/CaptureMetrics.cpp"
+  ],
+  "forbidden_changes": [
+    "modify any file outside src/audio/CaptureMetrics.hpp and src/audio/CaptureMetrics.cpp",
+    "include Qt, PipeWire, libsndfile, or FLAC headers",
+    "use std::mutex or blocking synchronization in the publish path",
+    "add third-party dependencies",
+    "modify AudioRingBuffer or PipeWireCaptureStream files"
+  ],
+  "allowed_symbols": [
+    "CaptureMetricsSnapshot",
+    "CaptureMetrics",
+    "publish",
+    "snapshot",
+    "framesCaptured",
+    "peakLevel",
+    "overflowCount",
+    "underrunCount",
+    "xrunCount",
+    "timestampNs"
+  ],
+  "decision_budget": {
+    "allowed": [
+      "choose between sequence lock, double buffer, or atomic struct swap",
+      "choose mono peak vs per-channel peak representation",
+      "choose relaxed vs release/acquire memory ordering for publish"
+    ],
+    "forbidden": [
+      "introduce a logging or tracing framework",
+      "add Qt signal integration",
+      "use heap allocation in the publish path"
+    ]
+  },
+  "dependencies": [],
+  "task_timeout_seconds": 900,
+  "model": "gpt-5.6-luna",
+  "verification_commands": [
+    {
+      "name": "syntax_check",
+      "command": [
+        "g++",
+        "-std=c++20",
+        "-fsyntax-only",
+        "src/audio/CaptureMetrics.cpp",
+        "-I",
+        "src"
+      ]
+    },
+    {
+      "name": "no_mutex_in_publish",
+      "command": [
+        "bash",
+        "-c",
+        "! grep -qE 'std::mutex|std::lock_guard' src/audio/CaptureMetrics.hpp src/audio/CaptureMetrics.cpp"
+      ]
+    }
+  ]
+}

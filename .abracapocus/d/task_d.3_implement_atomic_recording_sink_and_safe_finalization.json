@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "task_id": "d.3",
+  "phase": "D",
+  "phase_id": "d",
+  "title": "Implement atomic recording sink and safe finalization",
+  "description": "Create RecordingSink, an orchestration layer that owns a writer (WavWriter or FlacWriter) and an OutputPathPolicy, manages the lifecycle of a single capture session with atomic file finalization, and records conversion provenance.\n\nBefore editing, inspect:\n- src/recording/WavWriter.hpp for the WavWriter public interface and SampleFormat/ConversionProvenance types\n- src/recording/FlacWriter.hpp for the FlacWriter public interface\n- src/recording/OutputPathPolicy.hpp for the OutputPathPolicy public interface and CaptureMetadata\n\nDo not infer APIs, schemas, behavior, or file contents; inspect the referenced files first.\n\nImplementation requirements:\n1. Declare class RecordingSink in RecordingSink.hpp. It should own either a WavWriter or FlacWriter (selected at construction/open time based on requested format). It holds an OutputPathPolicy reference for path resolution.\n2. Public interface: open(format, captureMetadata, outputPathPolicy), pushSamples(buffer, frameCount), finalize() -> CaptureResult, abort(). CaptureResult should carry: final file path, total frames, duration, provenance, sample format, sample rate, and whether finalization succeeded.\n3. Implement atomic finalization in RecordingSink.cpp: write to a temporary file (same directory, .tmp extension or dot-prefixed), and on finalize() close the writer then atomically rename (std::filesystem::rename) to the final resolved path. If rename fails, set error state and preserve the temp file.\n4. On abort(), close the writer and delete the temporary file.\n5. Track and expose conversion provenance: whether the capture was native (source format matches writer format), quantized (float source to integer FLAC), or resampled. This provenance must be stored in CaptureResult and must not misrepresent upsampled audio as higher-resolution source.\n6. Handle errors from the underlying writer (check lastError() after each write) and propagate them. If the writer enters an error state mid-capture, RecordingSink should stop accepting samples and report the error on finalize().\n7. Thread safety: RecordingSink::pushSamples() will be called from a dedicated writer thread (not the PipeWire realtime thread). No locking is required within RecordingSink itself, but document the threading contract.\n\nSTRICT FILE SCOPE: Create or modify ONLY the files listed in this task's allowed_write_paths.",
+  "acceptance_criteria": [
+    "src/recording/RecordingSink.hpp exists and declares RecordingSink with open, pushSamples, finalize, abort, and CaptureResult",
+    "src/recording/RecordingSink.cpp exists and includes WavWriter.hpp, FlacWriter.hpp, and OutputPathPolicy.hpp",
+    "RecordingSink writes to a temporary file and atomically renames on finalize()",
+    "RecordingSink::abort() closes the writer and deletes the temporary file",
+    "CaptureResult carries final path, total frames, duration, provenance, sample format, sample rate, and success status",
+    "Conversion provenance is tracked and does not misrepresent upsampled audio as higher-resolution",
+    "Writer errors are checked after each pushSamples and propagated to finalize()",
+    "No file outside the task's allowed_write_paths is created or modified"
+  ],
+  "selected_backend": "codex_cli",
+  "verification_profile": "focused",
+  "allowed_write_paths": [
+    "src/recording/RecordingSink.hpp",
+    "src/recording/RecordingSink.cpp"
+  ],
+  "forbidden_changes": [
+    "modify any file outside src/recording/RecordingSink.hpp and src/recording/RecordingSink.cpp",
+    "modify CMakeLists.txt",
+    "modify src/recording/WavWriter.hpp or WavWriter.cpp",
+    "modify src/recording/FlacWriter.hpp or FlacWriter.cpp",
+    "modify src/recording/OutputPathPolicy.hpp or OutputPathPolicy.cpp",
+    "add PipeWire realtime callback logic",
+    "add blocking synchronization primitives to pushSamples"
+  ],
+  "allowed_symbols": [
+    "RecordingSink",
+    "CaptureResult",
+    "open",
+    "pushSamples",
+    "finalize",
+    "abort"
+  ],
+  "decision_budget": {
+    "allowed": [
+      "choose between std::variant and runtime polymorphism for WavWriter/FlacWriter ownership",
+      "choose temporary file naming scheme (.tmp suffix or dot-prefix)",
+      "define CaptureResult as struct or nested type"
+    ],
+    "forbidden": [
+      "introduce new third-party dependencies",
+      "create a writer base class in this task",
+      "add mutex or locking to pushSamples",
+      "perform sample format conversion within RecordingSink"
+    ]
+  },
+  "dependencies": [
+    "d.1",
+    "d.2",
+    "d.4"
+  ],
+  "task_timeout_seconds": 900,
+  "model": "gpt-5.6-sol",
+  "verification_commands": [
+    {
+      "name": "syntax_check",
+      "command": [
+        "bash",
+        "-c",
+        "g++ -std=c++20 -fsyntax-only src/recording/RecordingSink.cpp -I src $(pkg-config --cflags sndfile flac)"
+      ]
+    },
+    {
+      "name": "has_atomic_rename",
+      "command": [
+        "bash",
+        "-c",
+        "grep -qE 'filesystem::rename|rename\\(' src/recording/RecordingSink.cpp"
+      ]
+    }
+  ]
+}

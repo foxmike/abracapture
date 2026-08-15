@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "task_id": "c.1",
+  "phase": "C",
+  "phase_id": "c",
+  "title": "Implement bounded audio ring buffer",
+  "description": "Create a lock-free, bounded, single-producer single-consumer audio ring buffer suitable for use inside a PipeWire realtime callback.\n\nBefore editing, inspect:\n- Any existing files under src/audio/ for conventions, include style, and namespace usage.\n- CMakeLists.txt at the project root and under src/ for how source files are registered.\n\nDo not infer APIs, schemas, behavior, or file contents; inspect the referenced files first.\n\nImplement AudioRingBuffer as a templated or float/int32-based SPSC ring buffer with:\n- A fixed power-of-two capacity set at construction time.\n- A lockfree write() callable from the PipeWire realtime thread (no allocation, no blocking, no exceptions).\n- A read()/consume() for the writer thread to drain samples.\n- Overflow detection: write() must return a status or count indicating how many frames were dropped; it must never block or grow.\n- Underrun detection: read() must report when fewer frames are available than requested.\n- Memory ordering via std::atomic with acquire/release semantics; no mutexes.\n- Static assertion or comment confirming the type is trivially copyable.\n\nDo not include any file I/O, compression, Qt headers, or PipeWire headers in this unit. The ring buffer is a pure data structure with no external dependencies beyond the C++ standard library.\n\nSTRICT FILE SCOPE: Create or modify ONLY the files listed in this task's allowed_write_paths.",
+  "acceptance_criteria": [
+    "src/audio/AudioRingBuffer.hpp exists and declares the ring buffer class with write() and read() methods",
+    "src/audio/AudioRingBuffer.cpp exists and compiles cleanly",
+    "write() is lock-free: no std::mutex, no std::lock_guard, no blocking syscalls, no dynamic allocation in the write path",
+    "Overflow is observable: write() returns a value or sets a flag indicating dropped frames when the buffer is full",
+    "Underrun is observable: read() returns a value indicating fewer frames available than requested",
+    "No #include of Qt, PipeWire, libsndfile, or FLAC headers appears in either file",
+    "g++ -std=c++20 -fsyntax-only src/audio/AudioRingBuffer.cpp -I src passes or cmake --build build compiles the unit",
+    "No file outside the task's allowed_write_paths is created or modified"
+  ],
+  "selected_backend": "codex_cli",
+  "verification_profile": "focused",
+  "allowed_write_paths": [
+    "src/audio/AudioRingBuffer.hpp",
+    "src/audio/AudioRingBuffer.cpp"
+  ],
+  "forbidden_changes": [
+    "modify any file outside src/audio/AudioRingBuffer.hpp and src/audio/AudioRingBuffer.cpp",
+    "add third-party dependencies",
+    "include Qt, PipeWire, libsndfile, or FLAC headers",
+    "use std::mutex or any blocking synchronization primitive",
+    "perform dynamic memory allocation in write() or read() hot paths"
+  ],
+  "allowed_symbols": [
+    "AudioRingBuffer",
+    "write",
+    "read",
+    "capacity",
+    "available",
+    "overflowCount",
+    "underrunCount",
+    "reset"
+  ],
+  "decision_budget": {
+    "allowed": [
+      "choose between templated and fixed-type ring buffer",
+      "choose power-of-two masking vs modulo for index wrapping",
+      "choose between returning status codes or frame counts for overflow/underrun"
+    ],
+    "forbidden": [
+      "add dynamic resizing or growable buffer",
+      "introduce multi-producer or multi-consumer support",
+      "add file I/O or logging in the data path"
+    ]
+  },
+  "dependencies": [],
+  "task_timeout_seconds": 900,
+  "model": "gpt-5.6-terra",
+  "verification_commands": [
+    {
+      "name": "syntax_check",
+      "command": [
+        "g++",
+        "-std=c++20",
+        "-fsyntax-only",
+        "src/audio/AudioRingBuffer.cpp",
+        "-I",
+        "src"
+      ]
+    },
+    {
+      "name": "no_mutex",
+      "command": [
+        "bash",
+        "-c",
+        "! grep -qE 'std::mutex|std::lock_guard|std::unique_lock' src/audio/AudioRingBuffer.hpp src/audio/AudioRingBuffer.cpp"
+      ]
+    },
+    {
+      "name": "no_heap_alloc_in_write",
+      "command": [
+        "bash",
+        "-c",
+        "! grep -qE '\\bnew\\b|malloc' src/audio/AudioRingBuffer.hpp src/audio/AudioRingBuffer.cpp"
+      ]
+    }
+  ]
+}

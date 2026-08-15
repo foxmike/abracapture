@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "task_id": "d.2",
+  "phase": "D",
+  "phase_id": "d",
+  "title": "Implement FLAC lossless master writer",
+  "description": "Create FlacWriter, a libFLAC-backed lossless FLAC master writer that accepts interleaved audio buffers and preserves the negotiated source sample rate and integer bit depth (up to 32-bit). FLAC supports only integer samples; the writer must document and enforce this constraint.\n\nBefore editing, inspect:\n- src/recording/WavWriter.hpp for SampleFormat and ConversionProvenance enums that may be reusable or must be kept consistent\n- The project CMakeLists.txt for libFLAC linkage\n\nDo not infer APIs, schemas, behavior, or file contents; inspect the referenced files first.\n\nImplementation requirements:\n1. Declare class FlacWriter in FlacWriter.hpp with at minimum: open(path, channels, sampleRate, bitsPerSample), write(const int32_t*, frameCount), finalize(), abort(), and isOpen(). Include a provenance() accessor and lastError() for error state.\n2. Implement FlacWriter in FlacWriter.cpp using the libFLAC C API (FLAC__stream_encoder_*). On open(), configure the encoder for the requested bitsPerSample (16, 24, or 32), channels, and sample rate. Set compression level to a reasonable default (5). Use FLAC__stream_encoder_init_file().\n3. On write(), submit samples via FLAC__stream_encoder_process_interleaved(). Track total frames written.\n4. On finalize(), call FLAC__stream_encoder_finish() and verify it returns true; if not, set error state. On abort(), finish the encoder and delete the partial file.\n5. Reject Float32/Float64 sample formats at open() time with a clear error; FLAC is integer-only. Document this constraint in the header.\n6. Handle encoder errors: if FLAC__stream_encoder_process_interleaved returns false, query FLAC__stream_encoder_get_state() and set lastError().\n7. Do not perform blocking I/O inside a PipeWire realtime callback.\n\nSTRICT FILE SCOPE: Create or modify ONLY the files listed in this task's allowed_write_paths.",
+  "acceptance_criteria": [
+    "src/recording/FlacWriter.hpp exists and declares FlacWriter class with open, write, finalize, abort, isOpen, provenance, and lastError public interface",
+    "src/recording/FlacWriter.cpp exists and uses libFLAC FLAC__stream_encoder_* APIs",
+    "FlacWriter supports 16-bit, 24-bit, and 32-bit integer sample depths",
+    "FlacWriter rejects float sample formats at open() with a clear error",
+    "FlacWriter::finalize() calls FLAC__stream_encoder_finish() and checks its return value",
+    "FlacWriter::abort() finishes the encoder and removes the partial file",
+    "Encoder errors set a queryable lastError() state",
+    "No file outside the task's allowed_write_paths is created or modified"
+  ],
+  "selected_backend": "codex_cli",
+  "verification_profile": "focused",
+  "allowed_write_paths": [
+    "src/recording/FlacWriter.hpp",
+    "src/recording/FlacWriter.cpp"
+  ],
+  "forbidden_changes": [
+    "modify any file outside src/recording/FlacWriter.hpp and src/recording/FlacWriter.cpp",
+    "add PipeWire realtime callback logic",
+    "modify CMakeLists.txt",
+    "modify src/recording/WavWriter.hpp or WavWriter.cpp",
+    "modify src/recording/RecordingSink.hpp or RecordingSink.cpp",
+    "modify src/recording/OutputPathPolicy.hpp or OutputPathPolicy.cpp"
+  ],
+  "allowed_symbols": [
+    "FlacWriter",
+    "open",
+    "write",
+    "finalize",
+    "abort",
+    "isOpen",
+    "provenance",
+    "lastError"
+  ],
+  "decision_budget": {
+    "allowed": [
+      "choose FLAC compression level default",
+      "define local enums if WavWriter enums are not yet available to include",
+      "choose whether to support streaming metadata (FLAC VORBIS_COMMENT) for provenance"
+    ],
+    "forbidden": [
+      "introduce new third-party dependencies beyond libFLAC",
+      "create a base class hierarchy for writers",
+      "add threading or synchronization primitives",
+      "accept float samples and silently convert to integer"
+    ]
+  },
+  "dependencies": [],
+  "task_timeout_seconds": 900,
+  "model": "gpt-5.6-sol",
+  "verification_commands": [
+    {
+      "name": "syntax_check",
+      "command": [
+        "bash",
+        "-c",
+        "g++ -std=c++20 -fsyntax-only src/recording/FlacWriter.cpp -I src $(pkg-config --cflags flac)"
+      ]
+    },
+    {
+      "name": "has_flac_api",
+      "command": [
+        "bash",
+        "-c",
+        "grep -q 'FLAC__stream_encoder' src/recording/FlacWriter.cpp"
+      ]
+    }
+  ]
+}

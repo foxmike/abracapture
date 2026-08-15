@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "task_id": "e.1",
+  "phase": "E",
+  "phase_id": "e",
+  "title": "Implement auto start stop pre-roll and post-roll controller",
+  "description": "Create AutoRecordController that monitors an audio level signal and drives recording start/stop with configurable thresholds, hold time, pre-roll, and post-roll.\n\nBefore editing, inspect:\n- src/recording/ for the existing recorder interface and ring-buffer API that pre-roll will read from.\n- Any existing threshold or level-monitoring helpers.\n\nDo not infer APIs, schemas, behavior, or file contents; inspect the referenced files first.\n\nRequirements:\n1. AutoRecordController exposes start/stop threshold (dBFS), hold time (ms), pre-roll duration (ms), and post-roll duration (ms) as configurable properties.\n2. feedLevel(float peakLinear) is called from the GUI/metering thread (never from the PipeWire realtime callback) and drives a simple state machine: Idle → Armed → Recording → PostRoll → Idle.\n3. Transition from Idle to Armed occurs when the peak exceeds startThreshold for a debounce window (≥2 consecutive calls) to avoid threshold chatter.\n4. Pre-roll: on transition to Recording, emit a signal carrying the pre-roll duration so the recorder can flush its ring-buffer history into the file.\n5. Post-roll: when the level drops below stopThreshold, enter PostRoll state and continue recording for the configured post-roll duration before emitting a stop signal.\n6. Hold time: if the level rises above startThreshold again during PostRoll, return to Recording without re-triggering pre-roll.\n7. No file I/O, no PipeWire calls, no blocking synchronization inside this class.\n8. Use Q_OBJECT, signals/slots for integration. Expose an enum State { Idle, Armed, Recording, PostRoll } and a stateChanged signal.\n\nSTRICT FILE SCOPE: Create or modify ONLY the files listed in this task's allowed_write_paths.",
+  "acceptance_criteria": [
+    "src/automation/AutoRecordController.hpp declares AutoRecordController with Q_OBJECT, State enum, feedLevel slot, configurable threshold/hold/pre-roll/post-roll properties, and stateChanged signal",
+    "src/automation/AutoRecordController.cpp implements the Idle→Armed→Recording→PostRoll→Idle state machine with debounce and hold-time re-arm logic",
+    "No file I/O, subprocess spawning, or PipeWire API calls appear in AutoRecordController",
+    "python3 -c \"import re, sys; src=open('src/automation/AutoRecordController.cpp').read(); assert 'feedLevel' in src; assert 'PostRoll' in src; print('ok')\" passes",
+    "No file outside the task's allowed_write_paths is created or modified"
+  ],
+  "selected_backend": "codex_cli",
+  "verification_profile": "focused",
+  "allowed_write_paths": [
+    "src/automation/AutoRecordController.hpp",
+    "src/automation/AutoRecordController.cpp"
+  ],
+  "forbidden_changes": [
+    "modify any file under src/recording/",
+    "modify any file under src/pipewire/",
+    "modify src/app/main.cpp",
+    "add new third-party dependencies",
+    "place blocking synchronization or file I/O in AutoRecordController"
+  ],
+  "allowed_symbols": [
+    "AutoRecordController",
+    "State",
+    "Idle",
+    "Armed",
+    "Recording",
+    "PostRoll",
+    "feedLevel",
+    "stateChanged",
+    "startRequested",
+    "stopRequested",
+    "preRollRequested"
+  ],
+  "decision_budget": {
+    "allowed": [
+      "choose debounce window size for threshold chatter rejection",
+      "use QElapsedTimer or QDeadlineTimer for hold-time and post-roll timing"
+    ],
+    "forbidden": [
+      "add PipeWire stream management to this class",
+      "perform file I/O or encoding in this class",
+      "introduce new threading primitives"
+    ]
+  },
+  "dependencies": [],
+  "task_timeout_seconds": 900,
+  "model": "gpt-5.6-sol",
+  "verification_commands": [
+    {
+      "name": "has_state_machine",
+      "command": [
+        "bash",
+        "-c",
+        "grep -qE 'Armed|PostRoll|Idle' src/automation/AutoRecordController.hpp"
+      ]
+    },
+    {
+      "name": "has_feed_level_slot",
+      "command": [
+        "bash",
+        "-c",
+        "grep -q 'feedLevel' src/automation/AutoRecordController.hpp"
+      ]
+    },
+    {
+      "name": "no_pipewire_or_file_io",
+      "command": [
+        "bash",
+        "-c",
+        "! grep -qE 'pw_stream|pw_thread_loop|std::ofstream|fopen' src/automation/AutoRecordController.cpp"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,96 @@
+{
+  "schema_version": 1,
+  "task_id": "f.1",
+  "phase": "F",
+  "phase_id": "f",
+  "title": "Build live source browser and source cards",
+  "description": "Create the SourceListModel C++ class and SourceCard QML component that together present discovered PipeWire sources (application streams, system/output monitors, hardware inputs) as browsable cards with live identification data.\n\nBefore editing, inspect:\n- src/pipewire/ headers for the PipeWire source discovery types and enums already defined in earlier phases (source kind, display name, channel count, sample rate, active flag).\n- Any existing Q_PROPERTY or QAbstractListModel patterns already used in src/ui/.\n- qml/components/ for any shared style tokens, spacing constants, or component conventions.\n\nDo not infer APIs, schemas, behavior, or file contents; inspect the referenced files first.\n\nImplementation:\n- src/ui/SourceListModel.hpp / .cpp: Subclass QAbstractListModel. Expose roles for source id, display name, source kind (application / monitor / hardware), channel count, sample rate, and an isActive flag. Provide Q_INVOKABLE refresh and selection helpers. Accept source snapshots from the engine layer via a thread-safe slot; never touch PipeWire realtime buffers directly.\n- qml/components/SourceCard.qml: A delegate that renders one source entry showing its display name, kind icon/label, channel and rate info, and a visual active indicator. Use QtQuick.Controls style, not Canvas or raw OpenGL.\n\nSTRICT FILE SCOPE: Create or modify ONLY the files listed in this task's allowed_write_paths.\n\nBuild handoff: f.3 owns Phase F CMake registration, so this task must not edit CMakeLists.txt. Before editing, inspect the Phase-A QML resource/module convention in CMakeLists.txt so SourceCard.qml follows its import/path convention. Its C++ source is compiled by the f.3 fan-in abracapture target build.",
+  "acceptance_criteria": [
+    "src/ui/SourceListModel.hpp and src/ui/SourceListModel.cpp exist and define a QAbstractListModel subclass with roleNames() returning at least sourceId, displayName, sourceKind, channelCount, sampleRate, and isActive roles",
+    "qml/components/SourceCard.qml exists and references the model roles defined in SourceListModel",
+    "SourceListModel does not include any PipeWire headers or call pw_* functions directly",
+    "No file outside the task's allowed_write_paths is created or modified"
+  ],
+  "selected_backend": "antigravity_cli",
+  "model": "gemini-3.7-flash-medium",
+  "verification_profile": "focused",
+  "allowed_write_paths": [
+    "src/ui/SourceListModel.hpp",
+    "src/ui/SourceListModel.cpp",
+    "qml/components/SourceCard.qml"
+  ],
+  "forbidden_changes": [
+    "modify any file under src/pipewire/",
+    "modify qml/Main.qml",
+    "modify CMakeLists.txt",
+    "add new third-party dependencies",
+    "touch PipeWire realtime buffers or call pw_* functions from UI code"
+  ],
+  "allowed_symbols": [
+    "SourceListModel",
+    "SourceCard"
+  ],
+  "decision_budget": {
+    "allowed": [
+      "choose QAbstractListModel role enum values",
+      "add local helper methods for source kind display strings"
+    ],
+    "forbidden": [
+      "introduce a custom item model framework",
+      "add direct PipeWire dependencies to UI layer",
+      "create additional QML pages"
+    ]
+  },
+  "dependencies": [],
+  "task_timeout_seconds": 900,
+  "verification_commands": [
+    {
+      "name": "source_list_model_exists",
+      "command": [
+        "bash",
+        "-c",
+        "test -f src/ui/SourceListModel.hpp && test -f src/ui/SourceListModel.cpp"
+      ]
+    },
+    {
+      "name": "source_card_qml_exists",
+      "command": [
+        "bash",
+        "-c",
+        "test -f qml/components/SourceCard.qml"
+      ]
+    },
+    {
+      "name": "has_abstract_list_model",
+      "command": [
+        "bash",
+        "-c",
+        "grep -q 'QAbstractListModel' src/ui/SourceListModel.hpp"
+      ]
+    },
+    {
+      "name": "no_pipewire_in_ui",
+      "command": [
+        "bash",
+        "-c",
+        "! grep -qE '#include.*pipewire|#include.*spa/' src/ui/SourceListModel.hpp src/ui/SourceListModel.cpp"
+      ]
+    },
+    {
+      "name": "source_card_qml_syntax",
+      "command": [
+        "qmlformat",
+        "--check",
+        "qml/components/SourceCard.qml"
+      ]
+    },
+    {
+      "name": "source_list_model_cpp_syntax",
+      "command": [
+        "bash",
+        "-c",
+        "c++ -std=c++20 -fsyntax-only $(pkg-config --cflags Qt6Core Qt6Qml Qt6Quick) -I src src/ui/SourceListModel.cpp"
+      ]
+    }
+  ]
+}

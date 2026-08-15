@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "task_id": "e.3",
+  "phase": "E",
+  "phase_id": "e",
+  "title": "Implement verified post-capture export manager",
+  "description": "Create ExportManager that produces optional derived lossy/lossless exports from a completed lossless master file using the ffmpeg executable, with verification that the master exists and is valid before any export begins.\n\nBefore editing, inspect:\n- src/recording/ for the recorder output path and CaptureIntegrity API (from e.2, but do not modify those files).\n- Check whether a process/command runner utility already exists in the project.\n\nDo not infer APIs, schemas, behavior, or file contents; inspect the referenced files first.\n\nRequirements:\n1. ExportManager accepts a master file path, a CaptureIntegrity summary, and a list of ExportSpec (target format, sample rate, bit depth, codec, output path).\n2. Before starting any export, verify the master file exists and is non-empty. If verification fails, emit exportFailed with an error and do not delete or modify the master.\n3. Run ffmpeg as a QProcess for each export. Build command lines for: FLAC (lossless), MP3 (lossy), Ogg Vorbis (lossy), and WAV (resampled) targets.\n4. Exports run sequentially (one QProcess at a time) to avoid disk contention.\n5. After each ffmpeg completes, verify the output file exists and is non-empty. Emit exportCompleted or exportFailed per-export.\n6. Export failures must never delete, truncate, or invalidate the master file.\n7. Use Q_OBJECT with signals: exportStarted(QString format), exportCompleted(QString path), exportFailed(QString format, QString error), allExportsFinished().\n8. No encoding, resampling, or compression is done in-process; all encoding is delegated to the ffmpeg executable.\n\nSTRICT FILE SCOPE: Create or modify ONLY the files listed in this task's allowed_write_paths.",
+  "acceptance_criteria": [
+    "src/export/ExportManager.hpp declares ExportManager with Q_OBJECT, ExportSpec struct, and signals for exportStarted/exportCompleted/exportFailed/allExportsFinished",
+    "src/export/ExportManager.cpp implements master verification before any export begins and emits exportFailed without modifying the master if verification fails",
+    "ffmpeg command lines are built for at least FLAC, MP3, Ogg Vorbis, and WAV export targets",
+    "Exports run via QProcess, not via in-process encoding or libav linking",
+    "Export failure does not delete or truncate the master file (no unlink/remove/truncate call on the master path in any error path)",
+    "python3 -c \"import re; src=open('src/export/ExportManager.cpp').read(); assert 'ffmpeg' in src; assert 'QProcess' in src; assert 'exportFailed' in src; print('ok')\" passes",
+    "No file outside the task's allowed_write_paths is created or modified"
+  ],
+  "selected_backend": "codex_cli",
+  "verification_profile": "focused",
+  "allowed_write_paths": [
+    "src/export/ExportManager.hpp",
+    "src/export/ExportManager.cpp"
+  ],
+  "forbidden_changes": [
+    "modify any file under src/recording/",
+    "modify any file under src/automation/",
+    "modify src/app/main.cpp",
+    "link against libavcodec, libavformat, or libavutil",
+    "add in-process lossy encoding",
+    "delete or truncate the master file in any code path"
+  ],
+  "allowed_symbols": [
+    "ExportManager",
+    "ExportSpec",
+    "exportStarted",
+    "exportCompleted",
+    "exportFailed",
+    "allExportsFinished",
+    "startExports",
+    "verifyMaster"
+  ],
+  "decision_budget": {
+    "allowed": [
+      "choose ffmpeg argument ordering and codec flags",
+      "add local helper to build ffmpeg command-line arguments"
+    ],
+    "forbidden": [
+      "perform encoding in-process without ffmpeg",
+      "introduce new audio library dependencies",
+      "delete or modify the master recording on export failure"
+    ]
+  },
+  "dependencies": [],
+  "task_timeout_seconds": 900,
+  "model": "gpt-5.6-terra",
+  "verification_commands": [
+    {
+      "name": "has_qprocess",
+      "command": [
+        "bash",
+        "-c",
+        "grep -q 'QProcess' src/export/ExportManager.hpp"
+      ]
+    },
+    {
+      "name": "has_export_signals",
+      "command": [
+        "bash",
+        "-c",
+        "grep -qE 'exportFailed|exportCompleted' src/export/ExportManager.hpp"
+      ]
+    },
+    {
+      "name": "no_inprocess_encoding",
+      "command": [
+        "bash",
+        "-c",
+        "! grep -qE '#include.*<libav|avcodec|avformat>' src/export/ExportManager.hpp src/export/ExportManager.cpp"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,71 @@
+{
+  "verification": {
+    "checks": [
+      {
+        "name": "cmake_configure",
+        "command": [
+          "cmake",
+          "-S",
+          ".",
+          "-B",
+          "build",
+          "-DCMAKE_BUILD_TYPE=RelWithDebInfo",
+          "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
+        ]
+      },
+      {
+        "name": "cmake_build",
+        "command": [
+          "cmake",
+          "--build",
+          "build",
+          "--config",
+          "RelWithDebInfo",
+          "--parallel"
+        ]
+      },
+      {
+        "name": "ctest_all",
+        "command": [
+          "ctest",
+          "--test-dir",
+          "build",
+          "-C",
+          "RelWithDebInfo",
+          "--output-on-failure"
+        ]
+      },
+      {
+        "name": "desktop_file_validate",
+        "command": [
+          "desktop-file-validate",
+          "packaging/abracapture.desktop"
+        ]
+      },
+      {
+        "name": "metainfo_xml_wellformed",
+        "command": [
+          "xmllint",
+          "--noout",
+          "packaging/abracapture.metainfo.xml"
+        ]
+      },
+      {
+        "name": "readme_line_count",
+        "command": [
+          "sh",
+          "-c",
+          "lines=$(wc -l < README.md) && [ \"$lines\" -le 200 ] && echo \"README.md: $lines lines (OK)\" || { echo \"README.md: $lines lines (EXCEEDS 200)\"; exit 1; }"
+        ]
+      },
+      {
+        "name": "user_guide_line_count",
+        "command": [
+          "sh",
+          "-c",
+          "lines=$(wc -l < docs/USER_GUIDE.md) && [ \"$lines\" -le 400 ] && echo \"USER_GUIDE.md: $lines lines (OK)\" || { echo \"USER_GUIDE.md: $lines lines (EXCEEDS 400)\"; exit 1; }"
+        ]
+      }
+    ]
+  }
+}

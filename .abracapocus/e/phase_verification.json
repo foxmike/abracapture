@@ -1,0 +1,69 @@
+{
+  "verification": {
+    "checks": [
+      {
+        "name": "cmake_configure",
+        "command": [
+          "cmake",
+          "-S",
+          ".",
+          "-B",
+          "build",
+          "-DCMAKE_BUILD_TYPE=RelWithDebInfo",
+          "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
+        ]
+      },
+      {
+        "name": "cmake_build",
+        "command": [
+          "cmake",
+          "--build",
+          "build",
+          "--config",
+          "RelWithDebInfo",
+          "--parallel"
+        ]
+      },
+      {
+        "name": "verify_auto_record_controller",
+        "command": [
+          "python3",
+          "-c",
+          "import re; src=open('src/automation/AutoRecordController.cpp').read(); assert 'feedLevel' in src; assert 'PostRoll' in src; assert 'Armed' in src; print('AutoRecordController ok')"
+        ]
+      },
+      {
+        "name": "verify_capture_integrity",
+        "command": [
+          "python3",
+          "-c",
+          "import re; src=open('src/recording/CaptureIntegrity.cpp').read(); assert 'toJson' in src; assert 'Native' in src; assert 'Converted' in src; assert 'Resampled' in src; print('CaptureIntegrity ok')"
+        ]
+      },
+      {
+        "name": "verify_export_manager",
+        "command": [
+          "python3",
+          "-c",
+          "import re; src=open('src/export/ExportManager.cpp').read(); assert 'ffmpeg' in src; assert 'QProcess' in src; assert 'exportFailed' in src; print('ExportManager ok')"
+        ]
+      },
+      {
+        "name": "verify_cli_app",
+        "command": [
+          "python3",
+          "-c",
+          "import re; src=open('src/cli/CliApp.cpp').read(); assert 'list-sources' in src; assert 'record' in src; print('CliApp ok')"
+        ]
+      },
+      {
+        "name": "verify_no_realtime_io",
+        "command": [
+          "python3",
+          "-c",
+          "import re; src=open('src/automation/AutoRecordController.cpp').read(); assert 'fopen' not in src; assert 'std::ofstream' not in src; assert 'QFile' not in src; print('No file I/O in AutoRecordController')"
+        ]
+      }
+    ]
+  }
+}

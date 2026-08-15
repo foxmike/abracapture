@@ -1,0 +1,60 @@
+{
+  "verification": {
+    "checks": [
+      {
+        "name": "ring_buffer_compile",
+        "command": [
+          "g++",
+          "-std=c++20",
+          "-fsyntax-only",
+          "src/audio/AudioRingBuffer.cpp",
+          "-I",
+          "src"
+        ]
+      },
+      {
+        "name": "capture_stream_compile",
+        "command": [
+          "bash",
+          "-c",
+          "g++ -std=c++20 -fsyntax-only src/audio/PipeWireCaptureStream.cpp -I src $(pkg-config --cflags libpipewire-0.3)"
+        ]
+      },
+      {
+        "name": "capture_metrics_compile",
+        "command": [
+          "g++",
+          "-std=c++20",
+          "-fsyntax-only",
+          "src/audio/CaptureMetrics.cpp",
+          "-I",
+          "src"
+        ]
+      },
+      {
+        "name": "capture_session_compile",
+        "command": [
+          "bash",
+          "-c",
+          "g++ -std=c++20 -fsyntax-only src/audio/CaptureSession.cpp -I src $(pkg-config --cflags libpipewire-0.3)"
+        ]
+      },
+      {
+        "name": "no_blocking_in_realtime",
+        "command": [
+          "bash",
+          "-c",
+          "! grep -n 'std::mutex\\|std::lock_guard\\|std::unique_lock\\|malloc\\|new ' src/audio/AudioRingBuffer.hpp src/audio/AudioRingBuffer.cpp src/audio/CaptureMetrics.hpp src/audio/CaptureMetrics.cpp"
+        ]
+      },
+      {
+        "name": "no_qt_in_audio_core",
+        "command": [
+          "bash",
+          "-c",
+          "! grep -rn '#include.*<Q' src/audio/AudioRingBuffer.hpp src/audio/AudioRingBuffer.cpp src/audio/PipeWireCaptureStream.hpp src/audio/PipeWireCaptureStream.cpp src/audio/CaptureMetrics.hpp src/audio/CaptureMetrics.cpp src/audio/CaptureSession.hpp src/audio/CaptureSession.cpp"
+        ]
+      }
+    ]
+  }
+}

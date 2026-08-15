@@ -1,0 +1,52 @@
+{
+  "verification": {
+    "checks": [
+      {
+        "name": "cmake_configure",
+        "command": [
+          "cmake",
+          "-S",
+          ".",
+          "-B",
+          "build",
+          "-DCMAKE_BUILD_TYPE=RelWithDebInfo",
+          "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
+        ]
+      },
+      {
+        "name": "cmake_build",
+        "command": [
+          "cmake",
+          "--build",
+          "build",
+          "--config",
+          "RelWithDebInfo",
+          "--parallel"
+        ]
+      },
+      {
+        "name": "ctest",
+        "command": [
+          "ctest",
+          "--test-dir",
+          "build",
+          "-C",
+          "RelWithDebInfo",
+          "--output-on-failure"
+        ]
+      },
+      {
+        "name": "phase_f_qml_syntax",
+        "command": [
+          "qmlformat",
+          "--check",
+          "qml/Main.qml",
+          "qml/components/SourceCard.qml",
+          "qml/components/WaveformView.qml",
+          "qml/pages/CapturePage.qml",
+          "qml/pages/SettingsPage.qml"
+        ]
+      }
+    ]
+  }
+}

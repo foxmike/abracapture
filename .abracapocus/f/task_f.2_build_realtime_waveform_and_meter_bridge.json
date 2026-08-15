@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "task_id": "f.2",
+  "phase": "F",
+  "phase_id": "f",
+  "title": "Build realtime waveform and meter bridge",
+  "description": "Create the WaveformBridge C++ class and WaveformView QML component that render live waveform and level-meter data from bounded audio snapshots without touching PipeWire realtime buffers directly.\n\nBefore editing, inspect:\n- src/audio/CaptureMetrics.hpp for the CaptureMetricsSnapshot struct (peak, RMS, framesCaptured, overflowCount) that the bridge will read from.\n- src/audio/AudioRingBuffer.hpp for the bounded ring buffer API; the bridge must never hold a reference into the realtime buffer — pass bounded snapshots only.\n- Any existing QQuickPaintedItem or QQuickItem subclasses in src/ui/ for rendering conventions.\n- qml/components/ for shared style tokens and sizing.\n\nDo not infer APIs, schemas, behavior, or file contents; inspect the referenced files first.\n\nImplementation:\n- src/ui/WaveformBridge.hpp / .cpp: A QObject (or QQuickItem subclass) that receives bounded audio snapshots via a queued signal/slot connection. Expose Q_PROPERTYs for per-channel peak and RMS levels, and a method or property that provides the current waveform sample buffer to QML. Never hold a reference into the realtime ring buffer; copy or consume bounded snapshots only. Provide a configurable snapshot window size.\n- qml/components/WaveformView.qml: Renders the waveform using Canvas, Shape, or a suitable QtQuick element. Displays a level meter bar alongside the waveform. Updates at a UI-friendly rate (target 30–60 fps refresh, not audio-rate). Must remain responsive during capture.\n\nSTRICT FILE SCOPE: Create or modify ONLY the files listed in this task's allowed_write_paths.\n\nSnapshot handoff: Before editing, inspect src/audio/CaptureSession.hpp for the bounded CaptureVisualizationSnapshot value-copy reader established in Phase C; it is the waveform sample source. CaptureMetricsSnapshot supplies only peak/RMS/integrity metrics, not waveform samples. Implement a queued GUI-thread slot that accepts bounded value copies supplied by f.3 from CaptureSession. WaveformBridge must not include, read, drain, or retain references into AudioRingBuffer.",
+  "acceptance_criteria": [
+    "src/ui/WaveformBridge.hpp and src/ui/WaveformBridge.cpp exist and define a QObject or QQuickItem subclass with Q_PROPERTYs for peak and RMS levels",
+    "WaveformBridge accepts audio snapshots via a slot and does not include PipeWire headers or reference pw_stream or pw_core directly",
+    "qml/components/WaveformView.qml exists and renders waveform and level meter visuals",
+    "WaveformBridge does not perform file I/O, compression, or blocking synchronization",
+    "No file outside the task's allowed_write_paths is created or modified",
+    "WaveformBridge waveform samples enter only through its queued bounded-snapshot slot; CaptureMetricsSnapshot is used only for metrics and AudioRingBuffer is neither included nor accessed"
+  ],
+  "selected_backend": "codex_cli",
+  "model": "gpt-5.6-sol",
+  "verification_profile": "focused",
+  "allowed_write_paths": [
+    "src/ui/WaveformBridge.hpp",
+    "src/ui/WaveformBridge.cpp",
+    "qml/components/WaveformView.qml"
+  ],
+  "forbidden_changes": [
+    "modify any file under src/pipewire/ or src/engine/",
+    "modify qml/Main.qml",
+    "modify CMakeLists.txt",
+    "add new third-party dependencies",
+    "hold references into realtime ring buffers",
+    "perform file I/O or compression in the bridge class"
+  ],
+  "allowed_symbols": [
+    "WaveformBridge",
+    "WaveformView"
+  ],
+  "decision_budget": {
+    "allowed": [
+      "choose between QQuickPaintedItem and QObject with Canvas-based QML rendering",
+      "choose snapshot buffer representation (QVector<float>, QByteArray, etc.)",
+      "add local helper for dB conversion"
+    ],
+    "forbidden": [
+      "introduce a custom rendering framework or OpenGL backend",
+      "add direct PipeWire or audio-engine dependencies to UI layer",
+      "create additional QML pages"
+    ]
+  },
+  "dependencies": [],
+  "task_timeout_seconds": 900,
+  "verification_commands": [
+    {
+      "name": "waveform_bridge_exists",
+      "command": [
+        "bash",
+        "-c",
+        "test -f src/ui/WaveformBridge.hpp && test -f src/ui/WaveformBridge.cpp"
+      ]
+    },
+    {
+      "name": "waveform_view_qml_exists",
+      "command": [
+        "bash",
+        "-c",
+        "test -f qml/components/WaveformView.qml"
+      ]
+    },
+    {
+      "name": "no_direct_ring_buffer_access",
+      "command": [
+        "bash",
+        "-c",
+        "! grep -q 'AudioRingBuffer' src/ui/WaveformBridge.hpp src/ui/WaveformBridge.cpp"
+      ]
+    },
+    {
+      "name": "waveform_view_qml_syntax",
+      "command": [
+        "qmlformat",
+        "--check",
+        "qml/components/WaveformView.qml"
+      ]
+    },
+    {
+      "name": "waveform_bridge_cpp_syntax",
+      "command": [
+        "bash",
+        "-c",
+        "c++ -std=c++20 -fsyntax-only $(pkg-config --cflags Qt6Core Qt6Qml Qt6Quick) -I src src/ui/WaveformBridge.cpp"
+      ]
+    }
+  ]
+}

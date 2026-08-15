@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "task_id": "e.2",
+  "phase": "E",
+  "phase_id": "e",
+  "title": "Implement capture integrity and provenance reporting",
+  "description": "Create CaptureIntegrity that accumulates per-capture provenance metadata and produces a structured integrity report after recording completes.\n\nBefore editing, inspect:\n- src/recording/ for the recorder class and any existing format/sample-rate negotiation results.\n- src/pipewire/ for how the negotiated stream format (sample format, rate, channels) is exposed.\n\nDo not infer APIs, schemas, behavior, or file contents; inspect the referenced files first.\n\nRequirements:\n1. CaptureIntegrity tracks: source stream name, negotiated sample format and rate, file sample format and rate, whether the capture is native (negotiated == file), quantized (bit-depth reduced), resampled (rate changed), or converted (both).\n2. Expose an enum CaptureKind { Native, Quantized, Resampled, Converted } and a human-readable label for each.\n3. Record xrun count, total frames captured, capture duration, and file path.\n4. Provide a toJson() method returning a QJsonObject with all provenance fields.\n5. Provide a summary() method returning a single-line human-readable string that includes CaptureKind and file path.\n6. The class is a plain C++ value type (no Q_OBJECT needed). Header-only or header+cpp is acceptable.\n7. No file I/O beyond what the caller passes in; CaptureIntegrity does not open or write files itself.\n\nSTRICT FILE SCOPE: Create or modify ONLY the files listed in this task's allowed_write_paths.",
+  "acceptance_criteria": [
+    "src/recording/CaptureIntegrity.hpp declares CaptureIntegrity with CaptureKind enum, toJson(), and summary() methods",
+    "src/recording/CaptureIntegrity.cpp implements toJson() returning a QJsonObject with keys: sourceStream, negotiatedFormat, negotiatedRate, fileFormat, fileRate, captureKind, xrunCount, totalFrames, durationSeconds, filePath",
+    "CaptureKind is Native when negotiated format/rate equals file format/rate, Quantized when only bit-depth differs, Resampled when only rate differs, Converted when both differ",
+    "summary() includes the CaptureKind label and file path in a single line",
+    "python3 -c \"import re, sys; src=open('src/recording/CaptureIntegrity.cpp').read(); assert 'toJson' in src; assert 'Native' in src; assert 'Converted' in src; print('ok')\" passes",
+    "No file outside the task's allowed_write_paths is created or modified"
+  ],
+  "selected_backend": "codex_cli",
+  "verification_profile": "focused",
+  "allowed_write_paths": [
+    "src/recording/CaptureIntegrity.hpp",
+    "src/recording/CaptureIntegrity.cpp"
+  ],
+  "forbidden_changes": [
+    "modify any file under src/automation/",
+    "modify any file under src/export/",
+    "modify src/app/main.cpp",
+    "add new third-party dependencies",
+    "perform file I/O or open files inside CaptureIntegrity"
+  ],
+  "allowed_symbols": [
+    "CaptureIntegrity",
+    "CaptureKind",
+    "Native",
+    "Quantized",
+    "Resampled",
+    "Converted",
+    "toJson",
+    "summary",
+    "setNegotiatedFormat",
+    "setFileFormat"
+  ],
+  "decision_budget": {
+    "allowed": [
+      "choose struct layout for provenance fields",
+      "use builder-style setters or direct member access"
+    ],
+    "forbidden": [
+      "write report files to disk from this class",
+      "add PipeWire or libsndfile dependencies to this class",
+      "introduce upsampled-as-native misrepresentation"
+    ]
+  },
+  "dependencies": [],
+  "task_timeout_seconds": 900,
+  "model": "gpt-5.6-terra",
+  "verification_commands": [
+    {
+      "name": "has_to_json",
+      "command": [
+        "bash",
+        "-c",
+        "grep -q 'toJson' src/recording/CaptureIntegrity.hpp"
+      ]
+    },
+    {
+      "name": "has_capture_kind_enum",
+      "command": [
+        "bash",
+        "-c",
+        "grep -qE 'CaptureKind|Native|Converted' src/recording/CaptureIntegrity.hpp"
+      ]
+    },
+    {
+      "name": "no_file_io",
+      "command": [
+        "bash",
+        "-c",
+        "! grep -qE 'std::ofstream|fopen|QFile' src/recording/CaptureIntegrity.hpp src/recording/CaptureIntegrity.cpp"
+      ]
+    }
+  ]
+}

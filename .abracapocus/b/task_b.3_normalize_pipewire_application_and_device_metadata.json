@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "task_id": "b.3",
+  "phase": "B",
+  "phase_id": "b",
+  "title": "Normalize PipeWire application and device metadata",
+  "description": "Create PropertyNormalizer, a stateless utility that extracts and normalizes human-readable display names, application identifiers, device labels, and icon names from raw PipeWire spa_dict property bags.\n\nSTRICT FILE SCOPE: Create or modify ONLY the files listed in this task's allowed_write_paths.\n\nBefore editing, inspect:\n- PipeWire property keys in pipewire/keys.h (PW_KEY_APP_NAME, PW_KEY_APP_ICON_NAME, PW_KEY_MEDIA_NAME, PW_KEY_NODE_DESCRIPTION, PW_KEY_NODE_NICK, PW_KEY_NODE_NAME, PW_KEY_DEVICE_NICK, PW_KEY_DEVICE_DESCRIPTION)\n- spa/dict.h for spa_dict and spa_dict_lookup\n- src/pipewire/SourceDescriptor.hpp for the SourceDescriptor fields this normalizer will populate\n\nDo not infer APIs, schemas, behavior, or file contents; inspect the referenced files first.\n\nImplementation:\n1. PropertyNormalizer.hpp — declare a namespace or struct PropertyNormalizer with static/free functions: std::string extractDisplayName(const spa_dict* props) that tries PW_KEY_NODE_DESCRIPTION → PW_KEY_NODE_NICK → PW_KEY_NODE_NAME → PW_KEY_APP_NAME with fallback to \"Unknown\"; std::string extractAppName(const spa_dict* props); std::string extractMediaClass(const spa_dict* props); std::optional<uint32_t> extractDeviceId(const spa_dict* props); std::string extractIconName(const spa_dict* props). Declare std::string sanitizeUtf8(std::string_view raw) to strip control characters and ensure valid UTF-8 for UI display.\n2. PropertyNormalizer.cpp — implement each extractor using spa_dict_lookup with the documented fallback chains. extractDeviceId parses the string property to uint32_t safely. sanitizeUtf8 removes C0/C1 control characters (except space) and replaces invalid UTF-8 sequences with U+FFFD. All functions are pure: no PipeWire connection, no state, no allocation beyond return values.\n\nConstraints:\n- All functions must be stateless and thread-safe (no mutable static data).\n- Do not depend on PipeWireContext; only depend on PipeWire/SPA headers for type definitions.\n- Handle nullptr spa_dict gracefully (return empty/nullopt, no throw).",
+  "acceptance_criteria": [
+    "src/pipewire/PropertyNormalizer.hpp declares extractDisplayName, extractAppName, extractMediaClass, extractDeviceId, extractIconName, and sanitizeUtf8",
+    "src/pipewire/PropertyNormalizer.cpp implements property extraction with documented fallback chains using spa_dict_lookup",
+    "All PropertyNormalizer functions handle nullptr spa_dict input without crashing or throwing",
+    "sanitizeUtf8 strips control characters and replaces invalid UTF-8 sequences",
+    "PropertyNormalizer does not include or depend on PipeWireContext.hpp",
+    "g++ -std=c++20 -fsyntax-only -I/usr/include/pipewire-0.3 -I/usr/include/spa-0.2 src/pipewire/PropertyNormalizer.hpp succeeds or the file is parseable as valid C++20 with SPA headers",
+    "No file outside the task's allowed_write_paths is created or modified"
+  ],
+  "selected_backend": "codex_cli",
+  "model": "gpt-5.6-luna",
+  "verification_profile": "focused",
+  "allowed_write_paths": [
+    "src/pipewire/PropertyNormalizer.hpp",
+    "src/pipewire/PropertyNormalizer.cpp"
+  ],
+  "forbidden_changes": [
+    "modify files outside src/pipewire/PropertyNormalizer.{hpp,cpp}",
+    "include or depend on PipeWireContext.hpp",
+    "add runtime PipeWire connection or proxy calls",
+    "modify CMakeLists.txt or build configuration"
+  ],
+  "allowed_symbols": [
+    "PropertyNormalizer",
+    "extractDisplayName",
+    "extractAppName",
+    "extractMediaClass",
+    "extractDeviceId",
+    "extractIconName",
+    "sanitizeUtf8"
+  ],
+  "decision_budget": {
+    "allowed": [
+      "choose namespace vs struct for grouping normalizer functions",
+      "choose fallback chain order for display name extraction"
+    ],
+    "forbidden": [
+      "introduce a property caching or memoization layer",
+      "add PipeWire runtime connection logic",
+      "design the source catalog aggregation"
+    ]
+  },
+  "dependencies": [],
+  "task_timeout_seconds": 900,
+  "verification_commands": [
+    {
+      "name": "syntax_check",
+      "command": [
+        "bash",
+        "-c",
+        "g++ -std=c++20 -fsyntax-only src/pipewire/PropertyNormalizer.cpp -I src $(pkg-config --cflags libpipewire-0.3)"
+      ]
+    },
+    {
+      "name": "has_extract_display_name",
+      "command": [
+        "bash",
+        "-c",
+        "grep -q 'extractDisplayName' src/pipewire/PropertyNormalizer.hpp"
+      ]
+    }
+  ]
+}

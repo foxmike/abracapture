@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "task_id": "f.4",
+  "phase": "F",
+  "phase_id": "f",
+  "title": "Build settings page and settings view model",
+  "description": "Create the SettingsViewModel C++ class and SettingsPage QML component for configuring output directories, file naming patterns, format preferences (WAV/FLAC), auto-start/auto-stop behavior, pre-roll/post-roll durations, and export options.\n\nBefore editing, inspect:\n- src/config/ or src/settings/ for any existing settings persistence layer (QSettings wrapper, JSON config, schema definitions) from earlier phases.\n- qml/components/ for shared UI style conventions and component patterns.\n- The plan's product requirements for settings scope: output directory, naming template, master format (WAV/FLAC), optional post-capture exports, auto-start/auto-stop thresholds, pre-roll/post-roll seconds.\n\nDo not infer APIs, schemas, behavior, or file contents; inspect the referenced files first.\n\nImplementation:\n- src/ui/SettingsViewModel.hpp / .cpp: A QObject exposing Q_PROPERTYs for output directory, naming pattern, master format (WAV/FLAC), export enabled flag, export format, auto-start enabled, auto-start threshold, auto-stop enabled, auto-stop silence duration, pre-roll seconds, and post-roll seconds. Provide load/save Q_INVOKABLE methods that delegate to the persistence layer. Validate paths and emit error signals for invalid configurations.\n- qml/pages/SettingsPage.qml: A scrollable form presenting all settings with appropriate controls (text fields, combo boxes, spin boxes, switches, folder picker). Group settings logically (Output, Capture Behavior, Export). Show validation feedback inline.\n\nSTRICT FILE SCOPE: Create or modify ONLY the files listed in this task's allowed_write_paths.\n\nBuild handoff: f.3 owns Phase F CMake registration, so this task must not edit CMakeLists.txt. Before editing, inspect the Phase-A QML resource/module convention in CMakeLists.txt so SettingsPage.qml follows its import/path convention. Its C++ source is compiled by the f.3 fan-in abracapture target build.",
+  "acceptance_criteria": [
+    "src/ui/SettingsViewModel.hpp and src/ui/SettingsViewModel.cpp exist and define a QObject subclass with Q_PROPERTYs for at least outputDirectory, namingPattern, masterFormat, autoStartEnabled, autoStopEnabled, preRollSeconds, and postRollSeconds",
+    "SettingsViewModel provides Q_INVOKABLE load and save methods",
+    "qml/pages/SettingsPage.qml exists and binds to SettingsViewModel properties with appropriate input controls",
+    "SettingsViewModel does not perform audio capture, PipeWire calls, or compression",
+    "No file outside the task's allowed_write_paths is created or modified"
+  ],
+  "selected_backend": "antigravity_cli",
+  "model": "gemini-3.7-flash-medium",
+  "verification_profile": "focused",
+  "allowed_write_paths": [
+    "src/ui/SettingsViewModel.hpp",
+    "src/ui/SettingsViewModel.cpp",
+    "qml/pages/SettingsPage.qml"
+  ],
+  "forbidden_changes": [
+    "modify any file under src/pipewire/ or src/engine/",
+    "modify qml/Main.qml",
+    "modify CMakeLists.txt",
+    "add new third-party dependencies",
+    "perform audio capture or PipeWire operations from the settings layer"
+  ],
+  "allowed_symbols": [
+    "SettingsViewModel",
+    "SettingsPage"
+  ],
+  "decision_budget": {
+    "allowed": [
+      "choose validation approach for output directory paths",
+      "add local enum for master format options",
+      "choose settings grouping and layout within the page"
+    ],
+    "forbidden": [
+      "introduce a custom settings framework beyond QSettings",
+      "add audio capture or PipeWire dependencies",
+      "create additional QML pages"
+    ]
+  },
+  "dependencies": [],
+  "task_timeout_seconds": 900,
+  "verification_commands": [
+    {
+      "name": "settings_viewmodel_exists",
+      "command": [
+        "bash",
+        "-c",
+        "test -f src/ui/SettingsViewModel.hpp && test -f src/ui/SettingsViewModel.cpp"
+      ]
+    },
+    {
+      "name": "settings_page_qml_exists",
+      "command": [
+        "bash",
+        "-c",
+        "test -f qml/pages/SettingsPage.qml"
+      ]
+    },
+    {
+      "name": "no_audio_capture",
+      "command": [
+        "bash",
+        "-c",
+        "! grep -qE 'pw_stream|AudioRingBuffer|CaptureSession' src/ui/SettingsViewModel.hpp src/ui/SettingsViewModel.cpp"
+      ]
+    },
+    {
+      "name": "settings_page_qml_syntax",
+      "command": [
+        "qmlformat",
+        "--check",
+        "qml/pages/SettingsPage.qml"
+      ]
+    },
+    {
+      "name": "settings_viewmodel_cpp_syntax",
+      "command": [
+        "bash",
+        "-c",
+        "c++ -std=c++20 -fsyntax-only $(pkg-config --cflags Qt6Core Qt6Qml Qt6Quick) -I src src/ui/SettingsViewModel.cpp"
+      ]
+    }
+  ]
+}

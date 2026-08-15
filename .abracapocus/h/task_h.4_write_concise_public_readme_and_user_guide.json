@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "task_id": "h.4",
+  "phase": "H",
+  "phase_id": "h",
+  "title": "Write concise public README and user guide",
+  "description": "Write a concise public-facing README.md and a user guide that accurately describe Abracapture's capabilities, build requirements, and usage. Documentation must clearly state native capture versus conversion/resampling behavior and must not promise bit-perfect capture when PipeWire negotiation or resampling is involved.\n\nBefore editing, inspect:\n- The existing README.md for any content to preserve or replace.\n- src/audio/PipeWireCaptureStream.hpp for capture lifecycle and format-negotiation API to document accurately.\n- src/core/AudioFormat.hpp for supported formats, native-vs-converted classification, and format metadata.\n- src/app/main.cpp and any CLI argument parsing for command-line usage documentation.\n- CMakeLists.txt for build dependencies (Qt version, PipeWire version, libsndfile, libFLAC, ffmpeg).\n- packaging/abracapture.desktop for the application description consistency.\n\nDo not infer APIs, schemas, behavior, or file contents; inspect the referenced files first.\n\nSTRICT FILE SCOPE: Create or modify ONLY the files listed in this task's allowed_write_paths.\n\nREADME.md: Project overview (one paragraph), feature list, build requirements (C++20 compiler, CMake, Qt 6.11, PipeWire 0.3, libsndfile, libFLAC, ffmpeg for optional exports), build instructions (cmake configure/build/install sequence), brief usage section, and license. Keep under 200 lines.\n\ndocs/USER_GUIDE.md: Sections for: getting started (first launch, stream discovery), selecting capture sources (application streams, monitor streams, hardware inputs), capture controls (start/stop, auto-start/auto-stop, pre-roll/post-roll), output formats (WAV/FLAC masters, native format preservation, conversion disclosure), post-capture exports (lossy/lossless derived formats via ffmpeg), output directory and naming configuration, capture history, settings, and CLI automation. Include a 'Capture Integrity' section that explains: when capture is native versus quantized/resampled/converted, how the UI reports this, and that upsampled audio is not presented as higher-resolution source material. Keep under 400 lines.",
+  "acceptance_criteria": [
+    "README.md exists and is under 200 lines",
+    "README.md lists all build dependencies: C++20, CMake, Qt 6.11, PipeWire 0.3, libsndfile, libFLAC, ffmpeg",
+    "README.md includes cmake configure/build/install commands",
+    "docs/USER_GUIDE.md exists and is under 400 lines",
+    "User guide contains a Capture Integrity section explaining native vs converted capture",
+    "Documentation does not promise bit-perfect capture unconditionally",
+    "Documentation accurately states that upsampled audio is not presented as higher-resolution source",
+    "No file outside the task's allowed_write_paths is created or modified"
+  ],
+  "selected_backend": "codex_cli",
+  "verification_profile": "focused",
+  "allowed_write_paths": [
+    "README.md",
+    "docs/USER_GUIDE.md"
+  ],
+  "forbidden_changes": [
+    "modify any file under src/",
+    "modify any file under tests/",
+    "modify CMakeLists.txt",
+    "modify any file under packaging/",
+    "add new source files or build targets",
+    "promise bit-perfect capture when PipeWire negotiation or resampling is involved"
+  ],
+  "decision_budget": {
+    "allowed": [
+      "choose documentation wording and section order",
+      "choose markdown formatting style",
+      "choose which CLI flags to document based on inspection"
+    ],
+    "forbidden": [
+      "invent features not present in the source code",
+      "claim bit-perfect capture without qualification",
+      "add tutorial or developer contribution guide beyond scope"
+    ]
+  },
+  "dependencies": [],
+  "task_timeout_seconds": 900,
+  "model": "gpt-5.6-luna",
+  "verification_commands": [
+    {
+      "name": "readme_exists",
+      "command": [
+        "bash",
+        "-c",
+        "test -f README.md"
+      ]
+    },
+    {
+      "name": "user_guide_exists",
+      "command": [
+        "bash",
+        "-c",
+        "test -f docs/USER_GUIDE.md"
+      ]
+    },
+    {
+      "name": "readme_within_line_limit",
+      "command": [
+        "bash",
+        "-c",
+        "[ $(wc -l < README.md) -le 200 ]"
+      ]
+    },
+    {
+      "name": "user_guide_within_line_limit",
+      "command": [
+        "bash",
+        "-c",
+        "[ $(wc -l < docs/USER_GUIDE.md) -le 400 ]"
+      ]
+    }
+  ]
+}

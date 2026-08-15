@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "task_id": "g.1",
+  "phase": "G",
+  "phase_id": "g",
+  "title": "Implement lightweight recording history index",
+  "description": "Create a lightweight JSON-backed recording history index that tracks Abracapture capture outputs and their sidecar metadata. The index must support append, removal, and chronological listing without becoming a media library or database project.\n\nBefore editing, inspect:\n- src/recording/RecordingSink.hpp for the CaptureResult struct (final file path, format, sample rate, duration, provenance) that RecordingEntry wraps.\n- Any existing history or index files under src/\n- CMakeLists.txt for the src/history/ source group pattern\n\nDo not infer APIs, schemas, behavior, or file contents; inspect the referenced files first.\n\nImplementation:\n1. Create src/history/RecordingIndex.hpp declaring a RecordingEntry struct (file path, format, sample rate, bit depth, channels, duration, timestamp, native-vs-converted flag, optional sidecar path) and a RecordingIndex class with append(), remove(), entries(), load(), save() methods.\n2. Create src/history/RecordingIndex.cpp implementing JSON serialization/deserialization using QJsonDocument. Store the index file at a configurable path (default: QStandardPaths::AppDataLocation + \"/history.json\"). Guard file I/O with QSaveFile for atomic writes.\n3. Ensure load() handles missing or corrupt index files gracefully (empty index, no crash). Ensure entries() returns newest-first order.\n\nSTRICT FILE SCOPE: Create or modify ONLY the files listed in this task's allowed_write_paths.",
+  "acceptance_criteria": [
+    "src/history/RecordingIndex.hpp exists and declares RecordingEntry struct and RecordingIndex class",
+    "src/history/RecordingIndex.cpp exists and implements JSON load/save with QJsonDocument",
+    "RecordingIndex::append() adds a RecordingEntry and persists to disk",
+    "RecordingIndex::entries() returns entries in newest-first chronological order",
+    "load() on a missing or corrupt index file produces an empty index without crashing",
+    "Atomic write uses QSaveFile or equivalent safe-write pattern",
+    "No file outside the task's allowed_write_paths is created or modified"
+  ],
+  "selected_backend": "antigravity_cli",
+  "verification_profile": "focused",
+  "allowed_write_paths": [
+    "src/history/RecordingIndex.hpp",
+    "src/history/RecordingIndex.cpp"
+  ],
+  "forbidden_changes": [
+    "modify any file outside src/history/",
+    "add third-party dependencies beyond Qt",
+    "implement a database or SQL-backed store",
+    "modify CMakeLists.txt",
+    "modify qml/Main.qml"
+  ],
+  "allowed_symbols": [
+    "RecordingEntry",
+    "RecordingIndex"
+  ],
+  "decision_budget": {
+    "allowed": [
+      "choose JSON field names for RecordingEntry serialization",
+      "choose default index file location under QStandardPaths"
+    ],
+    "forbidden": [
+      "introduce SQLite or any database dependency",
+      "add media scanning or file-system watching",
+      "create a background indexing thread"
+    ]
+  },
+  "dependencies": [],
+  "task_timeout_seconds": 900,
+  "model": "gemini-3.7-flash-medium",
+  "verification_commands": [
+    {
+      "name": "recording_index_exists",
+      "command": [
+        "bash",
+        "-c",
+        "test -f src/history/RecordingIndex.hpp && test -f src/history/RecordingIndex.cpp"
+      ]
+    },
+    {
+      "name": "has_recording_entry",
+      "command": [
+        "bash",
+        "-c",
+        "grep -q 'RecordingEntry' src/history/RecordingIndex.hpp"
+      ]
+    },
+    {
+      "name": "has_save_with_qsavefile",
+      "command": [
+        "bash",
+        "-c",
+        "grep -qE 'save|QSaveFile' src/history/RecordingIndex.cpp"
+      ]
+    }
+  ]
+}

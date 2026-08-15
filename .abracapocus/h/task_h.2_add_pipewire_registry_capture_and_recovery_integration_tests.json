@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "task_id": "h.2",
+  "phase": "H",
+  "phase_id": "h",
+  "title": "Add PipeWire registry capture and recovery integration tests",
+  "description": "Create integration tests that exercise real PipeWire registry enumeration and capture-engine recovery paths. These tests require a running PipeWire daemon and must clean up every temporary stream, link, and node they create.\n\nBefore editing, inspect:\n- src/pipewire/PipeWireContext.hpp and src/pipewire/PipeWireContext.cpp for the registry event-driven listener and GlobalObject lifecycle.\n- src/audio/CaptureSession.hpp and src/audio/CaptureSession.cpp for session states, reconnection logic, and source-loss handling.\n- src/audio/AudioRingBuffer.hpp for the buffer interface the capture engine writes into.\n- CMakeLists.txt for the existing integration test target and PipeWire link flags.\n\nDo not infer APIs, schemas, behavior, or file contents; inspect the referenced files first.\n\nSTRICT FILE SCOPE: Create or modify ONLY the files listed in this task's allowed_write_paths.\n\ntest_pipewire_registry.cpp: Connect to the running PipeWire daemon, enumerate available nodes, verify at least one audio sink or source is reported, confirm node property access (name, media class, format), disconnect cleanly. Include a test that registers a change callback, verifies it fires on a synthetic node addition if possible, and deregisters without leaking the callback.\n\ntest_capture_recovery.cpp: Start a short capture session against a null or test sink, verify audio frames arrive in the ring buffer, simulate stream-lost by disconnecting the stream, verify the engine reports the error state and attempts recovery within a bounded timeout, stop and clean up. Include a stress path that starts and stops capture 10 times in rapid succession and asserts no resource leaks (file descriptors, PipeWire proxy objects). All tests must have a hard timeout guard (no longer than 30 seconds per test case) to prevent CI hangs.",
+  "acceptance_criteria": [
+    "tests/integration/test_pipewire_registry.cpp exists and compiles as part of the integration test target",
+    "tests/integration/test_capture_recovery.cpp exists and compiles as part of the integration test target",
+    "Registry test connects to PipeWire, enumerates nodes, and disconnects without leaking resources",
+    "Recovery test exercises stream-lost error path and verifies bounded recovery attempt",
+    "Stress test starts/stops capture at least 10 times and asserts no resource leak",
+    "Every test case has a hard timeout guard of 30 seconds or less",
+    "All temporary PipeWire streams, links, and proxies are cleaned up in test teardown",
+    "No file outside the task's allowed_write_paths is created or modified"
+  ],
+  "selected_backend": "codex_cli",
+  "verification_profile": "focused",
+  "allowed_write_paths": [
+    "tests/integration/test_pipewire_registry.cpp",
+    "tests/integration/test_capture_recovery.cpp"
+  ],
+  "forbidden_changes": [
+    "modify any file under src/",
+    "modify CMakeLists.txt",
+    "modify any file under packaging/",
+    "modify README.md or docs/",
+    "add new third-party dependencies",
+    "create files outside tests/integration/"
+  ],
+  "allowed_symbols": [
+    "TEST",
+    "TEST_F",
+    "EXPECT_EQ",
+    "EXPECT_NE",
+    "EXPECT_TRUE",
+    "EXPECT_FALSE",
+    "EXPECT_GT",
+    "EXPECT_GE",
+    "ASSERT_EQ",
+    "ASSERT_TRUE",
+    "ASSERT_NE"
+  ],
+  "decision_budget": {
+    "allowed": [
+      "choose test fixture names and setup/teardown structure",
+      "choose timeout values within the 30-second per-test ceiling",
+      "use null sink or test sink for capture tests",
+      "choose stress iteration count at or above 10"
+    ],
+    "forbidden": [
+      "modify production PipeWire wrapper code",
+      "introduce mock PipeWire layer",
+      "leave streams or proxies uncleaned in any test path",
+      "add tests that require specific hardware audio devices"
+    ]
+  },
+  "dependencies": [],
+  "task_timeout_seconds": 1200,
+  "model": "gpt-5.6-sol",
+  "verification_commands": [
+    {
+      "name": "test_registry_exists",
+      "command": [
+        "bash",
+        "-c",
+        "test -f tests/integration/test_pipewire_registry.cpp"
+      ]
+    },
+    {
+      "name": "test_capture_recovery_exists",
+      "command": [
+        "bash",
+        "-c",
+        "test -f tests/integration/test_capture_recovery.cpp"
+      ]
+    },
+    {
+      "name": "has_timeout_guard",
+      "command": [
+        "bash",
+        "-c",
+        "grep -qEi 'timeout|TIMEOUT|30' tests/integration/test_capture_recovery.cpp"
+      ]
+    }
+  ]
+}

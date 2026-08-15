@@ -1,0 +1,374 @@
+# Plan Review Report
+
+Plan directory: /home/mike/dev/mike/music/python/abracapture/.abracapocus
+
+## Warnings
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/a/task_a.1_define_cmake_and_system_dependency_baseline.json] allowed_write_paths entry 'CMakeLists.txt' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/a/task_a.1_define_cmake_and_system_dependency_baseline.json] allowed_write_paths entry 'cmake/Dependencies.cmake' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/a/task_a.1_define_cmake_and_system_dependency_baseline.json] acceptance_criteria list length > 5
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/a/task_a.1_define_cmake_and_system_dependency_baseline.json] description field length > 300 characters
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/a/task_a.2_create_qt_quick_application_bootstrap.json] allowed_write_paths list length > 4
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/a/task_a.2_create_qt_quick_application_bootstrap.json] allowed_write_paths entry 'src/app/main.cpp' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/a/task_a.2_create_qt_quick_application_bootstrap.json] allowed_write_paths entry 'src/app/AppController.hpp' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/a/task_a.2_create_qt_quick_application_bootstrap.json] allowed_write_paths entry 'src/app/AppController.cpp' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/a/task_a.2_create_qt_quick_application_bootstrap.json] allowed_write_paths entry 'qml/Main.qml' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/a/task_a.2_create_qt_quick_application_bootstrap.json] allowed_write_paths entry 'CMakeLists.txt' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/a/task_a.2_create_qt_quick_application_bootstrap.json] acceptance_criteria list length > 5
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/a/task_a.2_create_qt_quick_application_bootstrap.json] description field length > 300 characters
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/a/task_a.3_implement_persistent_application_settings.json] allowed_write_paths entry 'src/config/AppSettings.hpp' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/a/task_a.3_implement_persistent_application_settings.json] allowed_write_paths entry 'src/config/AppSettings.cpp' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/a/task_a.3_implement_persistent_application_settings.json] acceptance_criteria list length > 5
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/a/task_a.3_implement_persistent_application_settings.json] acceptance_criteria item length > 120 characters
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/a/task_a.3_implement_persistent_application_settings.json] description field length > 300 characters
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/a/task_a.4_define_audio_format_and_conversion_domain_types.json] allowed_write_paths entry 'src/core/AudioFormat.hpp' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/a/task_a.4_define_audio_format_and_conversion_domain_types.json] allowed_write_paths entry 'src/core/AudioFormat.cpp' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/a/task_a.4_define_audio_format_and_conversion_domain_types.json] acceptance_criteria list length > 5
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/a/task_a.4_define_audio_format_and_conversion_domain_types.json] acceptance_criteria item length > 120 characters
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/a/task_a.4_define_audio_format_and_conversion_domain_types.json] description field length > 300 characters
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/a/task_a.4_define_audio_format_and_conversion_domain_types.json] description contains broad word: all
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/a/task_a.4_define_audio_format_and_conversion_domain_types.json] acceptance_criteria[5] contains broad word: all
+- Task 'a.1' acceptance_criteria[4] may produce unsatisfied reconciliation: 'No FetchContent, ExternalProject, vcpkg, or Conan usage appe...' lacks file reference or test command
+- Task 'a.1' acceptance_criteria[5] may produce unsatisfied reconciliation: 'No file outside the task's allowed_write_paths is created or...' lacks file reference or test command
+- Task 'a.2' acceptance_criteria[6] may produce unsatisfied reconciliation: 'No file outside the task's allowed_write_paths is created or...' lacks file reference or test command
+- Task 'a.3' acceptance_criteria[1] may produce unsatisfied reconciliation: 'AppSettings exposes outputDirectory, fileNamingPattern, mast...' lacks file reference or test command
+- Task 'a.3' acceptance_criteria[3] may produce unsatisfied reconciliation: 'AppSettings constructor calls load() to restore settings fro...' lacks file reference or test command
+- Task 'a.3' acceptance_criteria[4] may produce unsatisfied reconciliation: 'No dependency on AppController, AudioFormat, PipeWire, or ot...' lacks file reference or test command
+- Task 'a.3' acceptance_criteria[5] may produce unsatisfied reconciliation: 'No file outside the task's allowed_write_paths is created or...' lacks file reference or test command
+- Task 'a.4' acceptance_criteria[6] may produce unsatisfied reconciliation: 'No Qt or PipeWire headers are included in either file...' lacks file reference or test command
+- Task 'a.4' acceptance_criteria[7] may produce unsatisfied reconciliation: 'No file outside the task's allowed_write_paths is created or...' lacks file reference or test command
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/b/task_b.1_implement_pipewire_registry_and_object_lifetime_engine.json] allowed_write_paths entry 'src/pipewire/PipeWireContext.hpp' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/b/task_b.1_implement_pipewire_registry_and_object_lifetime_engine.json] allowed_write_paths entry 'src/pipewire/PipeWireContext.cpp' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/b/task_b.1_implement_pipewire_registry_and_object_lifetime_engine.json] acceptance_criteria list length > 5
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/b/task_b.1_implement_pipewire_registry_and_object_lifetime_engine.json] acceptance_criteria item length > 120 characters
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/b/task_b.1_implement_pipewire_registry_and_object_lifetime_engine.json] description field length > 300 characters
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/b/task_b.1_implement_pipewire_registry_and_object_lifetime_engine.json] description contains broad word: full
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/b/task_b.1_implement_pipewire_registry_and_object_lifetime_engine.json] description contains broad word: all
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/b/task_b.2_define_source_descriptors_and_source_classification.json] allowed_write_paths entry 'src/pipewire/SourceDescriptor.hpp' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/b/task_b.2_define_source_descriptors_and_source_classification.json] allowed_write_paths entry 'src/pipewire/SourceDescriptor.cpp' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/b/task_b.2_define_source_descriptors_and_source_classification.json] acceptance_criteria list length > 5
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/b/task_b.2_define_source_descriptors_and_source_classification.json] acceptance_criteria item length > 120 characters
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/b/task_b.2_define_source_descriptors_and_source_classification.json] description field length > 300 characters
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/b/task_b.3_normalize_pipewire_application_and_device_metadata.json] allowed_write_paths entry 'src/pipewire/PropertyNormalizer.hpp' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/b/task_b.3_normalize_pipewire_application_and_device_metadata.json] allowed_write_paths entry 'src/pipewire/PropertyNormalizer.cpp' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/b/task_b.3_normalize_pipewire_application_and_device_metadata.json] acceptance_criteria list length > 5
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/b/task_b.3_normalize_pipewire_application_and_device_metadata.json] acceptance_criteria item length > 120 characters
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/b/task_b.3_normalize_pipewire_application_and_device_metadata.json] description field length > 300 characters
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/b/task_b.3_normalize_pipewire_application_and_device_metadata.json] description contains broad word: all
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/b/task_b.3_normalize_pipewire_application_and_device_metadata.json] acceptance_criteria[2] contains broad word: all
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/b/task_b.4_build_live_source_catalog_and_activity_model.json] allowed_write_paths entry 'src/pipewire/SourceCatalog.hpp' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/b/task_b.4_build_live_source_catalog_and_activity_model.json] allowed_write_paths entry 'src/pipewire/SourceCatalog.cpp' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/b/task_b.4_build_live_source_catalog_and_activity_model.json] acceptance_criteria list length > 5
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/b/task_b.4_build_live_source_catalog_and_activity_model.json] acceptance_criteria item length > 120 characters
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/b/task_b.4_build_live_source_catalog_and_activity_model.json] description field length > 300 characters
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/b/task_b.4_build_live_source_catalog_and_activity_model.json] description contains broad word: all
+- Task 'b.4' depends on 'b.1' but their allowed_write_paths are disjoint; dependency may be unnecessary
+- Task 'b.4' depends on 'b.2' but their allowed_write_paths are disjoint; dependency may be unnecessary
+- Task 'b.4' depends on 'b.3' but their allowed_write_paths are disjoint; dependency may be unnecessary
+- Task 'b.1' acceptance_criteria[2] may produce unsatisfied reconciliation: 'PipeWireContext uses pw_thread_loop for thread-safe registry...' lacks file reference or test command
+- Task 'b.1' acceptance_criteria[3] may produce unsatisfied reconciliation: 'No calls to popen, system(), QProcess, pw-dump, pw-cli, or w...' lacks file reference or test command
+- Task 'b.1' acceptance_criteria[5] may produce unsatisfied reconciliation: 'No file outside the task's allowed_write_paths is created or...' lacks file reference or test command
+- Task 'b.2' acceptance_criteria[6] may produce unsatisfied reconciliation: 'No file outside the task's allowed_write_paths is created or...' lacks file reference or test command
+- Task 'b.3' acceptance_criteria[2] may produce unsatisfied reconciliation: 'All PropertyNormalizer functions handle nullptr spa_dict inp...' lacks file reference or test command
+- Task 'b.3' acceptance_criteria[3] may produce unsatisfied reconciliation: 'sanitizeUtf8 strips control characters and replaces invalid ...' lacks file reference or test command
+- Task 'b.3' acceptance_criteria[6] may produce unsatisfied reconciliation: 'No file outside the task's allowed_write_paths is created or...' lacks file reference or test command
+- Task 'b.4' acceptance_criteria[3] may produce unsatisfied reconciliation: 'SourceCatalog uses std::mutex to guard catalog mutations and...' lacks file reference or test command
+- Task 'b.4' acceptance_criteria[6] may produce unsatisfied reconciliation: 'No file outside the task's allowed_write_paths is created or...' lacks file reference or test command
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/c/task_c.1_implement_bounded_audio_ring_buffer.json] allowed_write_paths entry 'src/audio/AudioRingBuffer.hpp' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/c/task_c.1_implement_bounded_audio_ring_buffer.json] allowed_write_paths entry 'src/audio/AudioRingBuffer.cpp' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/c/task_c.1_implement_bounded_audio_ring_buffer.json] acceptance_criteria list length > 5
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/c/task_c.1_implement_bounded_audio_ring_buffer.json] description field length > 300 characters
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/c/task_c.1_implement_bounded_audio_ring_buffer.json] acceptance_criteria[3] contains broad word: full
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/c/task_c.2_implement_negotiated_pipewire_capture_stream.json] allowed_write_paths entry 'src/audio/PipeWireCaptureStream.hpp' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/c/task_c.2_implement_negotiated_pipewire_capture_stream.json] allowed_write_paths entry 'src/audio/PipeWireCaptureStream.cpp' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/c/task_c.2_implement_negotiated_pipewire_capture_stream.json] acceptance_criteria list length > 5
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/c/task_c.2_implement_negotiated_pipewire_capture_stream.json] acceptance_criteria item length > 120 characters
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/c/task_c.2_implement_negotiated_pipewire_capture_stream.json] description field length > 300 characters
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/c/task_c.3_implement_lock_light_capture_metrics_snapshots.json] allowed_write_paths entry 'src/audio/CaptureMetrics.hpp' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/c/task_c.3_implement_lock_light_capture_metrics_snapshots.json] allowed_write_paths entry 'src/audio/CaptureMetrics.cpp' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/c/task_c.3_implement_lock_light_capture_metrics_snapshots.json] acceptance_criteria list length > 5
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/c/task_c.3_implement_lock_light_capture_metrics_snapshots.json] description field length > 300 characters
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/c/task_c.4_implement_capture_session_lifecycle_and_source_reconnection.json] allowed_write_paths entry 'src/audio/CaptureSession.hpp' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/c/task_c.4_implement_capture_session_lifecycle_and_source_reconnection.json] allowed_write_paths entry 'src/audio/CaptureSession.cpp' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/c/task_c.4_implement_capture_session_lifecycle_and_source_reconnection.json] acceptance_criteria list length > 5
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/c/task_c.4_implement_capture_session_lifecycle_and_source_reconnection.json] acceptance_criteria item length > 120 characters
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/c/task_c.4_implement_capture_session_lifecycle_and_source_reconnection.json] description field length > 300 characters
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/c/task_c.4_implement_capture_session_lifecycle_and_source_reconnection.json] description contains broad word: full
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/c/task_c.4_implement_capture_session_lifecycle_and_source_reconnection.json] description contains broad word: all
+- Task 'c.2' depends on 'c.1' but their allowed_write_paths are disjoint; dependency may be unnecessary
+- Task 'c.4' depends on 'c.1' but their allowed_write_paths are disjoint; dependency may be unnecessary
+- Task 'c.4' depends on 'c.2' but their allowed_write_paths are disjoint; dependency may be unnecessary
+- Task 'c.4' depends on 'c.3' but their allowed_write_paths are disjoint; dependency may be unnecessary
+- Task 'c.1' acceptance_criteria[2] may produce unsatisfied reconciliation: 'write() is lock-free: no std::mutex, no std::lock_guard, no ...' lacks file reference or test command
+- Task 'c.1' acceptance_criteria[3] may produce unsatisfied reconciliation: 'Overflow is observable: write() returns a value or sets a fl...' lacks file reference or test command
+- Task 'c.1' acceptance_criteria[4] may produce unsatisfied reconciliation: 'Underrun is observable: read() returns a value indicating fe...' lacks file reference or test command
+- Task 'c.1' acceptance_criteria[5] may produce unsatisfied reconciliation: 'No #include of Qt, PipeWire, libsndfile, or FLAC headers app...' lacks file reference or test command
+- Task 'c.1' acceptance_criteria[7] may produce unsatisfied reconciliation: 'No file outside the task's allowed_write_paths is created or...' lacks file reference or test command
+- Task 'c.2' acceptance_criteria[2] may produce unsatisfied reconciliation: 'The process callback (on_process or equivalent) contains no ...' lacks file reference or test command
+- Task 'c.2' acceptance_criteria[3] may produce unsatisfied reconciliation: 'Negotiated format, sample rate, and channel count are expose...' lacks file reference or test command
+- Task 'c.2' acceptance_criteria[4] may produce unsatisfied reconciliation: 'A method or accessor reports whether the capture is native o...' lacks file reference or test command
+- Task 'c.2' acceptance_criteria[5] may produce unsatisfied reconciliation: 'Stream lifecycle methods (start, stop, cleanup) lock the Pip...' lacks file reference or test command
+- Task 'c.2' acceptance_criteria[6] may produce unsatisfied reconciliation: 'No #include of Qt, libsndfile, or FLAC headers appears in ei...' lacks file reference or test command
+- Task 'c.2' acceptance_criteria[8] may produce unsatisfied reconciliation: 'No file outside the task's allowed_write_paths is created or...' lacks file reference or test command
+- Task 'c.2' acceptance_criteria[9] may produce unsatisfied reconciliation: 'PipeWireCaptureStream exposes a bounded CaptureVisualization...' lacks file reference or test command
+- Task 'c.3' acceptance_criteria[2] may produce unsatisfied reconciliation: 'CaptureMetricsSnapshot is trivially copyable (static_assert ...' lacks file reference or test command
+- Task 'c.3' acceptance_criteria[3] may produce unsatisfied reconciliation: 'The publish/update path uses no std::mutex, no dynamic alloc...' lacks file reference or test command
+- Task 'c.3' acceptance_criteria[4] may produce unsatisfied reconciliation: 'The read path returns a consistent snapshot without blocking...' lacks file reference or test command
+- Task 'c.3' acceptance_criteria[5] may produce unsatisfied reconciliation: 'Snapshot includes at minimum: frames captured, peak level, o...' lacks file reference or test command
+- Task 'c.3' acceptance_criteria[6] may produce unsatisfied reconciliation: 'No #include of Qt, PipeWire, libsndfile, or FLAC headers app...' lacks file reference or test command
+- Task 'c.3' acceptance_criteria[8] may produce unsatisfied reconciliation: 'No file outside the task's allowed_write_paths is created or...' lacks file reference or test command
+- Task 'c.4' acceptance_criteria[2] may produce unsatisfied reconciliation: 'CaptureSession owns or references AudioRingBuffer, PipeWireC...' lacks file reference or test command
+- Task 'c.4' acceptance_criteria[3] may produce unsatisfied reconciliation: 'Session state enum includes at minimum: Idle, Connecting, Ca...' lacks file reference or test command
+- Task 'c.4' acceptance_criteria[4] may produce unsatisfied reconciliation: 'Source-loss triggers a transition to Reconnecting with bound...' lacks file reference or test command
+- Task 'c.4' acceptance_criteria[5] may produce unsatisfied reconciliation: 'Negotiated format metadata is exposed via public accessors d...' lacks file reference or test command
+- Task 'c.4' acceptance_criteria[6] may produce unsatisfied reconciliation: 'No file I/O, compression, or Qt GUI headers appear in either...' lacks file reference or test command
+- Task 'c.4' acceptance_criteria[8] may produce unsatisfied reconciliation: 'No file outside the task's allowed_write_paths is created or...' lacks file reference or test command
+- Task 'c.4' acceptance_criteria[9] may produce unsatisfied reconciliation: 'CaptureSession exposes a bounded CaptureVisualizationSnapsho...' lacks file reference or test command
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/d/task_d.1_implement_wav_lossless_master_writer.json] allowed_write_paths entry 'src/recording/WavWriter.hpp' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/d/task_d.1_implement_wav_lossless_master_writer.json] allowed_write_paths entry 'src/recording/WavWriter.cpp' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/d/task_d.1_implement_wav_lossless_master_writer.json] acceptance_criteria list length > 5
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/d/task_d.1_implement_wav_lossless_master_writer.json] acceptance_criteria item length > 120 characters
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/d/task_d.1_implement_wav_lossless_master_writer.json] description field length > 300 characters
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/d/task_d.1_implement_wav_lossless_master_writer.json] description contains broad word: full
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/d/task_d.1_implement_wav_lossless_master_writer.json] acceptance_criteria[5] contains broad word: full
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/d/task_d.2_implement_flac_lossless_master_writer.json] allowed_write_paths entry 'src/recording/FlacWriter.hpp' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/d/task_d.2_implement_flac_lossless_master_writer.json] allowed_write_paths entry 'src/recording/FlacWriter.cpp' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/d/task_d.2_implement_flac_lossless_master_writer.json] acceptance_criteria list length > 5
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/d/task_d.2_implement_flac_lossless_master_writer.json] acceptance_criteria item length > 120 characters
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/d/task_d.2_implement_flac_lossless_master_writer.json] description field length > 300 characters
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/d/task_d.3_implement_atomic_recording_sink_and_safe_finalization.json] allowed_write_paths entry 'src/recording/RecordingSink.hpp' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/d/task_d.3_implement_atomic_recording_sink_and_safe_finalization.json] allowed_write_paths entry 'src/recording/RecordingSink.cpp' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/d/task_d.3_implement_atomic_recording_sink_and_safe_finalization.json] acceptance_criteria list length > 5
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/d/task_d.3_implement_atomic_recording_sink_and_safe_finalization.json] acceptance_criteria item length > 120 characters
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/d/task_d.3_implement_atomic_recording_sink_and_safe_finalization.json] description field length > 300 characters
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/d/task_d.4_implement_output_directory_and_filename_policy.json] allowed_write_paths entry 'src/recording/OutputPathPolicy.hpp' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/d/task_d.4_implement_output_directory_and_filename_policy.json] allowed_write_paths entry 'src/recording/OutputPathPolicy.cpp' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/d/task_d.4_implement_output_directory_and_filename_policy.json] acceptance_criteria list length > 5
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/d/task_d.4_implement_output_directory_and_filename_policy.json] acceptance_criteria item length > 120 characters
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/d/task_d.4_implement_output_directory_and_filename_policy.json] description field length > 300 characters
+- Task 'd.3' depends on 'd.1' but their allowed_write_paths are disjoint; dependency may be unnecessary
+- Task 'd.3' depends on 'd.2' but their allowed_write_paths are disjoint; dependency may be unnecessary
+- Task 'd.3' depends on 'd.4' but their allowed_write_paths are disjoint; dependency may be unnecessary
+- Task 'd.1' acceptance_criteria[2] may produce unsatisfied reconciliation: 'WavWriter stores and exposes conversion provenance metadata ...' lacks file reference or test command
+- Task 'd.1' acceptance_criteria[3] may produce unsatisfied reconciliation: 'WavWriter handles RF64 for files that may exceed 4 GiB...' lacks file reference or test command
+- Task 'd.1' acceptance_criteria[4] may produce unsatisfied reconciliation: 'WavWriter::abort() closes the handle and removes the partial...' lacks file reference or test command
+- Task 'd.1' acceptance_criteria[5] may produce unsatisfied reconciliation: 'Disk-full condition (short sf_writef return) sets a queryabl...' lacks file reference or test command
+- Task 'd.1' acceptance_criteria[6] may produce unsatisfied reconciliation: 'No file outside the task's allowed_write_paths is created or...' lacks file reference or test command
+- Task 'd.2' acceptance_criteria[2] may produce unsatisfied reconciliation: 'FlacWriter supports 16-bit, 24-bit, and 32-bit integer sampl...' lacks file reference or test command
+- Task 'd.2' acceptance_criteria[3] may produce unsatisfied reconciliation: 'FlacWriter rejects float sample formats at open() with a cle...' lacks file reference or test command
+- Task 'd.2' acceptance_criteria[4] may produce unsatisfied reconciliation: 'FlacWriter::finalize() calls FLAC__stream_encoder_finish() a...' lacks file reference or test command
+- Task 'd.2' acceptance_criteria[5] may produce unsatisfied reconciliation: 'FlacWriter::abort() finishes the encoder and removes the par...' lacks file reference or test command
+- Task 'd.2' acceptance_criteria[6] may produce unsatisfied reconciliation: 'Encoder errors set a queryable lastError() state...' lacks file reference or test command
+- Task 'd.2' acceptance_criteria[7] may produce unsatisfied reconciliation: 'No file outside the task's allowed_write_paths is created or...' lacks file reference or test command
+- Task 'd.3' acceptance_criteria[2] may produce unsatisfied reconciliation: 'RecordingSink writes to a temporary file and atomically rena...' lacks file reference or test command
+- Task 'd.3' acceptance_criteria[3] may produce unsatisfied reconciliation: 'RecordingSink::abort() closes the writer and deletes the tem...' lacks file reference or test command
+- Task 'd.3' acceptance_criteria[4] may produce unsatisfied reconciliation: 'CaptureResult carries final path, total frames, duration, pr...' lacks file reference or test command
+- Task 'd.3' acceptance_criteria[5] may produce unsatisfied reconciliation: 'Conversion provenance is tracked and does not misrepresent u...' lacks file reference or test command
+- Task 'd.3' acceptance_criteria[6] may produce unsatisfied reconciliation: 'Writer errors are checked after each pushSamples and propaga...' lacks file reference or test command
+- Task 'd.3' acceptance_criteria[7] may produce unsatisfied reconciliation: 'No file outside the task's allowed_write_paths is created or...' lacks file reference or test command
+- Task 'd.4' acceptance_criteria[2] may produce unsatisfied reconciliation: 'OutputPathPolicy creates the output directory if it does not...' lacks file reference or test command
+- Task 'd.4' acceptance_criteria[3] may produce unsatisfied reconciliation: 'OutputPathPolicy handles filename collisions with incrementi...' lacks file reference or test command
+- Task 'd.4' acceptance_criteria[4] may produce unsatisfied reconciliation: 'OutputPathPolicy validates that the base directory is writab...' lacks file reference or test command
+- Task 'd.4' acceptance_criteria[5] may produce unsatisfied reconciliation: 'Implementation uses only C++ standard library, no Qt depende...' lacks file reference or test command
+- Task 'd.4' acceptance_criteria[6] may produce unsatisfied reconciliation: 'No file outside the task's allowed_write_paths is created or...' lacks file reference or test command
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/e/task_e.1_implement_auto_start_stop_pre_roll_and_post_roll_controller.json] allowed_write_paths entry 'src/automation/AutoRecordController.hpp' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/e/task_e.1_implement_auto_start_stop_pre_roll_and_post_roll_controller.json] allowed_write_paths entry 'src/automation/AutoRecordController.cpp' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/e/task_e.1_implement_auto_start_stop_pre_roll_and_post_roll_controller.json] acceptance_criteria item length > 120 characters
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/e/task_e.1_implement_auto_start_stop_pre_roll_and_post_roll_controller.json] description field length > 300 characters
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/e/task_e.2_implement_capture_integrity_and_provenance_reporting.json] allowed_write_paths entry 'src/recording/CaptureIntegrity.hpp' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/e/task_e.2_implement_capture_integrity_and_provenance_reporting.json] allowed_write_paths entry 'src/recording/CaptureIntegrity.cpp' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/e/task_e.2_implement_capture_integrity_and_provenance_reporting.json] acceptance_criteria list length > 5
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/e/task_e.2_implement_capture_integrity_and_provenance_reporting.json] acceptance_criteria item length > 120 characters
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/e/task_e.2_implement_capture_integrity_and_provenance_reporting.json] description field length > 300 characters
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/e/task_e.2_implement_capture_integrity_and_provenance_reporting.json] description contains broad word: all
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/e/task_e.3_implement_verified_post_capture_export_manager.json] allowed_write_paths entry 'src/export/ExportManager.hpp' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/e/task_e.3_implement_verified_post_capture_export_manager.json] allowed_write_paths entry 'src/export/ExportManager.cpp' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/e/task_e.3_implement_verified_post_capture_export_manager.json] acceptance_criteria list length > 5
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/e/task_e.3_implement_verified_post_capture_export_manager.json] acceptance_criteria item length > 120 characters
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/e/task_e.3_implement_verified_post_capture_export_manager.json] description field length > 300 characters
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/e/task_e.3_implement_verified_post_capture_export_manager.json] description contains broad word: all
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/e/task_e.4_implement_list_and_record_cli_workflows.json] allowed_write_paths entry 'src/cli/CliApp.hpp' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/e/task_e.4_implement_list_and_record_cli_workflows.json] allowed_write_paths entry 'src/cli/CliApp.cpp' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/e/task_e.4_implement_list_and_record_cli_workflows.json] allowed_write_paths entry 'src/app/main.cpp' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/e/task_e.4_implement_list_and_record_cli_workflows.json] acceptance_criteria list length > 5
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/e/task_e.4_implement_list_and_record_cli_workflows.json] acceptance_criteria item length > 120 characters
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/e/task_e.4_implement_list_and_record_cli_workflows.json] description field length > 300 characters
+- Task 'e.4' depends on 'e.1' but their allowed_write_paths are disjoint; dependency may be unnecessary
+- Task 'e.4' depends on 'e.2' but their allowed_write_paths are disjoint; dependency may be unnecessary
+- Task 'e.4' depends on 'e.3' but their allowed_write_paths are disjoint; dependency may be unnecessary
+- Task 'e.1' acceptance_criteria[2] may produce unsatisfied reconciliation: 'No file I/O, subprocess spawning, or PipeWire API calls appe...' lacks file reference or test command
+- Task 'e.1' acceptance_criteria[4] may produce unsatisfied reconciliation: 'No file outside the task's allowed_write_paths is created or...' lacks file reference or test command
+- Task 'e.2' acceptance_criteria[2] may produce unsatisfied reconciliation: 'CaptureKind is Native when negotiated format/rate equals fil...' lacks file reference or test command
+- Task 'e.2' acceptance_criteria[3] may produce unsatisfied reconciliation: 'summary() includes the CaptureKind label and file path in a ...' lacks file reference or test command
+- Task 'e.2' acceptance_criteria[5] may produce unsatisfied reconciliation: 'No file outside the task's allowed_write_paths is created or...' lacks file reference or test command
+- Task 'e.3' acceptance_criteria[2] may produce unsatisfied reconciliation: 'ffmpeg command lines are built for at least FLAC, MP3, Ogg V...' lacks file reference or test command
+- Task 'e.3' acceptance_criteria[3] may produce unsatisfied reconciliation: 'Exports run via QProcess, not via in-process encoding or lib...' lacks file reference or test command
+- Task 'e.3' acceptance_criteria[4] may produce unsatisfied reconciliation: 'Export failure does not delete or truncate the master file (...' lacks file reference or test command
+- Task 'e.3' acceptance_criteria[6] may produce unsatisfied reconciliation: 'No file outside the task's allowed_write_paths is created or...' lacks file reference or test command
+- Task 'e.4' acceptance_criteria[3] may produce unsatisfied reconciliation: 'record subcommand prints CaptureIntegrity summary including ...' lacks file reference or test command
+- Task 'e.4' acceptance_criteria[4] may produce unsatisfied reconciliation: 'Exit codes 0-4 are used as specified: 0 success, 1 argument ...' lacks file reference or test command
+- Task 'e.4' acceptance_criteria[7] may produce unsatisfied reconciliation: 'No file outside the task's allowed_write_paths is created or...' lacks file reference or test command
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/f/task_f.1_build_live_source_browser_and_source_cards.json] allowed_write_paths entry 'src/ui/SourceListModel.hpp' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/f/task_f.1_build_live_source_browser_and_source_cards.json] allowed_write_paths entry 'src/ui/SourceListModel.cpp' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/f/task_f.1_build_live_source_browser_and_source_cards.json] allowed_write_paths entry 'qml/components/SourceCard.qml' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/f/task_f.1_build_live_source_browser_and_source_cards.json] acceptance_criteria item length > 120 characters
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/f/task_f.1_build_live_source_browser_and_source_cards.json] description field length > 300 characters
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/f/task_f.2_build_realtime_waveform_and_meter_bridge.json] allowed_write_paths entry 'src/ui/WaveformBridge.hpp' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/f/task_f.2_build_realtime_waveform_and_meter_bridge.json] allowed_write_paths entry 'src/ui/WaveformBridge.cpp' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/f/task_f.2_build_realtime_waveform_and_meter_bridge.json] allowed_write_paths entry 'qml/components/WaveformView.qml' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/f/task_f.2_build_realtime_waveform_and_meter_bridge.json] acceptance_criteria list length > 5
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/f/task_f.2_build_realtime_waveform_and_meter_bridge.json] acceptance_criteria item length > 120 characters
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/f/task_f.2_build_realtime_waveform_and_meter_bridge.json] description field length > 300 characters
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/f/task_f.3_build_integrated_capture_page_and_application_shell.json] allowed_write_paths list length > 4
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/f/task_f.3_build_integrated_capture_page_and_application_shell.json] allowed_write_paths entry 'src/ui/CaptureViewModel.hpp' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/f/task_f.3_build_integrated_capture_page_and_application_shell.json] allowed_write_paths entry 'src/ui/CaptureViewModel.cpp' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/f/task_f.3_build_integrated_capture_page_and_application_shell.json] allowed_write_paths entry 'qml/pages/CapturePage.qml' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/f/task_f.3_build_integrated_capture_page_and_application_shell.json] allowed_write_paths entry 'qml/Main.qml' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/f/task_f.3_build_integrated_capture_page_and_application_shell.json] allowed_write_paths entry 'src/app/main.cpp' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/f/task_f.3_build_integrated_capture_page_and_application_shell.json] allowed_write_paths entry 'CMakeLists.txt' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/f/task_f.3_build_integrated_capture_page_and_application_shell.json] acceptance_criteria list length > 5
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/f/task_f.3_build_integrated_capture_page_and_application_shell.json] acceptance_criteria item length > 120 characters
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/f/task_f.3_build_integrated_capture_page_and_application_shell.json] description field length > 300 characters
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/f/task_f.3_build_integrated_capture_page_and_application_shell.json] description contains broad word: every
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/f/task_f.3_build_integrated_capture_page_and_application_shell.json] acceptance_criteria[6] contains broad word: all
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/f/task_f.4_build_settings_page_and_settings_view_model.json] allowed_write_paths entry 'src/ui/SettingsViewModel.hpp' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/f/task_f.4_build_settings_page_and_settings_view_model.json] allowed_write_paths entry 'src/ui/SettingsViewModel.cpp' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/f/task_f.4_build_settings_page_and_settings_view_model.json] allowed_write_paths entry 'qml/pages/SettingsPage.qml' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/f/task_f.4_build_settings_page_and_settings_view_model.json] acceptance_criteria item length > 120 characters
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/f/task_f.4_build_settings_page_and_settings_view_model.json] description field length > 300 characters
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/f/task_f.4_build_settings_page_and_settings_view_model.json] description contains broad word: all
+- Task 'f.3' depends on 'f.1' but their allowed_write_paths are disjoint; dependency may be unnecessary
+- Task 'f.3' depends on 'f.2' but their allowed_write_paths are disjoint; dependency may be unnecessary
+- Task 'f.3' depends on 'f.4' but their allowed_write_paths are disjoint; dependency may be unnecessary
+- Task 'f.1' acceptance_criteria[2] may produce unsatisfied reconciliation: 'SourceListModel does not include any PipeWire headers or cal...' lacks file reference or test command
+- Task 'f.1' acceptance_criteria[3] may produce unsatisfied reconciliation: 'No file outside the task's allowed_write_paths is created or...' lacks file reference or test command
+- Task 'f.2' acceptance_criteria[1] may produce unsatisfied reconciliation: 'WaveformBridge accepts audio snapshots via a slot and does n...' lacks file reference or test command
+- Task 'f.2' acceptance_criteria[3] may produce unsatisfied reconciliation: 'WaveformBridge does not perform file I/O, compression, or bl...' lacks file reference or test command
+- Task 'f.2' acceptance_criteria[4] may produce unsatisfied reconciliation: 'No file outside the task's allowed_write_paths is created or...' lacks file reference or test command
+- Task 'f.2' acceptance_criteria[5] may produce unsatisfied reconciliation: 'WaveformBridge waveform samples enter only through its queue...' lacks file reference or test command
+- Task 'f.3' acceptance_criteria[1] may produce unsatisfied reconciliation: 'CaptureViewModel exposes a Q_PROPERTY or Q_INVOKABLE indicat...' lacks file reference or test command
+- Task 'f.3' acceptance_criteria[4] may produce unsatisfied reconciliation: 'CaptureViewModel does not perform file I/O, compression, or ...' lacks file reference or test command
+- Task 'f.3' acceptance_criteria[5] may produce unsatisfied reconciliation: 'No file outside the task's allowed_write_paths is created or...' lacks file reference or test command
+- Task 'f.3' acceptance_criteria[8] may produce unsatisfied reconciliation: 'The configured abracapture target builds in RelWithDebInfo a...' lacks file reference or test command
+- Task 'f.4' acceptance_criteria[1] may produce unsatisfied reconciliation: 'SettingsViewModel provides Q_INVOKABLE load and save methods...' lacks file reference or test command
+- Task 'f.4' acceptance_criteria[3] may produce unsatisfied reconciliation: 'SettingsViewModel does not perform audio capture, PipeWire c...' lacks file reference or test command
+- Task 'f.4' acceptance_criteria[4] may produce unsatisfied reconciliation: 'No file outside the task's allowed_write_paths is created or...' lacks file reference or test command
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/g/task_g.1_implement_lightweight_recording_history_index.json] allowed_write_paths entry 'src/history/RecordingIndex.hpp' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/g/task_g.1_implement_lightweight_recording_history_index.json] allowed_write_paths entry 'src/history/RecordingIndex.cpp' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/g/task_g.1_implement_lightweight_recording_history_index.json] acceptance_criteria list length > 5
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/g/task_g.1_implement_lightweight_recording_history_index.json] description field length > 300 characters
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/g/task_g.2_build_recordings_browser_and_recording_details.json] allowed_write_paths entry 'src/ui/RecordingsViewModel.hpp' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/g/task_g.2_build_recordings_browser_and_recording_details.json] allowed_write_paths entry 'src/ui/RecordingsViewModel.cpp' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/g/task_g.2_build_recordings_browser_and_recording_details.json] allowed_write_paths entry 'qml/pages/RecordingsPage.qml' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/g/task_g.2_build_recordings_browser_and_recording_details.json] acceptance_criteria list length > 5
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/g/task_g.2_build_recordings_browser_and_recording_details.json] description field length > 300 characters
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/g/task_g.2_build_recordings_browser_and_recording_details.json] description contains broad word: full
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/g/task_g.2_build_recordings_browser_and_recording_details.json] description contains broad word: all
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/g/task_g.2_build_recordings_browser_and_recording_details.json] acceptance_criteria[1] contains broad word: all
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/g/task_g.3_add_nonblocking_desktop_capture_notifications.json] allowed_write_paths entry 'src/ui/NotificationService.hpp' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/g/task_g.3_add_nonblocking_desktop_capture_notifications.json] allowed_write_paths entry 'src/ui/NotificationService.cpp' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/g/task_g.3_add_nonblocking_desktop_capture_notifications.json] allowed_write_paths entry 'src/ui/CaptureViewModel.cpp' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/g/task_g.3_add_nonblocking_desktop_capture_notifications.json] acceptance_criteria list length > 5
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/g/task_g.3_add_nonblocking_desktop_capture_notifications.json] acceptance_criteria item length > 120 characters
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/g/task_g.3_add_nonblocking_desktop_capture_notifications.json] description field length > 300 characters
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/g/task_g.4_add_abracapture_theme_accessibility_and_about_experience.json] allowed_write_paths entry 'qml/theme/AbracaptureTheme.qml' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/g/task_g.4_add_abracapture_theme_accessibility_and_about_experience.json] allowed_write_paths entry 'qml/pages/AboutPage.qml' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/g/task_g.4_add_abracapture_theme_accessibility_and_about_experience.json] allowed_write_paths entry 'qml/Main.qml' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/g/task_g.4_add_abracapture_theme_accessibility_and_about_experience.json] acceptance_criteria list length > 5
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/g/task_g.4_add_abracapture_theme_accessibility_and_about_experience.json] acceptance_criteria item length > 120 characters
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/g/task_g.4_add_abracapture_theme_accessibility_and_about_experience.json] description field length > 300 characters
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/g/task_g.4_add_abracapture_theme_accessibility_and_about_experience.json] description contains broad word: all
+- Task 'g.2' depends on 'g.1' but their allowed_write_paths are disjoint; dependency may be unnecessary
+- Task 'g.1' acceptance_criteria[2] may produce unsatisfied reconciliation: 'RecordingIndex::append() adds a RecordingEntry and persists ...' lacks file reference or test command
+- Task 'g.1' acceptance_criteria[3] may produce unsatisfied reconciliation: 'RecordingIndex::entries() returns entries in newest-first ch...' lacks file reference or test command
+- Task 'g.1' acceptance_criteria[4] may produce unsatisfied reconciliation: 'load() on a missing or corrupt index file produces an empty ...' lacks file reference or test command
+- Task 'g.1' acceptance_criteria[5] may produce unsatisfied reconciliation: 'Atomic write uses QSaveFile or equivalent safe-write pattern...' lacks file reference or test command
+- Task 'g.1' acceptance_criteria[6] may produce unsatisfied reconciliation: 'No file outside the task's allowed_write_paths is created or...' lacks file reference or test command
+- Task 'g.2' acceptance_criteria[2] may produce unsatisfied reconciliation: 'Q_INVOKABLE revealInFileManager() and removeEntry() methods ...' lacks file reference or test command
+- Task 'g.2' acceptance_criteria[6] may produce unsatisfied reconciliation: 'No file outside the task's allowed_write_paths is created or...' lacks file reference or test command
+- Task 'g.3' acceptance_criteria[2] may produce unsatisfied reconciliation: 'Notification delivery is nonblocking: no synchronous I/O or ...' lacks file reference or test command
+- Task 'g.3' acceptance_criteria[3] may produce unsatisfied reconciliation: 'NotificationService exposes a Q_PROPERTY enabled for user-co...' lacks file reference or test command
+- Task 'g.3' acceptance_criteria[5] may produce unsatisfied reconciliation: 'No file outside the task's allowed_write_paths is created or...' lacks file reference or test command
+- Task 'g.4' acceptance_criteria[1] may produce unsatisfied reconciliation: 'Capture-state indicator colors (capture-active, capture-idle...' lacks file reference or test command
+- Task 'g.4' acceptance_criteria[7] may produce unsatisfied reconciliation: 'No file outside the task's allowed_write_paths is created or...' lacks file reference or test command
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/h/task_h.1_add_deterministic_core_unit_tests.json] allowed_write_paths entry 'tests/core/test_audio_format.cpp' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/h/task_h.1_add_deterministic_core_unit_tests.json] allowed_write_paths entry 'tests/core/test_ring_buffer.cpp' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/h/task_h.1_add_deterministic_core_unit_tests.json] allowed_write_paths entry 'tests/core/test_output_path_policy.cpp' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/h/task_h.1_add_deterministic_core_unit_tests.json] acceptance_criteria list length > 5
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/h/task_h.1_add_deterministic_core_unit_tests.json] acceptance_criteria references pytest or test without a test allowed_write_path
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/h/task_h.1_add_deterministic_core_unit_tests.json] description field length > 300 characters
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/h/task_h.2_add_pipewire_registry_capture_and_recovery_integration_tests.json] allowed_write_paths entry 'tests/integration/test_pipewire_registry.cpp' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/h/task_h.2_add_pipewire_registry_capture_and_recovery_integration_tests.json] allowed_write_paths entry 'tests/integration/test_capture_recovery.cpp' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/h/task_h.2_add_pipewire_registry_capture_and_recovery_integration_tests.json] acceptance_criteria list length > 5
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/h/task_h.2_add_pipewire_registry_capture_and_recovery_integration_tests.json] acceptance_criteria references pytest or test without a test allowed_write_path
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/h/task_h.2_add_pipewire_registry_capture_and_recovery_integration_tests.json] description field length > 300 characters
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/h/task_h.2_add_pipewire_registry_capture_and_recovery_integration_tests.json] description contains broad word: all
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/h/task_h.2_add_pipewire_registry_capture_and_recovery_integration_tests.json] description contains broad word: every
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/h/task_h.2_add_pipewire_registry_capture_and_recovery_integration_tests.json] description contains broad phrase: clean up
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/h/task_h.2_add_pipewire_registry_capture_and_recovery_integration_tests.json] acceptance_criteria[5] contains broad word: every
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/h/task_h.2_add_pipewire_registry_capture_and_recovery_integration_tests.json] acceptance_criteria[6] contains broad word: all
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/h/task_h.2_add_pipewire_registry_capture_and_recovery_integration_tests.json] Task appears to modify blocking governance; ensure docs/operations.md Governance Blocking Policy requirements are met.
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/h/task_h.3_add_linux_desktop_packaging_metadata_and_install_rules.json] allowed_write_paths entry 'packaging/abracapture.desktop' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/h/task_h.3_add_linux_desktop_packaging_metadata_and_install_rules.json] allowed_write_paths entry 'packaging/abracapture.metainfo.xml' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/h/task_h.3_add_linux_desktop_packaging_metadata_and_install_rules.json] allowed_write_paths entry 'packaging/install.cmake' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/h/task_h.3_add_linux_desktop_packaging_metadata_and_install_rules.json] allowed_write_paths entry 'CMakeLists.txt' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/h/task_h.3_add_linux_desktop_packaging_metadata_and_install_rules.json] acceptance_criteria list length > 5
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/h/task_h.3_add_linux_desktop_packaging_metadata_and_install_rules.json] description field length > 300 characters
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/h/task_h.4_write_concise_public_readme_and_user_guide.json] allowed_write_paths entry 'docs/USER_GUIDE.md' does not exist in working root
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/h/task_h.4_write_concise_public_readme_and_user_guide.json] acceptance_criteria list length > 5
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/h/task_h.4_write_concise_public_readme_and_user_guide.json] description field length > 300 characters
+- [/home/mike/dev/mike/music/python/abracapture/.abracapocus/h/task_h.4_write_concise_public_readme_and_user_guide.json] acceptance_criteria[1] contains broad word: all
+- Task 'h.1' acceptance_criteria[3] may produce unsatisfied reconciliation: 'Each test file contains at least 5 distinct test cases exerc...' lacks file reference or test command
+- Task 'h.1' acceptance_criteria[4] may produce unsatisfied reconciliation: 'No test depends on PipeWire, network, or wall-clock timing...' lacks file reference or test command
+- Task 'h.1' acceptance_criteria[5] may produce unsatisfied reconciliation: 'No file outside the task's allowed_write_paths is created or...' lacks file reference or test command
+- Task 'h.2' acceptance_criteria[2] may produce unsatisfied reconciliation: 'Registry test connects to PipeWire, enumerates nodes, and di...' lacks file reference or test command
+- Task 'h.2' acceptance_criteria[3] may produce unsatisfied reconciliation: 'Recovery test exercises stream-lost error path and verifies ...' lacks file reference or test command
+- Task 'h.2' acceptance_criteria[4] may produce unsatisfied reconciliation: 'Stress test starts/stops capture at least 10 times and asser...' lacks file reference or test command
+- Task 'h.2' acceptance_criteria[5] may produce unsatisfied reconciliation: 'Every test case has a hard timeout guard of 30 seconds or le...' lacks file reference or test command
+- Task 'h.2' acceptance_criteria[6] may produce unsatisfied reconciliation: 'All temporary PipeWire streams, links, and proxies are clean...' lacks file reference or test command
+- Task 'h.2' acceptance_criteria[7] may produce unsatisfied reconciliation: 'No file outside the task's allowed_write_paths is created or...' lacks file reference or test command
+- Task 'h.3' acceptance_criteria[5] may produce unsatisfied reconciliation: 'Metainfo file project_license matches the repository license...' lacks file reference or test command
+- Task 'h.3' acceptance_criteria[6] may produce unsatisfied reconciliation: 'No Qt or PipeWire libraries are vendored or bundled by insta...' lacks file reference or test command
+- Task 'h.3' acceptance_criteria[7] may produce unsatisfied reconciliation: 'No file outside the task's allowed_write_paths is created or...' lacks file reference or test command
+- Task 'h.4' acceptance_criteria[4] may produce unsatisfied reconciliation: 'User guide contains a Capture Integrity section explaining n...' lacks file reference or test command
+- Task 'h.4' acceptance_criteria[5] may produce unsatisfied reconciliation: 'Documentation does not promise bit-perfect capture unconditi...' lacks file reference or test command
+- Task 'h.4' acceptance_criteria[6] may produce unsatisfied reconciliation: 'Documentation accurately states that upsampled audio is not ...' lacks file reference or test command
+- Task 'h.4' acceptance_criteria[7] may produce unsatisfied reconciliation: 'No file outside the task's allowed_write_paths is created or...' lacks file reference or test command
+
+## Lint Results
+- /home/mike/dev/mike/music/python/abracapture/.abracapocus/a/task_a.1_define_cmake_and_system_dependency_baseline.json: 0 errors, 4 warnings
+- /home/mike/dev/mike/music/python/abracapture/.abracapocus/a/task_a.2_create_qt_quick_application_bootstrap.json: 0 errors, 8 warnings
+- /home/mike/dev/mike/music/python/abracapture/.abracapocus/a/task_a.3_implement_persistent_application_settings.json: 0 errors, 5 warnings
+- /home/mike/dev/mike/music/python/abracapture/.abracapocus/a/task_a.4_define_audio_format_and_conversion_domain_types.json: 0 errors, 7 warnings
+- /home/mike/dev/mike/music/python/abracapture/.abracapocus/b/task_b.1_implement_pipewire_registry_and_object_lifetime_engine.json: 0 errors, 7 warnings
+- /home/mike/dev/mike/music/python/abracapture/.abracapocus/b/task_b.2_define_source_descriptors_and_source_classification.json: 0 errors, 5 warnings
+- /home/mike/dev/mike/music/python/abracapture/.abracapocus/b/task_b.3_normalize_pipewire_application_and_device_metadata.json: 0 errors, 7 warnings
+- /home/mike/dev/mike/music/python/abracapture/.abracapocus/b/task_b.4_build_live_source_catalog_and_activity_model.json: 0 errors, 6 warnings
+- /home/mike/dev/mike/music/python/abracapture/.abracapocus/c/task_c.1_implement_bounded_audio_ring_buffer.json: 0 errors, 5 warnings
+- /home/mike/dev/mike/music/python/abracapture/.abracapocus/c/task_c.2_implement_negotiated_pipewire_capture_stream.json: 0 errors, 5 warnings
+- /home/mike/dev/mike/music/python/abracapture/.abracapocus/c/task_c.3_implement_lock_light_capture_metrics_snapshots.json: 0 errors, 4 warnings
+- /home/mike/dev/mike/music/python/abracapture/.abracapocus/c/task_c.4_implement_capture_session_lifecycle_and_source_reconnection.json: 0 errors, 7 warnings
+- /home/mike/dev/mike/music/python/abracapture/.abracapocus/d/task_d.1_implement_wav_lossless_master_writer.json: 0 errors, 7 warnings
+- /home/mike/dev/mike/music/python/abracapture/.abracapocus/d/task_d.2_implement_flac_lossless_master_writer.json: 0 errors, 5 warnings
+- /home/mike/dev/mike/music/python/abracapture/.abracapocus/d/task_d.3_implement_atomic_recording_sink_and_safe_finalization.json: 0 errors, 5 warnings
+- /home/mike/dev/mike/music/python/abracapture/.abracapocus/d/task_d.4_implement_output_directory_and_filename_policy.json: 0 errors, 5 warnings
+- /home/mike/dev/mike/music/python/abracapture/.abracapocus/e/task_e.1_implement_auto_start_stop_pre_roll_and_post_roll_controller.json: 0 errors, 4 warnings
+- /home/mike/dev/mike/music/python/abracapture/.abracapocus/e/task_e.2_implement_capture_integrity_and_provenance_reporting.json: 0 errors, 6 warnings
+- /home/mike/dev/mike/music/python/abracapture/.abracapocus/e/task_e.3_implement_verified_post_capture_export_manager.json: 0 errors, 6 warnings
+- /home/mike/dev/mike/music/python/abracapture/.abracapocus/e/task_e.4_implement_list_and_record_cli_workflows.json: 0 errors, 6 warnings
+- /home/mike/dev/mike/music/python/abracapture/.abracapocus/f/task_f.1_build_live_source_browser_and_source_cards.json: 0 errors, 5 warnings
+- /home/mike/dev/mike/music/python/abracapture/.abracapocus/f/task_f.2_build_realtime_waveform_and_meter_bridge.json: 0 errors, 6 warnings
+- /home/mike/dev/mike/music/python/abracapture/.abracapocus/f/task_f.3_build_integrated_capture_page_and_application_shell.json: 0 errors, 12 warnings
+- /home/mike/dev/mike/music/python/abracapture/.abracapocus/f/task_f.4_build_settings_page_and_settings_view_model.json: 0 errors, 6 warnings
+- /home/mike/dev/mike/music/python/abracapture/.abracapocus/g/task_g.1_implement_lightweight_recording_history_index.json: 0 errors, 4 warnings
+- /home/mike/dev/mike/music/python/abracapture/.abracapocus/g/task_g.2_build_recordings_browser_and_recording_details.json: 0 errors, 8 warnings
+- /home/mike/dev/mike/music/python/abracapture/.abracapocus/g/task_g.3_add_nonblocking_desktop_capture_notifications.json: 0 errors, 6 warnings
+- /home/mike/dev/mike/music/python/abracapture/.abracapocus/g/task_g.4_add_abracapture_theme_accessibility_and_about_experience.json: 0 errors, 7 warnings
+- /home/mike/dev/mike/music/python/abracapture/.abracapocus/h/task_h.1_add_deterministic_core_unit_tests.json: 0 errors, 6 warnings
+- /home/mike/dev/mike/music/python/abracapture/.abracapocus/h/task_h.2_add_pipewire_registry_capture_and_recovery_integration_tests.json: 0 errors, 11 warnings
+- /home/mike/dev/mike/music/python/abracapture/.abracapocus/h/task_h.3_add_linux_desktop_packaging_metadata_and_install_rules.json: 0 errors, 6 warnings
+- /home/mike/dev/mike/music/python/abracapture/.abracapocus/h/task_h.4_write_concise_public_readme_and_user_guide.json: 0 errors, 4 warnings
+
+## Summary
+- Total errors: 0
+- Total warnings: 330
+- Linted files: 32

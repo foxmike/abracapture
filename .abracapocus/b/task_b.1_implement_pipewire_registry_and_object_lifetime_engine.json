@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "task_id": "b.1",
+  "phase": "B",
+  "phase_id": "b",
+  "title": "Implement PipeWire registry and object lifetime engine",
+  "description": "Create PipeWireContext, the event-driven PipeWire registry listener that tracks global objects (nodes, ports, links) through their full lifecycle.\n\nSTRICT FILE SCOPE: Create or modify ONLY the files listed in this task's allowed_write_paths.\n\nBefore editing, inspect:\n- PipeWire 0.3 API headers: spa/utils/hook.h, pipewire/core.h, pipewire/registry.h, pipewire/proxy.h\n- Any existing src/pipewire/ files for project conventions\n- CMakeLists.txt for existing PipeWire link targets\n\nDo not infer APIs, schemas, behavior, or file contents; inspect the referenced files first.\n\nImplementation:\n1. PipeWireContext.hpp — declare PipeWireContext class owning a pw_main_loop (or pw_thread_loop), pw_context, pw_core, and pw_registry. Expose lifecycle methods: start(), stop(), isRunning(). Define a nested GlobalObject struct holding uint32_t id, const char* type, uint32_t version, pw_proxy*, and spa_hook listener. Declare signal-style callbacks (std::function or Qt signal) for globalAdded(uint32_t id, const char* type, const spa_dict* props) and globalRemoved(uint32_t id). Declare a std::unordered_map<uint32_t, GlobalObject> for tracked objects.\n2. PipeWireContext.cpp — implement pw_registry_events with .global and .global_remove handlers. In the global handler, create a pw_proxy via pw_registry_bind, store the GlobalObject, and invoke globalAdded. In global_remove, destroy the proxy, erase the object, and invoke globalRemoved. Use pw_thread_loop for thread safety: lock/unlock around map mutations. start() creates the PipeWire objects and starts the thread loop; stop() quits the loop, destroys proxies, and tears down in reverse order. Handle pw_core error and done events for connection-loss detection.\n\nConstraints:\n- Do NOT shell out to pw-dump, pw-cli, or wpctl.\n- Do NOT perform file I/O, allocation-heavy work, or blocking calls inside PipeWire callbacks.\n- Use C++20 features where appropriate (structured bindings, std::format, concepts).\n- All PipeWire proxy and hook listener lifetimes must be explicitly managed; prevent use-after-free on rapid add/remove cycles.",
+  "acceptance_criteria": [
+    "src/pipewire/PipeWireContext.hpp exists and declares PipeWireContext with start(), stop(), isRunning(), globalAdded/globalRemoved callbacks, and a GlobalObject map",
+    "src/pipewire/PipeWireContext.cpp implements pw_registry_events .global and .global_remove handlers that bind proxies and track object lifetime",
+    "PipeWireContext uses pw_thread_loop for thread-safe registry access, not pw_main_loop on the calling thread",
+    "No calls to popen, system(), QProcess, pw-dump, pw-cli, or wpctl appear in either file",
+    "g++ -std=c++20 -fsyntax-only -I/usr/include/pipewire-0.3 -I/usr/include/spa-0.2 src/pipewire/PipeWireContext.hpp succeeds or the file is parseable as valid C++20 with PipeWire headers",
+    "No file outside the task's allowed_write_paths is created or modified"
+  ],
+  "selected_backend": "codex_cli",
+  "verification_profile": "focused",
+  "allowed_write_paths": [
+    "src/pipewire/PipeWireContext.hpp",
+    "src/pipewire/PipeWireContext.cpp"
+  ],
+  "forbidden_changes": [
+    "modify files outside src/pipewire/PipeWireContext.{hpp,cpp}",
+    "add new third-party dependencies beyond PipeWire 0.3 and standard library",
+    "create shell-out or subprocess calls to PipeWire CLI tools",
+    "modify CMakeLists.txt or build configuration"
+  ],
+  "allowed_symbols": [
+    "PipeWireContext",
+    "GlobalObject",
+    "start",
+    "stop",
+    "isRunning",
+    "globalAdded",
+    "globalRemoved"
+  ],
+  "decision_budget": {
+    "allowed": [
+      "choose pw_thread_loop vs pw_main_loop for thread model",
+      "choose std::function callbacks vs Qt signals for notification",
+      "choose RAII wrapper vs explicit destroy for proxy lifetime"
+    ],
+    "forbidden": [
+      "introduce a plugin or extension framework",
+      "add PipeWire filter or stream objects in this task",
+      "design the capture pipeline"
+    ]
+  },
+  "dependencies": [],
+  "task_timeout_seconds": 900,
+  "model": "gpt-5.6-sol",
+  "verification_commands": [
+    {
+      "name": "syntax_check",
+      "command": [
+        "bash",
+        "-c",
+        "g++ -std=c++20 -fsyntax-only src/pipewire/PipeWireContext.cpp -I src $(pkg-config --cflags libpipewire-0.3)"
+      ]
+    },
+    {
+      "name": "no_shell_out",
+      "command": [
+        "bash",
+        "-c",
+        "! grep -qE 'popen|system\\(|pw-dump|pw-cli|wpctl' src/pipewire/PipeWireContext.hpp src/pipewire/PipeWireContext.cpp"
+      ]
+    }
+  ]
+}

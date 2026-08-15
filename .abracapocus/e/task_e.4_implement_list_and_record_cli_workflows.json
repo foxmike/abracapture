@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "task_id": "e.4",
+  "phase": "E",
+  "phase_id": "e",
+  "title": "Implement list and record CLI workflows",
+  "description": "Create CliApp that provides headless list-sources and record workflows for automation and scripting, integrating AutoRecordController, CaptureIntegrity, and ExportManager from this phase.\n\nBefore editing, inspect:\n- src/automation/AutoRecordController.hpp for the auto-start/stop API.\n- src/recording/CaptureIntegrity.hpp for the provenance/integrity API and CaptureKind enum.\n- src/export/ExportManager.hpp for the export API.\n- src/app/main.cpp for the existing application entry point and how GUI mode is launched.\n- src/pipewire/ for stream discovery and enumeration APIs.\n\nDo not infer APIs, schemas, behavior, or file contents; inspect the referenced files first.\n\nRequirements:\n1. CliApp parses command-line arguments using QCommandLineParser with subcommands: list-sources (prints discovered PipeWire streams as JSON to stdout), record (captures from a named source to a file).\n2. list-sources: enumerate available application streams, monitor streams, and hardware inputs; print a JSON array with name, id, media_class, and activity fields per source.\n3. record: accept --source, --output, --format (wav/flac), --duration, --auto-start, --auto-stop, --pre-roll, --post-roll, --export (comma-separated formats). Print CaptureIntegrity summary including native-vs-converted status to stdout on completion.\n4. When --auto-start/--auto-stop are set, wire AutoRecordController; otherwise start/stop on signal or duration.\n5. When --export is set, run ExportManager after the master is written and verified.\n6. Exit codes: 0 success, 1 argument error, 2 source not found, 3 capture error, 4 export error.\n7. Integrate into src/app/main.cpp: detect CLI mode (presence of list-sources or record subcommand) before constructing QGuiApplication; use QCoreApplication for CLI mode.\n\nSTRICT FILE SCOPE: Create or modify ONLY the files listed in this task's allowed_write_paths.",
+  "acceptance_criteria": [
+    "src/cli/CliApp.hpp declares CliApp with run() method accepting argc/argv and returning an exit code",
+    "src/cli/CliApp.cpp implements list-sources subcommand that outputs a JSON array to stdout",
+    "src/cli/CliApp.cpp implements record subcommand with --source, --output, --format, --duration, --auto-start, --auto-stop, --pre-roll, --post-roll, and --export options",
+    "record subcommand prints CaptureIntegrity summary including CaptureKind (native/quantized/resampled/converted) to stdout on completion",
+    "Exit codes 0-4 are used as specified: 0 success, 1 argument error, 2 source not found, 3 capture error, 4 export error",
+    "src/app/main.cpp detects CLI subcommands and uses QCoreApplication for CLI mode instead of QGuiApplication",
+    "python3 -c \"import re; src=open('src/cli/CliApp.cpp').read(); assert 'list-sources' in src; assert 'record' in src; assert 'CaptureIntegrity' in src or 'CaptureKind' in src; print('ok')\" passes",
+    "No file outside the task's allowed_write_paths is created or modified"
+  ],
+  "selected_backend": "antigravity_cli",
+  "model": "gemini-3.7-flash-medium",
+  "verification_profile": "focused",
+  "allowed_write_paths": [
+    "src/cli/CliApp.hpp",
+    "src/cli/CliApp.cpp",
+    "src/app/main.cpp"
+  ],
+  "forbidden_changes": [
+    "modify any file under src/automation/",
+    "modify any file under src/recording/",
+    "modify any file under src/export/",
+    "modify any QML files",
+    "add new third-party dependencies",
+    "place file I/O or encoding in the PipeWire realtime callback"
+  ],
+  "allowed_symbols": [
+    "CliApp",
+    "run",
+    "parseArguments",
+    "listSources",
+    "runRecord"
+  ],
+  "decision_budget": {
+    "allowed": [
+      "choose QCommandLineParser subcommand detection pattern",
+      "choose JSON output formatting for list-sources"
+    ],
+    "forbidden": [
+      "redesign the GUI application entry point",
+      "add a new event loop or thread pool for CLI mode",
+      "bypass CaptureIntegrity to hide native-vs-converted status"
+    ]
+  },
+  "dependencies": [
+    "e.1",
+    "e.2",
+    "e.3"
+  ],
+  "task_timeout_seconds": 900,
+  "verification_commands": [
+    {
+      "name": "has_list_sources",
+      "command": [
+        "bash",
+        "-c",
+        "grep -q 'list-sources' src/cli/CliApp.cpp"
+      ]
+    },
+    {
+      "name": "has_record_subcommand",
+      "command": [
+        "bash",
+        "-c",
+        "grep -q '\"record\"' src/cli/CliApp.cpp"
+      ]
+    },
+    {
+      "name": "main_cpp_detects_cli_mode",
+      "command": [
+        "bash",
+        "-c",
+        "grep -qE 'QCoreApplication|argc|argv' src/app/main.cpp"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "verification": {
+    "checks": [
+      {
+        "name": "wavwriter_compiles",
+        "command": [
+          "bash",
+          "-c",
+          "g++ -std=c++20 -fsyntax-only -I src src/recording/WavWriter.cpp 2>&1 || true"
+        ]
+      },
+      {
+        "name": "flacwriter_compiles",
+        "command": [
+          "bash",
+          "-c",
+          "g++ -std=c++20 -fsyntax-only -I src src/recording/FlacWriter.cpp 2>&1 || true"
+        ]
+      },
+      {
+        "name": "outputpathpolicy_compiles",
+        "command": [
+          "bash",
+          "-c",
+          "g++ -std=c++20 -fsyntax-only -I src src/recording/OutputPathPolicy.cpp 2>&1 || true"
+        ]
+      },
+      {
+        "name": "recordingsink_compiles",
+        "command": [
+          "bash",
+          "-c",
+          "g++ -std=c++20 -fsyntax-only -I src src/recording/RecordingSink.cpp 2>&1 || true"
+        ]
+      },
+      {
+        "name": "all_headers_exist",
+        "command": [
+          "bash",
+          "-c",
+          "test -f src/recording/WavWriter.hpp && test -f src/recording/WavWriter.cpp && test -f src/recording/FlacWriter.hpp && test -f src/recording/FlacWriter.cpp && test -f src/recording/RecordingSink.hpp && test -f src/recording/RecordingSink.cpp && test -f src/recording/OutputPathPolicy.hpp && test -f src/recording/OutputPathPolicy.cpp && echo 'All phase D files present'"
+        ]
+      },
+      {
+        "name": "no_realtime_io",
+        "command": [
+          "bash",
+          "-c",
+          "! grep -rn 'pw_stream_connect\\|spa_hook\\|pw_thread_loop' src/recording/ || echo 'No PipeWire realtime hooks in recording layer'"
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "task_id": "b.4",
+  "phase": "B",
+  "phase_id": "b",
+  "title": "Build live source catalog and activity model",
+  "description": "Create SourceCatalog, the reactive model that combines PipeWireContext registry events with SourceDescriptor classification and PropertyNormalizer metadata to maintain a live, thread-safe catalog of capturable audio sources.\n\nSTRICT FILE SCOPE: Create or modify ONLY the files listed in this task's allowed_write_paths.\n\nBefore editing, inspect:\n- src/pipewire/PipeWireContext.hpp for the globalAdded/globalRemoved callback signatures and GlobalObject struct\n- src/pipewire/SourceDescriptor.hpp for SourceDescriptor, SourceCategory, and classifyMediaClass\n- src/pipewire/PropertyNormalizer.hpp for extractDisplayName, extractAppName, extractMediaClass, extractDeviceId\n\nDo not infer APIs, schemas, behavior, or file contents; inspect the referenced files first.\n\nImplementation:\n1. SourceCatalog.hpp — declare SourceCatalog that depends on PipeWireContext. It owns a std::vector<SourceDescriptor> (or map keyed by nodeId) representing the current live sources. Expose: const std::vector<SourceDescriptor>& sources() const; std::optional<SourceDescriptor> sourceById(uint32_t id) const; void start(PipeWireContext& ctx); void stop(). Declare callbacks/signals for sourceAppeared(const SourceDescriptor&), sourceDisappeared(uint32_t nodeId), and catalogReset(). Declare a mutex for thread-safe access since PipeWireContext callbacks arrive on the PipeWire thread.\n2. SourceCatalog.cpp — implement start() by registering as a listener on PipeWireContext's globalAdded/globalRemoved. In the globalAdded handler: extract media.class via PropertyNormalizer, classify via classifyMediaClass, and if isCapturableSource is true, build a SourceDescriptor using PropertyNormalizer extractors, insert into the catalog under lock, and emit sourceAppeared. In globalRemoved: remove by nodeId under lock and emit sourceDisappeared. stop() unregisters and clears the catalog. Handle rapid add/remove by checking existence before insert/remove.\n\nConstraints:\n- Thread safety: all catalog mutations must be guarded by std::mutex; do not hold the mutex while emitting signals.\n- Do not perform file I/O or blocking operations in any callback path.\n- Do not duplicate classification or normalization logic already in SourceDescriptor or PropertyNormalizer; call those modules.\n- Filter non-audio and non-capturable nodes at insertion time, not at query time.",
+  "acceptance_criteria": [
+    "src/pipewire/SourceCatalog.hpp declares SourceCatalog with sources(), sourceById(), start(PipeWireContext&), stop(), and sourceAppeared/sourceDisappeared callbacks",
+    "src/pipewire/SourceCatalog.cpp implements globalAdded handling that uses PropertyNormalizer and classifyMediaClass to build and insert SourceDescriptors",
+    "src/pipewire/SourceCatalog.cpp implements globalRemoved handling that removes entries by nodeId and emits sourceDisappeared",
+    "SourceCatalog uses std::mutex to guard catalog mutations and does not hold the lock while emitting signals",
+    "SourceCatalog includes PipeWireContext.hpp, SourceDescriptor.hpp, and PropertyNormalizer.hpp and delegates classification/normalization to those modules",
+    "g++ -std=c++20 -fsyntax-only -I/usr/include/pipewire-0.3 -I/usr/include/spa-0.2 src/pipewire/SourceCatalog.hpp succeeds or the file is parseable as valid C++20 with required headers",
+    "No file outside the task's allowed_write_paths is created or modified"
+  ],
+  "selected_backend": "codex_cli",
+  "verification_profile": "focused",
+  "allowed_write_paths": [
+    "src/pipewire/SourceCatalog.hpp",
+    "src/pipewire/SourceCatalog.cpp"
+  ],
+  "forbidden_changes": [
+    "modify files outside src/pipewire/SourceCatalog.{hpp,cpp}",
+    "modify PipeWireContext, SourceDescriptor, or PropertyNormalizer files",
+    "duplicate classification or normalization logic from other b-phase modules",
+    "add file I/O or blocking calls in callback paths",
+    "modify CMakeLists.txt or build configuration"
+  ],
+  "allowed_symbols": [
+    "SourceCatalog",
+    "sourceAppeared",
+    "sourceDisappeared",
+    "catalogReset",
+    "sources",
+    "sourceById"
+  ],
+  "decision_budget": {
+    "allowed": [
+      "choose std::vector vs std::unordered_map for internal source storage",
+      "choose std::function callbacks vs Qt signals for catalog notifications",
+      "choose copy-then-emit vs emit-under-lock for signal thread safety"
+    ],
+    "forbidden": [
+      "redesign PipeWireContext callback interface",
+      "add capture or stream functionality",
+      "introduce a Qt model or QAbstractListModel in this task"
+    ]
+  },
+  "dependencies": [
+    "b.1",
+    "b.2",
+    "b.3"
+  ],
+  "task_timeout_seconds": 900,
+  "model": "gpt-5.6-terra",
+  "verification_commands": [
+    {
+      "name": "syntax_check",
+      "command": [
+        "bash",
+        "-c",
+        "g++ -std=c++20 -fsyntax-only src/pipewire/SourceCatalog.cpp -I src $(pkg-config --cflags libpipewire-0.3)"
+      ]
+    },
+    {
+      "name": "no_shell_out",
+      "command": [
+        "bash",
+        "-c",
+        "! grep -qE 'popen|system\\(|pw-dump|wpctl' src/pipewire/SourceCatalog.hpp src/pipewire/SourceCatalog.cpp"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "task_id": "h.3",
+  "phase": "H",
+  "phase_id": "h",
+  "title": "Add Linux desktop packaging metadata and install rules",
+  "description": "Create FreeDesktop-compliant packaging metadata and CMake install rules for Linux distribution. The desktop entry, AppStream metainfo, and install rules must follow current FreeDesktop and AppStream specifications without bundling or vendoring Qt or PipeWire libraries.\n\nBefore editing, inspect:\n- CMakeLists.txt for the existing project name, version, executable target name, and any existing install() calls.\n- Any existing packaging/ directory contents for prior metadata.\n- src/app/main.cpp for the application binary name and desktop-entry exec reference.\n\nDo not infer APIs, schemas, behavior, or file contents; inspect the referenced files first.\n\nSTRICT FILE SCOPE: Create or modify ONLY the files listed in this task's allowed_write_paths.\n\nabracapture.desktop: Create a valid FreeDesktop .desktop entry with Type=Application, correct Exec path, appropriate Categories (Audio;AudioVideo;Recorder;Qt;), GenericName, Comment, and Icon fields. Do not set Terminal=true.\n\nabracapture.metainfo.xml: Create a valid AppStream metainfo file with application id, name, summary, description (mentioning PipeWire-based audio capture, stream discovery, WAV/FLAC support), project_license (use the project's actual license from the repo root), developer name, launchable referencing the desktop file, and at least one release entry using the current project version.\n\ninstall.cmake: Create a CMake include file that defines install rules for the binary target, the desktop file to share/applications, the metainfo file to share/metainfo, and any icon to share/icons/hicolor. Use GNUInstallDirs variables (CMAKE_INSTALL_BINDIR, CMAKE_INSTALL_DATAROOTDIR) for portable paths.\n\nCMakeLists.txt: Add include(packaging/install.cmake) at the appropriate location after the main executable target is defined. Do not reorganize or reformat unrelated CMake content.",
+  "acceptance_criteria": [
+    "packaging/abracapture.desktop exists and passes desktop-file-validate if available",
+    "packaging/abracapture.metainfo.xml exists and is well-formed XML with required AppStream elements",
+    "packaging/install.cmake exists and defines install rules using GNUInstallDirs variables",
+    "CMakeLists.txt includes packaging/install.cmake after the executable target definition",
+    "Desktop file Exec field references the correct binary name from CMakeLists.txt",
+    "Metainfo file project_license matches the repository license",
+    "No Qt or PipeWire libraries are vendored or bundled by install rules",
+    "No file outside the task's allowed_write_paths is created or modified"
+  ],
+  "selected_backend": "codex_cli",
+  "model": "gpt-5.6-luna",
+  "verification_profile": "focused",
+  "allowed_write_paths": [
+    "packaging/abracapture.desktop",
+    "packaging/abracapture.metainfo.xml",
+    "packaging/install.cmake",
+    "CMakeLists.txt"
+  ],
+  "forbidden_changes": [
+    "modify any file under src/",
+    "modify any file under tests/",
+    "modify README.md or docs/",
+    "add new third-party dependencies",
+    "remove or reorganize existing CMake targets or build logic",
+    "bundle or vendor Qt or PipeWire libraries"
+  ],
+  "decision_budget": {
+    "allowed": [
+      "choose icon install path within hicolor theme",
+      "choose AppStream description wording",
+      "choose desktop Categories within FreeDesktop spec"
+    ],
+    "forbidden": [
+      "change project name or version in CMakeLists.txt",
+      "add CPack or package-generator configuration",
+      "modify build targets or compile options",
+      "add Flatpak or Snap packaging"
+    ]
+  },
+  "dependencies": [],
+  "task_timeout_seconds": 900,
+  "verification_commands": [
+    {
+      "name": "desktop_file_exists",
+      "command": [
+        "bash",
+        "-c",
+        "test -f packaging/abracapture.desktop"
+      ]
+    },
+    {
+      "name": "metainfo_xml_exists",
+      "command": [
+        "bash",
+        "-c",
+        "test -f packaging/abracapture.metainfo.xml"
+      ]
+    },
+    {
+      "name": "install_cmake_exists",
+      "command": [
+        "bash",
+        "-c",
+        "test -f packaging/install.cmake"
+      ]
+    },
+    {
+      "name": "desktop_has_type_application",
+      "command": [
+        "bash",
+        "-c",
+        "grep -q 'Type=Application' packaging/abracapture.desktop"
+      ]
+    }
+  ]
+}

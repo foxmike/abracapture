@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "task_id": "g.3",
+  "phase": "G",
+  "phase_id": "g",
+  "title": "Add nonblocking desktop capture notifications",
+  "description": "Add a notification service that sends desktop notifications for capture lifecycle events (capture started, capture stopped, capture error) without blocking the capture pipeline or PipeWire realtime callback.\n\nBefore editing, inspect:\n- src/ui/CaptureViewModel.hpp and src/ui/CaptureViewModel.cpp for capture state signals and current capture lifecycle handling\n- src/audio/CaptureSession.hpp for session state transitions (Capturing, Stopped, Error) that drive notifications\n- Any existing notification or system-tray code under src/\n\nDo not infer APIs, schemas, behavior, or file contents; inspect the referenced files first.\n\nImplementation:\n1. Create src/ui/NotificationService.hpp declaring a NotificationService class with slots for onCaptureStarted(QString sourceName), onCaptureStopped(QString filePath, double durationSecs), onCaptureError(QString errorMessage). Use QSystemTrayIcon or freedesktop org.freedesktop.Notifications D-Bus interface for delivery.\n2. Create src/ui/NotificationService.cpp implementing nonblocking notification delivery. Notifications must never block the calling thread. Use queued signal-slot connections if invoked from a non-GUI thread. Include a user-visible setting to disable notifications (expose as Q_PROPERTY enabled).\n3. Modify src/ui/CaptureViewModel.cpp to instantiate NotificationService and connect capture lifecycle signals to it. Ensure connections use Qt::QueuedConnection so the PipeWire realtime callback is never blocked.\n\nSTRICT FILE SCOPE: Create or modify ONLY the files listed in this task's allowed_write_paths.",
+  "acceptance_criteria": [
+    "src/ui/NotificationService.hpp exists and declares NotificationService with onCaptureStarted, onCaptureStopped, onCaptureError slots",
+    "src/ui/NotificationService.cpp exists and sends desktop notifications via QSystemTrayIcon or D-Bus",
+    "Notification delivery is nonblocking: no synchronous I/O or blocking calls in notification slots",
+    "NotificationService exposes a Q_PROPERTY enabled for user-controllable notification toggle",
+    "src/ui/CaptureViewModel.cpp connects capture signals to NotificationService using Qt::QueuedConnection",
+    "No file outside the task's allowed_write_paths is created or modified"
+  ],
+  "selected_backend": "antigravity_cli",
+  "model": "gemini-3.7-flash-medium",
+  "verification_profile": "focused",
+  "allowed_write_paths": [
+    "src/ui/NotificationService.hpp",
+    "src/ui/NotificationService.cpp",
+    "src/ui/CaptureViewModel.cpp"
+  ],
+  "forbidden_changes": [
+    "modify any PipeWire realtime callback code",
+    "modify src/capture/ files",
+    "modify qml/Main.qml",
+    "add blocking synchronization in notification delivery",
+    "modify CMakeLists.txt"
+  ],
+  "allowed_symbols": [
+    "NotificationService",
+    "onCaptureStarted",
+    "onCaptureStopped",
+    "onCaptureError"
+  ],
+  "decision_budget": {
+    "allowed": [
+      "choose QSystemTrayIcon vs D-Bus for notification delivery",
+      "choose notification text and icon content"
+    ],
+    "forbidden": [
+      "add sound effects to notifications",
+      "introduce a notification queue or persistence layer",
+      "modify capture engine internals"
+    ]
+  },
+  "dependencies": [],
+  "task_timeout_seconds": 900,
+  "verification_commands": [
+    {
+      "name": "notification_service_exists",
+      "command": [
+        "bash",
+        "-c",
+        "test -f src/ui/NotificationService.hpp && test -f src/ui/NotificationService.cpp"
+      ]
+    },
+    {
+      "name": "has_on_capture_started",
+      "command": [
+        "bash",
+        "-c",
+        "grep -q 'onCaptureStarted' src/ui/NotificationService.hpp"
+      ]
+    },
+    {
+      "name": "notification_in_viewmodel",
+      "command": [
+        "bash",
+        "-c",
+        "grep -q 'NotificationService' src/ui/CaptureViewModel.cpp"
+      ]
+    }
+  ]
+}

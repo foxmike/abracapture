@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "task_id": "h.1",
+  "phase": "H",
+  "phase_id": "h",
+  "title": "Add deterministic core unit tests",
+  "description": "Create focused deterministic unit tests for the three core modules: AudioFormat, RingBuffer, and OutputPathPolicy. Each test file exercises the public API of its corresponding module with no PipeWire dependency, no filesystem side-effects beyond temp directories, and no timing-sensitive assertions.\n\nBefore editing, inspect:\n- src/core/AudioFormat.hpp and src/core/AudioFormat.cpp for AudioFormat/SampleFormat/ConversionProvenance types and helpers.\n- src/audio/AudioRingBuffer.hpp and src/audio/AudioRingBuffer.cpp for ring buffer capacity, read/write/overflow semantics, and thread-safety contracts.\n- src/recording/OutputPathPolicy.hpp and src/recording/OutputPathPolicy.cpp for naming-template expansion, directory creation policy, and collision handling.\n- CMakeLists.txt for the existing test target structure and test framework (expect Google Test or Catch2).\n\nDo not infer APIs, schemas, behavior, or file contents; inspect the referenced files first.\n\nSTRICT FILE SCOPE: Create or modify ONLY the files listed in this task's allowed_write_paths.\n\ntest_audio_format.cpp: Test format enum round-trips, sample-rate/bit-depth/channel accessors, native-vs-converted classification, format string rendering, and invalid-input edge cases.\n\ntest_ring_buffer.cpp: Test single-threaded write-read cycles, capacity boundary, overwrite/overflow policy, partial reads, empty-buffer reads, and power-of-two size enforcement.\n\ntest_output_path_policy.cpp: Test naming-template variable expansion (date, time, source name, sequence number), directory path assembly, filename collision avoidance (numeric suffix), and rejection of invalid template variables.",
+  "acceptance_criteria": [
+    "tests/core/test_audio_format.cpp exists and compiles as part of the test target",
+    "tests/core/test_ring_buffer.cpp exists and compiles as part of the test target",
+    "tests/core/test_output_path_policy.cpp exists and compiles as part of the test target",
+    "Each test file contains at least 5 distinct test cases exercising the described scenarios",
+    "No test depends on PipeWire, network, or wall-clock timing",
+    "No file outside the task's allowed_write_paths is created or modified"
+  ],
+  "selected_backend": "codex_cli",
+  "model": "gpt-5.6-luna",
+  "verification_profile": "focused",
+  "allowed_write_paths": [
+    "tests/core/test_audio_format.cpp",
+    "tests/core/test_ring_buffer.cpp",
+    "tests/core/test_output_path_policy.cpp"
+  ],
+  "forbidden_changes": [
+    "modify any file under src/",
+    "modify CMakeLists.txt",
+    "modify any file under packaging/",
+    "modify README.md or docs/",
+    "add new third-party dependencies",
+    "create files outside tests/core/"
+  ],
+  "allowed_symbols": [
+    "TEST",
+    "TEST_F",
+    "TEST_P",
+    "EXPECT_EQ",
+    "EXPECT_NE",
+    "EXPECT_TRUE",
+    "EXPECT_FALSE",
+    "EXPECT_THROW",
+    "ASSERT_EQ",
+    "ASSERT_TRUE"
+  ],
+  "decision_budget": {
+    "allowed": [
+      "choose test fixture names",
+      "choose edge-case values for boundary tests",
+      "use temporary directories for output path tests"
+    ],
+    "forbidden": [
+      "introduce new test framework",
+      "modify production source code",
+      "add PipeWire or audio device dependencies to tests"
+    ]
+  },
+  "dependencies": [],
+  "task_timeout_seconds": 900,
+  "verification_commands": [
+    {
+      "name": "test_audio_format_exists",
+      "command": [
+        "bash",
+        "-c",
+        "test -f tests/core/test_audio_format.cpp"
+      ]
+    },
+    {
+      "name": "test_ring_buffer_exists",
+      "command": [
+        "bash",
+        "-c",
+        "test -f tests/core/test_ring_buffer.cpp"
+      ]
+    },
+    {
+      "name": "test_output_path_policy_exists",
+      "command": [
+        "bash",
+        "-c",
+        "test -f tests/core/test_output_path_policy.cpp"
+      ]
+    },
+    {
+      "name": "no_pipewire_dependency",
+      "command": [
+        "bash",
+        "-c",
+        "! grep -qE '#include.*pipewire|pw_stream' tests/core/test_audio_format.cpp tests/core/test_ring_buffer.cpp tests/core/test_output_path_policy.cpp"
+      ]
+    }
+  ]
+}

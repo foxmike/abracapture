@@ -1,0 +1,133 @@
+{
+  "schema_version": 1,
+  "task_id": "f.3",
+  "phase": "F",
+  "phase_id": "f",
+  "title": "Build integrated capture page and application shell",
+  "description": "Create the CaptureViewModel C++ class, CapturePage QML component, and wire the application shell in Main.qml. This task integrates the source browser (f.1), waveform/meter (f.2), and settings (f.4) into the primary capture experience.\n\nBefore editing, inspect:\n- src/ui/SourceListModel.hpp for model roles and Q_INVOKABLE methods created in f.1.\n- src/ui/WaveformBridge.hpp for properties and snapshot slot created in f.2.\n- src/ui/SettingsViewModel.hpp for settings properties created in f.4.\n- qml/Main.qml for any existing structure (loader, stack, navigation).\n- src/audio/CaptureSession.hpp for session state enum (Idle, Connecting, Capturing, Reconnecting, Stopped, Error) and start/stop interface.\n\nDo not infer APIs, schemas, behavior, or file contents; inspect the referenced files first.\n\nImplementation:\n- src/ui/CaptureViewModel.hpp / .cpp: A QObject exposing capture state (idle/capturing/stopping), selected source, output path, format info, capture duration, integrity status, and start/stop Q_INVOKABLE methods. Connects to the engine layer via signals/slots. Exposes whether capture is native, quantized, resampled, or converted. Provides pre-roll/post-roll and auto-start/auto-stop property bindings.\n- qml/pages/CapturePage.qml: Integrates SourceCard list (from SourceListModel), WaveformView, capture controls (start/stop/arm), status display (duration, format, integrity), and output destination selector. Must clearly distinguish application streams, system monitors, and hardware inputs visually.\n- qml/Main.qml: Wire the application shell with navigation between CapturePage and SettingsPage using the context properties or singleton names registered by src/app/main.cpp; do not instantiate an unregistered C++ type from QML.\n\nSTRICT FILE SCOPE: Create or modify ONLY the files listed in this task's allowed_write_paths.\n\nBootstrap/build ownership: Before editing, inspect src/app/main.cpp for the actual Phase-A QQmlApplicationEngine context-property/singleton setup and the Phase-E CLI dispatch that must be preserved, and inspect CMakeLists.txt for the exact Phase-A source-list and qt_add_qml_module or qt_add_resources mechanism. In main.cpp, preserve CLI dispatch, instantiate CaptureViewModel, SourceListModel, WaveformBridge, and SettingsViewModel in the GUI bootstrap, expose them through that actual engine mechanism before loading QML, and wire non-realtime CaptureSession CaptureVisualizationSnapshot value copies to the WaveformBridge queued slot at a UI-friendly cadence. Main.qml consumes the registered names; QML must not construct an unregistered C++ type. In CMakeLists.txt, explicitly register every completed Phase B-F C++ source/header with abracapture and every completed Phase F QML file using the Phase-A mechanism. Do not use source-file globbing or create a second target/module.",
+  "acceptance_criteria": [
+    "src/ui/CaptureViewModel.hpp and src/ui/CaptureViewModel.cpp exist and define a QObject subclass with Q_PROPERTYs for captureState, selectedSourceId, outputPath, formatDescription, durationSeconds, and integrityStatus",
+    "CaptureViewModel exposes a Q_PROPERTY or Q_INVOKABLE indicating whether capture is native, quantized, resampled, or converted",
+    "qml/pages/CapturePage.qml exists and references SourceListModel, WaveformView, and CaptureViewModel",
+    "qml/Main.qml provides navigation between CapturePage and SettingsPage and instantiates or references the four view models/bridges",
+    "CaptureViewModel does not perform file I/O, compression, or PipeWire calls directly",
+    "No file outside the task's allowed_write_paths is created or modified",
+    "src/app/main.cpp preserves CLI dispatch and exposes all four Phase F C++ objects through the actual Phase-A QQmlApplicationEngine registration mechanism before qml/Main.qml loads",
+    "CMakeLists.txt explicitly registers completed Phase B-F C++ sources with abracapture and completed Phase F QML files through the Phase-A QML mechanism, without globbing",
+    "The configured abracapture target builds in RelWithDebInfo after the Phase F fan-in"
+  ],
+  "selected_backend": "codex_cli",
+  "model": "gpt-5.6-terra",
+  "verification_profile": "focused",
+  "allowed_write_paths": [
+    "src/ui/CaptureViewModel.hpp",
+    "src/ui/CaptureViewModel.cpp",
+    "qml/pages/CapturePage.qml",
+    "qml/Main.qml",
+    "src/app/main.cpp",
+    "CMakeLists.txt"
+  ],
+  "forbidden_changes": [
+    "modify any file under src/pipewire/ or src/engine/",
+    "modify src/ui/SourceListModel.hpp or src/ui/SourceListModel.cpp",
+    "modify src/ui/WaveformBridge.hpp or src/ui/WaveformBridge.cpp",
+    "modify src/ui/SettingsViewModel.hpp or src/ui/SettingsViewModel.cpp",
+    "modify qml/components/SourceCard.qml or qml/components/WaveformView.qml",
+    "modify qml/pages/SettingsPage.qml",
+    "add new third-party dependencies",
+    "perform file I/O or compression in the view model"
+  ],
+  "allowed_symbols": [
+    "CaptureViewModel",
+    "CapturePage",
+    "main",
+    "SourceListModel",
+    "WaveformBridge",
+    "SettingsViewModel"
+  ],
+  "decision_budget": {
+    "allowed": [
+      "choose navigation pattern (StackView, SwipeView, Loader)",
+      "choose how to expose integrity status (enum, string, structured object)",
+      "add local helpers for duration formatting"
+    ],
+    "forbidden": [
+      "introduce a plugin host, timeline editor, or DAW features",
+      "add direct PipeWire dependencies to UI layer",
+      "change SourceListModel or WaveformBridge interfaces"
+    ]
+  },
+  "dependencies": [
+    "f.1",
+    "f.2",
+    "f.4"
+  ],
+  "task_timeout_seconds": 900,
+  "verification_commands": [
+    {
+      "name": "capture_viewmodel_exists",
+      "command": [
+        "bash",
+        "-c",
+        "test -f src/ui/CaptureViewModel.hpp && test -f src/ui/CaptureViewModel.cpp"
+      ]
+    },
+    {
+      "name": "capture_page_qml_exists",
+      "command": [
+        "bash",
+        "-c",
+        "test -f qml/pages/CapturePage.qml"
+      ]
+    },
+    {
+      "name": "has_capture_state_property",
+      "command": [
+        "bash",
+        "-c",
+        "grep -q 'captureState' src/ui/CaptureViewModel.hpp"
+      ]
+    },
+    {
+      "name": "cmake_configure_phase_f",
+      "command": [
+        "cmake",
+        "-S",
+        ".",
+        "-B",
+        "build",
+        "-DCMAKE_BUILD_TYPE=RelWithDebInfo",
+        "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
+      ]
+    },
+    {
+      "name": "abracapture_phase_f_build",
+      "command": [
+        "cmake",
+        "--build",
+        "build",
+        "--target",
+        "abracapture",
+        "--config",
+        "RelWithDebInfo",
+        "--parallel"
+      ]
+    },
+    {
+      "name": "capture_page_qml_syntax",
+      "command": [
+        "qmlformat",
+        "--check",
+        "qml/pages/CapturePage.qml"
+      ]
+    },
+    {
+      "name": "main_qml_syntax",
+      "command": [
+        "qmlformat",
+        "--check",
+        "qml/Main.qml"
+      ]
+    }
+  ]
+}

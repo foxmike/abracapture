@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "task_id": "g.4",
+  "phase": "G",
+  "phase_id": "g",
+  "title": "Add Abracapture theme accessibility and About experience",
+  "description": "Create the Abracapture visual theme with accessibility support and an About page with product identity. Integrate both into the main application shell via Main.qml.\n\nBefore editing, inspect:\n- qml/Main.qml for existing navigation structure, page loader, and import patterns\n- qml/theme/ for any existing theme or style files\n- qml/pages/ for existing page patterns and conventions\n- Any existing About or version information in the project\n\nDo not infer APIs, schemas, behavior, or file contents; inspect the referenced files first.\n\nImplementation:\n1. Create qml/theme/AbracaptureTheme.qml as a singleton providing color palette (primary, secondary, background, surface, text, error, capture-active, capture-idle), font size scale factor, high-contrast mode toggle, and spacing constants. Support a dark and light variant selectable at runtime. Ensure capture-state indicator colors meet WCAG AA contrast ratios against their backgrounds.\n2. Create qml/pages/AboutPage.qml showing application name (Abracapture), version, brief description, license, and build information. Include attribution for PipeWire, Qt, libsndfile, libFLAC, and ffmpeg. Ensure the page is keyboard-navigable.\n3. Modify qml/Main.qml to:\n   - Import and apply AbracaptureTheme\n   - Add navigation entries for RecordingsPage and AboutPage\n   - Ensure all existing page navigation and keyboard operation is preserved\n   - Apply theme colors to the application shell\n\nSTRICT FILE SCOPE: Create or modify ONLY the files listed in this task's allowed_write_paths.",
+  "acceptance_criteria": [
+    "qml/theme/AbracaptureTheme.qml exists and provides color palette, font scale, high-contrast toggle, and dark/light variants",
+    "Capture-state indicator colors (capture-active, capture-idle) are defined in the theme",
+    "qml/pages/AboutPage.qml exists and displays application name, version, description, license, and build info",
+    "AboutPage.qml includes attribution for PipeWire, Qt, libsndfile, libFLAC, and ffmpeg",
+    "AboutPage.qml is fully keyboard-navigable",
+    "qml/Main.qml imports AbracaptureTheme and adds navigation entries for RecordingsPage and AboutPage",
+    "Existing page navigation in Main.qml is preserved after modifications",
+    "No file outside the task's allowed_write_paths is created or modified"
+  ],
+  "selected_backend": "codex_cli",
+  "model": "gpt-5.6-luna",
+  "verification_profile": "focused",
+  "allowed_write_paths": [
+    "qml/theme/AbracaptureTheme.qml",
+    "qml/pages/AboutPage.qml",
+    "qml/Main.qml"
+  ],
+  "forbidden_changes": [
+    "modify src/ui/CaptureViewModel.cpp",
+    "modify src/history/ files",
+    "modify src/ui/NotificationService.hpp or NotificationService.cpp",
+    "add new C++ source files",
+    "modify CMakeLists.txt"
+  ],
+  "allowed_symbols": [
+    "AbracaptureTheme",
+    "AboutPage"
+  ],
+  "decision_budget": {
+    "allowed": [
+      "choose specific color values for theme palette",
+      "choose layout and typography for About page",
+      "choose navigation entry labels and icons"
+    ],
+    "forbidden": [
+      "introduce a third-party theming framework",
+      "add custom font loading",
+      "restructure existing page navigation architecture"
+    ]
+  },
+  "dependencies": [],
+  "task_timeout_seconds": 900,
+  "verification_commands": [
+    {
+      "name": "theme_qml_exists",
+      "command": [
+        "bash",
+        "-c",
+        "test -f qml/theme/AbracaptureTheme.qml"
+      ]
+    },
+    {
+      "name": "about_page_qml_exists",
+      "command": [
+        "bash",
+        "-c",
+        "test -f qml/pages/AboutPage.qml"
+      ]
+    },
+    {
+      "name": "main_qml_has_about_page",
+      "command": [
+        "bash",
+        "-c",
+        "grep -q 'AboutPage' qml/Main.qml"
+      ]
+    }
+  ]
+}

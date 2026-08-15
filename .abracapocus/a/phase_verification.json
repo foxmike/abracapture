@@ -1,0 +1,29 @@
+{
+  "verification": {
+    "checks": [
+      {
+        "name": "cmake_configure",
+        "command": [
+          "cmake",
+          "-S",
+          ".",
+          "-B",
+          "build",
+          "-DCMAKE_BUILD_TYPE=RelWithDebInfo",
+          "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
+        ]
+      },
+      {
+        "name": "cmake_build",
+        "command": [
+          "cmake",
+          "--build",
+          "build",
+          "--config",
+          "RelWithDebInfo",
+          "--parallel"
+        ]
+      }
+    ]
+  }
+}

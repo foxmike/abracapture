@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "task_id": "a.2",
+  "phase": "A",
+  "phase_id": "a",
+  "title": "Create Qt Quick application bootstrap",
+  "description": "Create the Qt Quick application entry point, AppController QObject, and root QML window that prove the CMake/Qt dependency contract works end-to-end.\n\nSTRICT FILE SCOPE: Create or modify ONLY the files listed in this task's allowed_write_paths.\n\nBefore editing, inspect:\n- CMakeLists.txt — understand the existing target declaration and linked libraries from task a.1.\n- cmake/Dependencies.cmake — confirm Qt6 components available.\n\nDo not infer APIs, schemas, behavior, or file contents; inspect the referenced files first.\n\nRequirements:\n1. src/app/main.cpp must create a QGuiApplication, instantiate AppController, register it as a QML context property or singleton, load qml/Main.qml via QQmlApplicationEngine, and enter the event loop.\n2. src/app/AppController.hpp/cpp must declare a QObject subclass with Q_OBJECT macro. Expose a read-only `appName` Q_PROPERTY returning \"Abracapture\" and a read-only `appVersion` Q_PROPERTY returning \"0.1.0\".\n3. qml/Main.qml must declare an ApplicationWindow with title bound to appController.appName, minimum size 800x600, and a centered Text element displaying the app name and version.\n4. Update CMakeLists.txt to add the new .cpp/.hpp sources to the abracapture target and configure qt_add_qml_module or qt_add_resources for the QML files.\n5. Do not add settings, audio, or capture logic — this is strictly the application shell.",
+  "acceptance_criteria": [
+    "src/app/main.cpp exists and creates QGuiApplication and QQmlApplicationEngine",
+    "src/app/AppController.hpp declares a QObject subclass with Q_OBJECT and appName/appVersion Q_PROPERTYs",
+    "src/app/AppController.cpp implements AppController with appName returning Abracapture",
+    "qml/Main.qml declares an ApplicationWindow with title bound to appController.appName",
+    "CMakeLists.txt includes AppController.cpp, AppController.hpp, and main.cpp in the abracapture target sources",
+    "CMakeLists.txt configures QML resource handling for qml/Main.qml",
+    "No file outside the task's allowed_write_paths is created or modified"
+  ],
+  "selected_backend": "codex_cli",
+  "model": "gpt-5.6-terra",
+  "verification_profile": "focused",
+  "allowed_write_paths": [
+    "src/app/main.cpp",
+    "src/app/AppController.hpp",
+    "src/app/AppController.cpp",
+    "qml/Main.qml",
+    "CMakeLists.txt"
+  ],
+  "forbidden_changes": [
+    "modify cmake/Dependencies.cmake",
+    "add new dependencies or find_package calls",
+    "implement settings persistence or audio capture logic",
+    "create files outside the allowed_write_paths"
+  ],
+  "allowed_symbols": [
+    "AppController",
+    "appName",
+    "appVersion",
+    "main"
+  ],
+  "decision_budget": {
+    "allowed": [
+      "choose between qt_add_qml_module and qt_add_resources for QML",
+      "choose QML context property vs singleton registration for AppController"
+    ],
+    "forbidden": [
+      "add audio or capture functionality",
+      "add settings or configuration logic",
+      "introduce additional QObject subclasses"
+    ]
+  },
+  "dependencies": [
+    "a.1"
+  ],
+  "task_timeout_seconds": 900,
+  "verification_commands": [
+    {
+      "name": "cmake_configure",
+      "command": [
+        "cmake",
+        "-S",
+        ".",
+        "-B",
+        "build",
+        "-DCMAKE_BUILD_TYPE=RelWithDebInfo"
+      ]
+    },
+    {
+      "name": "cmake_build",
+      "command": [
+        "cmake",
+        "--build",
+        "build",
+        "--parallel"
+      ]
+    }
+  ]
+}

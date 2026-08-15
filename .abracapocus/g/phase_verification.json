@@ -1,0 +1,96 @@
+{
+  "verification": {
+    "checks": [
+      {
+        "name": "cmake_configure",
+        "command": [
+          "cmake",
+          "-S",
+          ".",
+          "-B",
+          "build",
+          "-DCMAKE_BUILD_TYPE=RelWithDebInfo",
+          "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
+        ]
+      },
+      {
+        "name": "cmake_build",
+        "command": [
+          "cmake",
+          "--build",
+          "build",
+          "--config",
+          "RelWithDebInfo",
+          "--parallel"
+        ]
+      },
+      {
+        "name": "ctest",
+        "command": [
+          "ctest",
+          "--test-dir",
+          "build",
+          "-C",
+          "RelWithDebInfo",
+          "--output-on-failure"
+        ]
+      },
+      {
+        "name": "recording_index_hpp_exists",
+        "command": [
+          "test",
+          "-f",
+          "src/history/RecordingIndex.hpp"
+        ]
+      },
+      {
+        "name": "recording_index_cpp_exists",
+        "command": [
+          "test",
+          "-f",
+          "src/history/RecordingIndex.cpp"
+        ]
+      },
+      {
+        "name": "recordings_viewmodel_hpp_exists",
+        "command": [
+          "test",
+          "-f",
+          "src/ui/RecordingsViewModel.hpp"
+        ]
+      },
+      {
+        "name": "recordings_page_qml_exists",
+        "command": [
+          "test",
+          "-f",
+          "qml/pages/RecordingsPage.qml"
+        ]
+      },
+      {
+        "name": "notification_service_hpp_exists",
+        "command": [
+          "test",
+          "-f",
+          "src/ui/NotificationService.hpp"
+        ]
+      },
+      {
+        "name": "theme_qml_exists",
+        "command": [
+          "test",
+          "-f",
+          "qml/theme/AbracaptureTheme.qml"
+        ]
+      },
+      {
+        "name": "about_page_qml_exists",
+        "command": [
+          "test",
+          "-f",
+          "qml/pages/AboutPage.qml"
+        ]
+      }
+    ]
+  }
+}

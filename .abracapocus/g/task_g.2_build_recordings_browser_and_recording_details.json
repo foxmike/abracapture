@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "task_id": "g.2",
+  "phase": "G",
+  "phase_id": "g",
+  "title": "Build recordings browser and recording details",
+  "description": "Create a recordings browser page and view model that exposes the RecordingIndex to QML, allowing users to browse past captures, view recording details, and perform actions (reveal in file manager, delete from index).\n\nBefore editing, inspect:\n- src/history/RecordingIndex.hpp for the RecordingEntry struct and RecordingIndex API\n- src/ui/ for existing ViewModel patterns and Q_PROPERTY conventions\n- qml/pages/ for existing page structure and import conventions\n- qml/Main.qml for navigation pattern (do NOT modify Main.qml in this task)\n\nDo not infer APIs, schemas, behavior, or file contents; inspect the referenced files first.\n\nImplementation:\n1. Create src/ui/RecordingsViewModel.hpp declaring a RecordingsViewModel that wraps RecordingIndex as a QAbstractListModel. Expose roles for all RecordingEntry fields. Add Q_INVOKABLE methods: revealInFileManager(int index), removeEntry(int index), refreshEntries().\n2. Create src/ui/RecordingsViewModel.cpp implementing the list model with proper beginResetModel/endResetModel calls on data changes. revealInFileManager() uses QDesktopServices::openUrl on the parent directory. removeEntry() calls RecordingIndex::remove() and refreshes.\n3. Create qml/pages/RecordingsPage.qml with a ListView bound to RecordingsViewModel, showing file name, format, duration, sample rate, bit depth, and timestamp for each entry. Include a details panel or delegate expansion showing full recording metadata and the native-vs-converted indicator. Add context menu or buttons for reveal and delete actions. Show an empty-state message when no recordings exist.\n\nSTRICT FILE SCOPE: Create or modify ONLY the files listed in this task's allowed_write_paths.",
+  "acceptance_criteria": [
+    "src/ui/RecordingsViewModel.hpp exists and declares RecordingsViewModel as QAbstractListModel subclass",
+    "src/ui/RecordingsViewModel.cpp exists and implements roleNames(), rowCount(), data() for all RecordingEntry fields",
+    "Q_INVOKABLE revealInFileManager() and removeEntry() methods are declared and implemented",
+    "qml/pages/RecordingsPage.qml exists with a ListView bound to the view model",
+    "RecordingsPage.qml displays file name, format, duration, sample rate, bit depth, timestamp, and native-vs-converted flag",
+    "RecordingsPage.qml shows an empty-state message when no recordings exist",
+    "No file outside the task's allowed_write_paths is created or modified"
+  ],
+  "selected_backend": "antigravity_cli",
+  "model": "gemini-3.7-flash-medium",
+  "verification_profile": "focused",
+  "allowed_write_paths": [
+    "src/ui/RecordingsViewModel.hpp",
+    "src/ui/RecordingsViewModel.cpp",
+    "qml/pages/RecordingsPage.qml"
+  ],
+  "forbidden_changes": [
+    "modify src/history/RecordingIndex.hpp or RecordingIndex.cpp",
+    "modify qml/Main.qml",
+    "modify src/ui/CaptureViewModel.cpp",
+    "add media playback or audio preview functionality",
+    "modify CMakeLists.txt"
+  ],
+  "allowed_symbols": [
+    "RecordingsViewModel",
+    "revealInFileManager",
+    "removeEntry",
+    "refreshEntries"
+  ],
+  "decision_budget": {
+    "allowed": [
+      "choose list model role names",
+      "choose details panel layout vs delegate expansion",
+      "choose context menu vs inline action buttons"
+    ],
+    "forbidden": [
+      "add audio playback or waveform preview in the browser",
+      "introduce a database query layer",
+      "modify the RecordingIndex API"
+    ]
+  },
+  "dependencies": [
+    "g.1"
+  ],
+  "task_timeout_seconds": 900,
+  "verification_commands": [
+    {
+      "name": "recordings_viewmodel_exists",
+      "command": [
+        "bash",
+        "-c",
+        "test -f src/ui/RecordingsViewModel.hpp && test -f src/ui/RecordingsViewModel.cpp"
+      ]
+    },
+    {
+      "name": "recordings_page_qml_exists",
+      "command": [
+        "bash",
+        "-c",
+        "test -f qml/pages/RecordingsPage.qml"
+      ]
+    },
+    {
+      "name": "has_abstract_list_model",
+      "command": [
+        "bash",
+        "-c",
+        "grep -q 'QAbstractListModel' src/ui/RecordingsViewModel.hpp"
+      ]
+    }
+  ]
+}
