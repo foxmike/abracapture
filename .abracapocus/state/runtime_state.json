@@ -1,17 +1,17 @@
 {
   "project_name": "abracapture",
-  "plan_version": "task-c.3",
+  "plan_version": "task-c.4",
   "active_phase": "C",
   "default_backend": "codex_cli",
   "routing_mode": "manual",
   "tasks": [
     {
-      "task_id": "c.3",
-      "title": "Implement lock-light capture metrics snapshots",
+      "task_id": "c.4",
+      "title": "Implement capture session lifecycle and source reconnection",
       "phase": "C",
-      "status": "completed",
+      "status": "planned",
       "backend": "codex_cli",
-      "last_run": "2026-08-15T23:55:13.364776",
+      "last_run": null,
       "notes": ""
     }
   ],
