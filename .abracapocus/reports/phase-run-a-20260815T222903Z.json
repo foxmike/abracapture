@@ -1,0 +1,152 @@
+{
+  "run_at": "2026-08-15T22:29:03.749562",
+  "phase_dir": "/home/mike/dev/mike/music/python/abracapture/.abracapocus/a",
+  "status": "failed",
+  "counts": {
+    "passed": 3,
+    "failed": 1,
+    "blocked": 0,
+    "skipped": 0,
+    "unverified": 0
+  },
+  "tasks": [
+    {
+      "task_id": "a.1",
+      "task_file": "/home/mike/dev/mike/music/python/abracapture/.abracapocus/a/task_a.1_define_cmake_and_system_dependency_baseline.json",
+      "status": "passed",
+      "acceptance_status": "accepted",
+      "task_verification": {
+        "status": "passed",
+        "checks": [
+          {
+            "name": "has_project_declaration",
+            "status": "passed"
+          },
+          {
+            "name": "has_cxx20_standard",
+            "status": "passed"
+          },
+          {
+            "name": "has_qt6_find_package",
+            "status": "passed"
+          },
+          {
+            "name": "has_pkg_check_modules",
+            "status": "passed"
+          },
+          {
+            "name": "no_fetch_content",
+            "status": "passed"
+          }
+        ],
+        "owner": "abracapocus"
+      },
+      "run_id": "77cabce1-8628-4f88-8d74-5fca60eadcc6",
+      "write_policy_violations": [],
+      "failure_classification": null,
+      "reviewer_summary": "a.1:Review complete"
+    },
+    {
+      "task_id": "a.2",
+      "task_file": "/home/mike/dev/mike/music/python/abracapture/.abracapocus/a/task_a.2_create_qt_quick_application_bootstrap.json",
+      "status": "rejected",
+      "acceptance_status": "rejected",
+      "task_verification": {
+        "status": "failed",
+        "checks": [
+          {
+            "name": "cmake_configure",
+            "status": "failed"
+          },
+          {
+            "name": "cmake_build",
+            "status": "failed"
+          }
+        ],
+        "owner": "abracapocus"
+      },
+      "run_id": "3ebce084-b9d2-4257-b192-356f10012836",
+      "write_policy_violations": [],
+      "failure_classification": {
+        "failure_type": "verification_failure",
+        "affected_files": [
+          "CMakeLists.txt",
+          "qml/Main.qml",
+          "src/app/AppController.cpp",
+          "src/app/AppController.hpp",
+          "src/app/main.cpp"
+        ],
+        "failure_detail": "-- The CXX compiler identification is GNU 13.3.0\n-- Detecting CXX compiler ABI info\n-- Detecting CXX compiler ABI info - done\n-- Check for working CXX compiler: /usr/bin/c++ - skipped\n-- Detecting CXX compile features\n-- Detecting CXX compile features - done\n-- Configuring incomplete, errors occurred!",
+        "retry_likely": true,
+        "suggested_focus": "Inspect failing verifier output for the specific unmet check."
+      },
+      "reviewer_summary": "a.2:Review complete"
+    },
+    {
+      "task_id": "a.3",
+      "task_file": "/home/mike/dev/mike/music/python/abracapture/.abracapocus/a/task_a.3_implement_persistent_application_settings.json",
+      "status": "passed",
+      "acceptance_status": "accepted",
+      "task_verification": {
+        "status": "passed",
+        "checks": [
+          {
+            "name": "has_qobject",
+            "status": "passed"
+          },
+          {
+            "name": "has_q_property",
+            "status": "passed"
+          },
+          {
+            "name": "has_qsettings",
+            "status": "passed"
+          },
+          {
+            "name": "has_output_directory_property",
+            "status": "passed"
+          }
+        ],
+        "owner": "abracapocus"
+      },
+      "run_id": "f6f950e6-c643-421e-95ff-315639aeebc9",
+      "write_policy_violations": [],
+      "failure_classification": null,
+      "reviewer_summary": "a.3:Review complete"
+    },
+    {
+      "task_id": "a.4",
+      "task_file": "/home/mike/dev/mike/music/python/abracapture/.abracapocus/a/task_a.4_define_audio_format_and_conversion_domain_types.json",
+      "status": "passed",
+      "acceptance_status": "accepted",
+      "task_verification": {
+        "status": "passed",
+        "checks": [
+          {
+            "name": "syntax_check",
+            "status": "passed"
+          },
+          {
+            "name": "no_qt_headers",
+            "status": "passed"
+          },
+          {
+            "name": "no_pipewire_headers",
+            "status": "passed"
+          }
+        ],
+        "owner": "abracapocus"
+      },
+      "run_id": "03b6d8fb-9bc5-4139-a5dc-4330c191ef47",
+      "write_policy_violations": [],
+      "failure_classification": null,
+      "reviewer_summary": "a.4:Review complete"
+    }
+  ],
+  "phase_verification": {
+    "status": "skipped",
+    "checks": [],
+    "notes": "phase verification deferred until all tasks pass",
+    "run_when": "all_tasks_pass"
+  }
+}

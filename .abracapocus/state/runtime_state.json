@@ -1,17 +1,17 @@
 {
   "project_name": "abracapture",
-  "plan_version": "task-a.4",
-  "active_phase": "A",
+  "plan_version": "task-b.1",
+  "active_phase": "B",
   "default_backend": "codex_cli",
   "routing_mode": "manual",
   "tasks": [
     {
-      "task_id": "a.4",
-      "title": "Define audio format and conversion domain types",
-      "phase": "A",
-      "status": "completed",
+      "task_id": "b.1",
+      "title": "Implement PipeWire registry and object lifetime engine",
+      "phase": "B",
+      "status": "planned",
       "backend": "codex_cli",
-      "last_run": "2026-08-15T22:29:03.600424",
+      "last_run": null,
       "notes": ""
     }
   ],
@@ -47,6 +47,6 @@
   "operator_overrides": {},
   "completed_phases": [],
   "remaining_phases": [
-    "A"
+    "B"
   ]
 }

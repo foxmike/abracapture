@@ -1,0 +1,199 @@
+{
+  "run_id": "21966e68-1da0-46fd-bcda-d1470905e944",
+  "task": {
+    "task_id": "demo-self-improve",
+    "title": "Refresh demo status log",
+    "description": "Update state/demo/demo_status.md with the latest demo guidance\n\nRetry attempt 2\nFailure type: verification_failure\nFailure detail: python: can't open file '/home/mike/dev/mike/music/python/abracapture/scripts/demo_improvement.py': [Errno 2] No such file or directory\nSuggested focus: Inspect failing verifier output for the specific unmet check.\n\nPrevious attempt stdout:\n<empty>\nPrevious attempt stderr:\npython: can't open file '/home/mike/dev/mike/music/python/abracapture/scripts/demo_improvement.py': [Errno 2] No such file or directory\nChanged files from previous attempt: <none>\nDo not repeat the same approach; use the failure detail above to choose a corrected implementation.\n\nRetry attempt 3\nFailure type: logic\nFailure detail: Repeated unclassified failure across retry attempts\nSuggested focus: Reassess task approach; repeated unknown failures are unlikely to improve by retrying unchanged.\n\nPrevious attempt stdout:\n<empty>\nPrevious attempt stderr:\npython: can't open file '/home/mike/dev/mike/music/python/abracapture/scripts/demo_improvement.py': [Errno 2] No such file or directory\nChanged files from previous attempt: <none>\nPrevious diff summary:\nNo file changes detected\nDo not repeat the same approach; use the failure detail above to choose a corrected implementation.",
+    "phase": "implementation",
+    "dependencies": [],
+    "exclusivity_category": null,
+    "max_in_category": null,
+    "status": "blocked",
+    "acceptance_criteria": [
+      "state/demo/demo_status.md exists",
+      "Log includes latest task details"
+    ],
+    "created_at": "2026-08-15T23:13:15.042966",
+    "selected_backend": "demo_cli",
+    "model": null,
+    "provider": null,
+    "task_timeout_seconds": null,
+    "verification_profile": "default",
+    "verification_commands": [],
+    "allowed_write_paths": [],
+    "forbidden_changes": [],
+    "allowed_symbols": [],
+    "decision_budget": null,
+    "forbidden_patterns_override": null
+  },
+  "phase": "implementation",
+  "status": "blocked",
+  "reason": "convergence_wandering",
+  "attempts": [
+    {
+      "attempt_number": 2,
+      "tier": 1,
+      "backend": "demo_cli",
+      "model": null,
+      "exit_code": 2,
+      "changed_files": [],
+      "diff_summary": "No file changes detected",
+      "stdout": "",
+      "stderr": "python: can't open file '/home/mike/dev/mike/music/python/abracapture/scripts/demo_improvement.py': [Errno 2] No such file or directory\n",
+      "write_policy_violations": [],
+      "outcome_classification": "backend_failed_no_changes",
+      "backend_timeout": false,
+      "backend_verification_timeout": false,
+      "backend_elapsed_seconds": 0.030783891677856445,
+      "timeout_seconds": null,
+      "changed_files_at_timeout_exit": [],
+      "abracapocus_verification_ran_after_backend_timeout": false,
+      "verification_owner": "phase",
+      "verification_result": "failed",
+      "verification": {
+        "status": "failed",
+        "checks": [
+          {
+            "name": "py_compile",
+            "status": "failed",
+            "detail": "[Errno 2] No such file or directory: 'main.py'",
+            "command": [
+              "python",
+              "-m",
+              "py_compile",
+              "main.py"
+            ],
+            "exit_code": 1
+          },
+          {
+            "name": "demo_selfcheck",
+            "status": "failed",
+            "detail": "python: can't open file '/home/mike/dev/mike/music/python/abracapture/scripts/selfcheck.py': [Errno 2] No such file or directory",
+            "command": [
+              "python",
+              "scripts/selfcheck.py"
+            ],
+            "exit_code": 2
+          }
+        ],
+        "created_at": "2026-08-15T23:13:15.544188",
+        "notes": "Verification complete",
+        "profile": "default"
+      },
+      "failure_classification": {
+        "failure_type": "verification_failure",
+        "affected_files": [],
+        "failure_detail": "python: can't open file '/home/mike/dev/mike/music/python/abracapture/scripts/demo_improvement.py': [Errno 2] No such file or directory",
+        "retry_likely": true,
+        "suggested_focus": "Inspect failing verifier output for the specific unmet check."
+      },
+      "convergence_assessment": {
+        "status": "insufficient_data",
+        "reasons": [],
+        "changed_file_growth": false,
+        "divergent_regions": false,
+        "verifier_failures_changed": false,
+        "detail": "Need at least two retry attempts."
+      }
+    },
+    {
+      "attempt_number": 3,
+      "tier": 1,
+      "backend": "demo_cli",
+      "model": null,
+      "exit_code": 2,
+      "changed_files": [],
+      "diff_summary": "No file changes detected",
+      "stdout": "",
+      "stderr": "python: can't open file '/home/mike/dev/mike/music/python/abracapture/scripts/demo_improvement.py': [Errno 2] No such file or directory\n",
+      "write_policy_violations": [],
+      "outcome_classification": "backend_failed_no_changes",
+      "backend_timeout": false,
+      "backend_verification_timeout": false,
+      "backend_elapsed_seconds": 0.035207271575927734,
+      "timeout_seconds": null,
+      "changed_files_at_timeout_exit": [],
+      "abracapocus_verification_ran_after_backend_timeout": false,
+      "verification_owner": "phase",
+      "verification_result": "failed",
+      "verification": {
+        "status": "failed",
+        "checks": [
+          {
+            "name": "py_compile",
+            "status": "failed",
+            "detail": "[Errno 2] No such file or directory: 'main.py'",
+            "command": [
+              "python",
+              "-m",
+              "py_compile",
+              "main.py"
+            ],
+            "exit_code": 1
+          },
+          {
+            "name": "demo_selfcheck",
+            "status": "failed",
+            "detail": "python: can't open file '/home/mike/dev/mike/music/python/abracapture/scripts/selfcheck.py': [Errno 2] No such file or directory",
+            "command": [
+              "python",
+              "scripts/selfcheck.py"
+            ],
+            "exit_code": 2
+          }
+        ],
+        "created_at": "2026-08-15T23:13:15.752444",
+        "notes": "Verification complete",
+        "profile": "default"
+      },
+      "failure_classification": {
+        "failure_type": "logic",
+        "affected_files": [],
+        "failure_detail": "Repeated unclassified failure across retry attempts",
+        "retry_likely": false,
+        "suggested_focus": "Reassess task approach; repeated unknown failures are unlikely to improve by retrying unchanged."
+      },
+      "convergence_assessment": {
+        "status": "wandering",
+        "reasons": [
+          "verifier_failures_changed"
+        ],
+        "changed_file_growth": false,
+        "divergent_regions": false,
+        "verifier_failures_changed": true,
+        "detail": "Retry attempts are wandering: verifier_failures_changed"
+      }
+    }
+  ],
+  "verification": {
+    "status": "failed",
+    "checks": [
+      {
+        "name": "py_compile",
+        "status": "failed",
+        "detail": "[Errno 2] No such file or directory: 'main.py'",
+        "command": [
+          "python",
+          "-m",
+          "py_compile",
+          "main.py"
+        ],
+        "exit_code": 1
+      },
+      {
+        "name": "demo_selfcheck",
+        "status": "failed",
+        "detail": "python: can't open file '/home/mike/dev/mike/music/python/abracapture/scripts/selfcheck.py': [Errno 2] No such file or directory",
+        "command": [
+          "python",
+          "scripts/selfcheck.py"
+        ],
+        "exit_code": 2
+      }
+    ],
+    "created_at": "2026-08-15T23:13:15.752444",
+    "notes": "Verification complete",
+    "profile": "default"
+  },
+  "created_at": "2026-08-15T23:13:15.758442"
+}

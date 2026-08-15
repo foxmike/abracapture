@@ -6,3 +6,15 @@
 2026-08-15 18:28:06 | INFO | abracapocus.backends.antigravity_cli | backend=antigravity_cli retry_count=0
 2026-08-15 18:28:06 | INFO | abracapocus | run=f6f950e6-c643-421e-95ff-315639aeebc9 phases=1 verification=passed
 2026-08-15 18:29:03 | INFO | abracapocus.backends.codex_cli | backend=codex_cli retry_count=0
+2026-08-15 18:29:03 | INFO | abracapocus | run=03b6d8fb-9bc5-4139-a5dc-4330c191ef47 phases=1 verification=passed
+2026-08-15 19:05:24 | INFO | abracapocus.backends.demo_cli | backend=demo_cli retry_count=0
+2026-08-15 19:05:25 | INFO | abracapocus.backends.demo_cli | backend=demo_cli retry_count=0
+2026-08-15 19:05:25 | INFO | abracapocus.backends.demo_cli | backend=demo_cli retry_count=0
+2026-08-15 19:05:25 | INFO | abracapocus | run=0fb06ff5-1982-401c-ba6d-c12342aabcde phase=implementation phase_gate=blocked result_status=failed
+2026-08-15 19:05:25 | INFO | abracapocus | run=0fb06ff5-1982-401c-ba6d-c12342aabcde phases=1 verification=failed
+2026-08-15 19:05:48 | INFO | abracapocus.backends.demo_cli | backend=demo_cli retry_count=0
+2026-08-15 19:05:49 | INFO | abracapocus.backends.demo_cli | backend=demo_cli retry_count=0
+2026-08-15 19:05:49 | INFO | abracapocus.backends.demo_cli | backend=demo_cli retry_count=0
+2026-08-15 19:05:49 | INFO | abracapocus | run=adcd90e3-7c19-4033-ba93-ef27bfdcd3f4 phase=implementation phase_gate=blocked result_status=failed verification_status=failed
+2026-08-15 19:05:49 | INFO | abracapocus | run=adcd90e3-7c19-4033-ba93-ef27bfdcd3f4 phases=1 verification=failed
+2026-08-15 19:25:23 | INFO | abracapocus.backends.codex_cli | backend=codex_cli retry_count=0

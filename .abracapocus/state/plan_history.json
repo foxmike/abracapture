@@ -235,5 +235,119 @@
       "version": "task-a.3",
       "created_at": "2026-08-15T22:26:56.499832"
     }
+  },
+  {
+    "created_at": "2026-08-15T22:29:03.655194",
+    "project_name": "abracapture",
+    "goal": "Create the shared audio-domain value types that describe sample formats, channel layouts, and format-conversion provenance throughout Abracapture.\n\nSTRICT FILE SCOPE: Create or modify ONLY the files listed in this task's allowed_write_paths.\n\nBefore editing, inspect:\n- No prerequisite files; this task has disjoint write paths from other wave-1 tasks.\n\nDo not infer APIs, schemas, behavior, or file contents; inspect the referenced files first.\n\nRequirements:\n1. src/core/AudioFormat.hpp must define:\n   - `enum class SampleFormat : uint8_t` with values: Int16, Int24, Int32, Float32, Float64.\n   - `struct AudioFormat` with fields: uint32_t sampleRate, uint16_t channels, SampleFormat sampleFormat.\n   - Equality/inequality operators for AudioFormat.\n   - `enum class ConversionProvenance : uint8_t` with values: Native, Quantized, Resampled, Converted. This enum records whether the captured audio is in its original format or was transformed.\n   - `struct FormatConversion` with fields: AudioFormat source, AudioFormat target, ConversionProvenance provenance.\n   - Free functions: `int bytesPerSample(SampleFormat)`, `int bytesPerFrame(const AudioFormat&)`, `std::string_view sampleFormatName(SampleFormat)`, `std::string_view provenanceName(ConversionProvenance)`.\n2. src/core/AudioFormat.cpp must implement the free functions.\n3. All types must be plain C++ with no Qt or PipeWire dependency.\n4. Use constexpr where appropriate.\n5. Include appropriate header guards or #pragma once.",
+    "plan_template": {
+      "project_name": "abracapture",
+      "summary": "Task run: Define audio format and conversion domain types",
+      "phases": [
+        {
+          "name": "A",
+          "objective": "Create the shared audio-domain value types that describe sample formats, channel layouts, and format-conversion provenance throughout Abracapture.\n\nSTRICT FILE SCOPE: Create or modify ONLY the files listed in this task's allowed_write_paths.\n\nBefore editing, inspect:\n- No prerequisite files; this task has disjoint write paths from other wave-1 tasks.\n\nDo not infer APIs, schemas, behavior, or file contents; inspect the referenced files first.\n\nRequirements:\n1. src/core/AudioFormat.hpp must define:\n   - `enum class SampleFormat : uint8_t` with values: Int16, Int24, Int32, Float32, Float64.\n   - `struct AudioFormat` with fields: uint32_t sampleRate, uint16_t channels, SampleFormat sampleFormat.\n   - Equality/inequality operators for AudioFormat.\n   - `enum class ConversionProvenance : uint8_t` with values: Native, Quantized, Resampled, Converted. This enum records whether the captured audio is in its original format or was transformed.\n   - `struct FormatConversion` with fields: AudioFormat source, AudioFormat target, ConversionProvenance provenance.\n   - Free functions: `int bytesPerSample(SampleFormat)`, `int bytesPerFrame(const AudioFormat&)`, `std::string_view sampleFormatName(SampleFormat)`, `std::string_view provenanceName(ConversionProvenance)`.\n2. src/core/AudioFormat.cpp must implement the free functions.\n3. All types must be plain C++ with no Qt or PipeWire dependency.\n4. Use constexpr where appropriate.\n5. Include appropriate header guards or #pragma once.",
+          "status": "completed",
+          "tasks": [
+            {
+              "task": {
+                "task_id": "a.4",
+                "title": "Define audio format and conversion domain types",
+                "description": "Create the shared audio-domain value types that describe sample formats, channel layouts, and format-conversion provenance throughout Abracapture.\n\nSTRICT FILE SCOPE: Create or modify ONLY the files listed in this task's allowed_write_paths.\n\nBefore editing, inspect:\n- No prerequisite files; this task has disjoint write paths from other wave-1 tasks.\n\nDo not infer APIs, schemas, behavior, or file contents; inspect the referenced files first.\n\nRequirements:\n1. src/core/AudioFormat.hpp must define:\n   - `enum class SampleFormat : uint8_t` with values: Int16, Int24, Int32, Float32, Float64.\n   - `struct AudioFormat` with fields: uint32_t sampleRate, uint16_t channels, SampleFormat sampleFormat.\n   - Equality/inequality operators for AudioFormat.\n   - `enum class ConversionProvenance : uint8_t` with values: Native, Quantized, Resampled, Converted. This enum records whether the captured audio is in its original format or was transformed.\n   - `struct FormatConversion` with fields: AudioFormat source, AudioFormat target, ConversionProvenance provenance.\n   - Free functions: `int bytesPerSample(SampleFormat)`, `int bytesPerFrame(const AudioFormat&)`, `std::string_view sampleFormatName(SampleFormat)`, `std::string_view provenanceName(ConversionProvenance)`.\n2. src/core/AudioFormat.cpp must implement the free functions.\n3. All types must be plain C++ with no Qt or PipeWire dependency.\n4. Use constexpr where appropriate.\n5. Include appropriate header guards or #pragma once.",
+                "phase": "A",
+                "dependencies": [],
+                "exclusivity_category": null,
+                "max_in_category": null,
+                "status": "completed",
+                "acceptance_criteria": [
+                  "src/core/AudioFormat.hpp exists and defines SampleFormat enum class with Int16, Int24, Int32, Float32, Float64",
+                  "src/core/AudioFormat.hpp defines struct AudioFormat with sampleRate, channels, sampleFormat fields and equality operators",
+                  "src/core/AudioFormat.hpp defines ConversionProvenance enum class with Native, Quantized, Resampled, Converted",
+                  "src/core/AudioFormat.hpp defines struct FormatConversion with source, target, provenance fields",
+                  "src/core/AudioFormat.hpp declares bytesPerSample, bytesPerFrame, sampleFormatName, provenanceName free functions",
+                  "src/core/AudioFormat.cpp implements all declared free functions",
+                  "No Qt or PipeWire headers are included in either file",
+                  "No file outside the task's allowed_write_paths is created or modified"
+                ],
+                "created_at": "2026-08-15T22:28:06.769983",
+                "selected_backend": "codex_cli",
+                "model": "gpt-5.6-luna",
+                "provider": null,
+                "task_timeout_seconds": 600.0,
+                "verification_profile": "focused",
+                "verification_commands": [
+                  {
+                    "name": "syntax_check",
+                    "command": [
+                      "g++",
+                      "-std=c++20",
+                      "-fsyntax-only",
+                      "src/core/AudioFormat.cpp",
+                      "-I",
+                      "src"
+                    ]
+                  },
+                  {
+                    "name": "no_qt_headers",
+                    "command": [
+                      "bash",
+                      "-c",
+                      "! grep -q '#include.*<Q' src/core/AudioFormat.hpp src/core/AudioFormat.cpp"
+                    ]
+                  },
+                  {
+                    "name": "no_pipewire_headers",
+                    "command": [
+                      "bash",
+                      "-c",
+                      "! grep -qE 'pipewire|spa/' src/core/AudioFormat.hpp src/core/AudioFormat.cpp"
+                    ]
+                  }
+                ],
+                "allowed_write_paths": [
+                  "src/core/AudioFormat.hpp",
+                  "src/core/AudioFormat.cpp"
+                ],
+                "forbidden_changes": [
+                  "modify CMakeLists.txt or any cmake file",
+                  "modify any file outside src/core/",
+                  "include Qt or PipeWire headers",
+                  "add third-party dependencies"
+                ],
+                "allowed_symbols": [
+                  "SampleFormat",
+                  "AudioFormat",
+                  "ConversionProvenance",
+                  "FormatConversion",
+                  "bytesPerSample",
+                  "bytesPerFrame",
+                  "sampleFormatName",
+                  "provenanceName"
+                ],
+                "decision_budget": {
+                  "allowed": [
+                    "choose constexpr vs inline for free functions",
+                    "choose #pragma once vs include guards"
+                  ],
+                  "forbidden": [
+                    "introduce Qt or PipeWire dependency",
+                    "add capture or streaming types",
+                    "define types not listed in requirements"
+                  ]
+                },
+                "forbidden_patterns_override": null
+              },
+              "dependencies": [],
+              "status": "completed"
+            }
+          ],
+          "completed": true,
+          "completed_at": "2026-08-15T22:29:03.575099",
+          "human_checkpoint": null
+        }
+      ],
+      "version": "task-a.4",
+      "created_at": "2026-08-15T22:28:06.937092"
+    }
   }
 ]
