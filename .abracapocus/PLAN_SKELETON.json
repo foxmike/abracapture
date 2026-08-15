@@ -1,0 +1,335 @@
+{
+  "plan_name": "ABRACAPTURE",
+  "purpose": "Build Abracapture as a polished standalone Linux audio-capture utility for PipeWire. The product must automatically discover available application streams, system/output monitor streams, and hardware inputs; help users identify sources with live activity, waveform, and level visualization; capture through a realtime-safe native PipeWire engine; preserve a lossless master at the negotiated native format whenever possible; support WAV and FLAC masters; optionally create derived lossless/lossy exports after capture; provide auto-start/auto-stop, pre-roll/post-roll, capture-integrity reporting, configurable output directories and naming, history, settings, CLI automation, and a polished Qt 6.11 Qt Quick GUI. Use C++20, CMake, Qt Quick/Qt Quick Controls, PipeWire 0.3 APIs, libsndfile for WAV/container writing, libFLAC where required for full FLAC bit-depth support, and the ffmpeg executable only for optional post-capture exports/resampling. Do not build a DAW, editor timeline, plugin host, VST, or JUCE application. Do not place file I/O, compression, process spawning, allocation-heavy UI work, or blocking synchronization in the PipeWire realtime callback. The implementation must expose whether capture was native, quantized, resampled, or otherwise converted rather than presenting upsampled audio as higher-resolution source material. Materialize exactly the 32 hinted tasks: one task per task_hints entry and no additional implementation tasks. Codex routing was empirically validated on the target Microsoft Surface with codex-cli 0.147.0 using ChatGPT authentication: gpt-5.6-sol with xhigh reasoning effort, gpt-5.6-terra with high reasoning effort, and gpt-5.6-luna with medium reasoning effort all returned exit code 0 and the expected smoke-test response. The task_hints schema does not currently carry a reasoning-effort field, so do not add an unsupported key. Execution policy is: Sol tasks should use xhigh effort, Terra tasks high effort, Luna tasks medium effort once Abracapocus codex_cli/task routing has an explicit supported pass-through for model_reasoning_effort; until then, the validated model pins remain authoritative and effort must not be silently assumed by the plan. Antigravity routing was empirically validated on the target Microsoft Surface with agy 1.1.13. The executable Google model slugs returned by `agy models` include gemini-3.7-flash-{low,medium,high}, gemini-3.6-flash-{low,medium,high}, gemini-3.5-flash-{low,medium,high}, and gemini-3.1-pro-{low,high}. Smoke tests succeeded for gemini-3.7-flash-high, gemini-3.7-flash-medium, gemini-3.6-flash-medium, gemini-3.5-flash-medium, and gemini-3.1-pro-high. For these Gemini selections, effort is part of the model slug and a separate `--effort medium` argument is rejected. Abracapture therefore uses antigravity_cli with model `gemini-3.7-flash-medium` for its eight AGY tasks. Do not route Abracapture tasks to Claude/Opus through AGY.",
+  "async_strategy": "Phases a-h execute sequentially and provide the only cross-phase sequencing guarantee; materialized tasks must not declare cross-phase dependencies. Within each phase, follow the explicit waves in async_notes. Tasks in the same wave must have disjoint allowed_write_paths. Fan-in tasks wait for all named same-phase prerequisites. The task-hint order within each phase maps to .1, .2, .3, .4 for the async_notes references. Shared fan-in files such as qml/Main.qml and src/app/main.cpp have a single owner within each phase.",
+  "cost_estimate": "medium: 32 tasks total with an exact cost/capability split \u2014 8 hardest tasks use codex_cli + gpt-5.6-sol; 8 next-hardest use codex_cli + gpt-5.6-terra; 8 medium/easier tasks use antigravity_cli + gemini-3.7-flash-medium; 8 narrowest tasks use codex_cli + gpt-5.6-luna. Validated Codex effort policy on codex-cli 0.147.0: Sol=xhigh, Terra=high, Luna=medium. Validated Antigravity routing on agy 1.1.13: gemini-3.7-flash-high, gemini-3.7-flash-medium, gemini-3.6-flash-medium, gemini-3.5-flash-medium, and gemini-3.1-pro-high all execute successfully. For Gemini models in this AGY version, effort is encoded in the executable model slug (for example gemini-3.7-flash-medium); do not pass a separate --effort value for these model slugs. Abracapture pins gemini-3.7-flash-medium for its Antigravity task quarter.",
+  "operator_questions": [],
+  "phases": [
+    {
+      "phase_id": "a",
+      "goal": "Establish the production C++20/Qt Quick application foundation, dependency contract, persistent settings schema, and shared audio-domain types. Materialize exactly four narrow tasks, one per hint.",
+      "expected_changed_files": [
+        "CMakeLists.txt",
+        "cmake/Dependencies.cmake",
+        "src/app/main.cpp",
+        "src/app/AppController.hpp",
+        "src/app/AppController.cpp",
+        "qml/Main.qml",
+        "src/config/AppSettings.hpp",
+        "src/config/AppSettings.cpp",
+        "src/core/AudioFormat.hpp",
+        "src/core/AudioFormat.cpp"
+      ],
+      "async_notes": "Wave 1: a.1, a.3, and a.4 may run in parallel because their write paths are disjoint. Wave 2: a.2 depends on a.1 so the application bootstrap follows the declared Qt/CMake dependency contract. Phase verification configures and builds only after all four tasks finish.",
+      "risk_notes": "Qt 6.11 Qt Quick is the GUI baseline. Keep dependencies explicit and dynamically linked where appropriate; do not introduce JUCE, a second GUI framework, a package manager, or vendored copies of PipeWire/Qt/FFmpeg. The CMake task must not silently download third-party dependencies.",
+      "estimated_task_count": 4,
+      "task_hints": [
+        {
+          "title": "Define CMake and system dependency baseline",
+          "selected_backend": "codex_cli",
+          "model": "gpt-5.6-luna"
+        },
+        {
+          "title": "Create Qt Quick application bootstrap",
+          "selected_backend": "codex_cli",
+          "model": "gpt-5.6-terra"
+        },
+        {
+          "title": "Implement persistent application settings",
+          "selected_backend": "antigravity_cli",
+          "model": "gemini-3.7-flash-medium"
+        },
+        {
+          "title": "Define audio format and conversion domain types",
+          "selected_backend": "codex_cli",
+          "model": "gpt-5.6-luna"
+        }
+      ]
+    },
+    {
+      "phase_id": "b",
+      "goal": "Implement live PipeWire graph discovery and source classification so Abracapture automatically presents application playback streams, system/output monitor streams, hardware capture inputs, and other relevant audio nodes with stable metadata. Materialize exactly four narrow tasks, one per hint.",
+      "expected_changed_files": [
+        "src/pipewire/PipeWireContext.hpp",
+        "src/pipewire/PipeWireContext.cpp",
+        "src/pipewire/SourceDescriptor.hpp",
+        "src/pipewire/SourceDescriptor.cpp",
+        "src/pipewire/PropertyNormalizer.hpp",
+        "src/pipewire/PropertyNormalizer.cpp",
+        "src/pipewire/SourceCatalog.hpp",
+        "src/pipewire/SourceCatalog.cpp"
+      ],
+      "async_notes": "Wave 1: b.1, b.2, and b.3 run in parallel with disjoint files. Wave 2: b.4 depends on b.1, b.2, and b.3 and is the only source-catalog fan-in task.",
+      "risk_notes": "PipeWire registry and proxy lifetimes, node disappearance, metadata churn, and sink-monitor semantics are the main risks. Discovery must be event driven; do not shell out to pw-dump/wpctl as the core implementation.",
+      "estimated_task_count": 4,
+      "task_hints": [
+        {
+          "title": "Implement PipeWire registry and object lifetime engine",
+          "selected_backend": "codex_cli",
+          "model": "gpt-5.6-sol"
+        },
+        {
+          "title": "Define source descriptors and source classification",
+          "selected_backend": "codex_cli",
+          "model": "gpt-5.6-terra"
+        },
+        {
+          "title": "Normalize PipeWire application and device metadata",
+          "selected_backend": "codex_cli",
+          "model": "gpt-5.6-luna"
+        },
+        {
+          "title": "Build live source catalog and activity model",
+          "selected_backend": "codex_cli",
+          "model": "gpt-5.6-terra"
+        }
+      ]
+    },
+    {
+      "phase_id": "c",
+      "goal": "Build the realtime-safe audio capture core: bounded buffering, negotiated PipeWire capture streams, lightweight metrics snapshots, and session lifecycle/reconnection behavior. Materialize exactly four narrow tasks, one per hint.",
+      "expected_changed_files": [
+        "src/audio/AudioRingBuffer.hpp",
+        "src/audio/AudioRingBuffer.cpp",
+        "src/audio/PipeWireCaptureStream.hpp",
+        "src/audio/PipeWireCaptureStream.cpp",
+        "src/audio/CaptureMetrics.hpp",
+        "src/audio/CaptureMetrics.cpp",
+        "src/audio/CaptureSession.hpp",
+        "src/audio/CaptureSession.cpp"
+      ],
+      "async_notes": "Wave 1: c.1, c.2, and c.3 run in parallel with disjoint files. Wave 2: c.4 depends on c.1, c.2, and c.3 and owns lifecycle fan-in, source loss, and reconnection behavior.",
+      "risk_notes": "The PipeWire process callback is a realtime boundary. No disk writes, ffmpeg invocation, Qt GUI work, blocking locks, dynamic container growth, or compression is allowed there. Buffer overflow/underrun and source renegotiation must become observable events rather than silent corruption.",
+      "estimated_task_count": 4,
+      "task_hints": [
+        {
+          "title": "Implement bounded audio ring buffer",
+          "selected_backend": "codex_cli",
+          "model": "gpt-5.6-terra"
+        },
+        {
+          "title": "Implement negotiated PipeWire capture stream",
+          "selected_backend": "codex_cli",
+          "model": "gpt-5.6-sol"
+        },
+        {
+          "title": "Implement lock-light capture metrics snapshots",
+          "selected_backend": "codex_cli",
+          "model": "gpt-5.6-luna"
+        },
+        {
+          "title": "Implement capture session lifecycle and source reconnection",
+          "selected_backend": "codex_cli",
+          "model": "gpt-5.6-sol"
+        }
+      ]
+    },
+    {
+      "phase_id": "d",
+      "goal": "Implement durable lossless master recording with WAV and FLAC writers, safe file finalization, and configurable destination/naming policy. The master path must preserve negotiated source rate/format when possible and record conversion provenance. Materialize exactly four narrow tasks, one per hint.",
+      "expected_changed_files": [
+        "src/recording/WavWriter.hpp",
+        "src/recording/WavWriter.cpp",
+        "src/recording/FlacWriter.hpp",
+        "src/recording/FlacWriter.cpp",
+        "src/recording/RecordingSink.hpp",
+        "src/recording/RecordingSink.cpp",
+        "src/recording/OutputPathPolicy.hpp",
+        "src/recording/OutputPathPolicy.cpp"
+      ],
+      "async_notes": "Wave 1: d.1, d.2, and d.4 run in parallel with disjoint files. Wave 2: d.3 depends on d.1, d.2, and d.4 and is the only writer-orchestration/finalization fan-in task.",
+      "risk_notes": "Incomplete headers, truncated files, >4 GiB WAV limits, disk-full behavior, and FLAC integer-depth handling must fail safely. A successfully finalized lossless master is required before any later export may be treated as complete.",
+      "estimated_task_count": 4,
+      "task_hints": [
+        {
+          "title": "Implement WAV lossless master writer",
+          "selected_backend": "codex_cli",
+          "model": "gpt-5.6-terra"
+        },
+        {
+          "title": "Implement FLAC lossless master writer",
+          "selected_backend": "codex_cli",
+          "model": "gpt-5.6-sol"
+        },
+        {
+          "title": "Implement atomic recording sink and safe finalization",
+          "selected_backend": "codex_cli",
+          "model": "gpt-5.6-sol"
+        },
+        {
+          "title": "Implement output directory and filename policy",
+          "selected_backend": "antigravity_cli",
+          "model": "gemini-3.7-flash-medium"
+        }
+      ]
+    },
+    {
+      "phase_id": "e",
+      "goal": "Add intelligent recording automation, capture-integrity/provenance reporting, optional verified post-capture exports, and first-class CLI operation. Lossy encoding and resampling occur only after a valid lossless master exists. Materialize exactly four narrow tasks, one per hint.",
+      "expected_changed_files": [
+        "src/automation/AutoRecordController.hpp",
+        "src/automation/AutoRecordController.cpp",
+        "src/recording/CaptureIntegrity.hpp",
+        "src/recording/CaptureIntegrity.cpp",
+        "src/export/ExportManager.hpp",
+        "src/export/ExportManager.cpp",
+        "src/cli/CliApp.hpp",
+        "src/cli/CliApp.cpp",
+        "src/app/main.cpp"
+      ],
+      "async_notes": "Wave 1: e.1, e.2, and e.3 run in parallel with disjoint files. Wave 2: e.4 depends on e.1, e.2, and e.3 and owns the phase's only src/app/main.cpp integration write.",
+      "risk_notes": "Auto-start/stop must be deterministic under threshold chatter and must preserve configurable pre-roll/post-roll. ffmpeg is an optional post-capture executable dependency, never part of the realtime callback. Export failures must not delete or invalidate the master. The CLI must expose native-vs-converted status.",
+      "estimated_task_count": 4,
+      "task_hints": [
+        {
+          "title": "Implement auto start stop pre-roll and post-roll controller",
+          "selected_backend": "codex_cli",
+          "model": "gpt-5.6-sol"
+        },
+        {
+          "title": "Implement capture integrity and provenance reporting",
+          "selected_backend": "codex_cli",
+          "model": "gpt-5.6-terra"
+        },
+        {
+          "title": "Implement verified post-capture export manager",
+          "selected_backend": "codex_cli",
+          "model": "gpt-5.6-terra"
+        },
+        {
+          "title": "Implement list and record CLI workflows",
+          "selected_backend": "antigravity_cli",
+          "model": "gemini-3.7-flash-medium"
+        }
+      ]
+    },
+    {
+      "phase_id": "f",
+      "goal": "Build the primary polished Qt Quick capture experience: source cards with live identification data, waveform and meters, capture controls/integrity status, output destination controls, and settings. Materialize exactly four narrow tasks, one per hint.",
+      "expected_changed_files": [
+        "src/ui/SourceListModel.hpp",
+        "src/ui/SourceListModel.cpp",
+        "qml/components/SourceCard.qml",
+        "src/ui/WaveformBridge.hpp",
+        "src/ui/WaveformBridge.cpp",
+        "qml/components/WaveformView.qml",
+        "src/ui/CaptureViewModel.hpp",
+        "src/ui/CaptureViewModel.cpp",
+        "qml/pages/CapturePage.qml",
+        "qml/Main.qml",
+        "src/ui/SettingsViewModel.hpp",
+        "src/ui/SettingsViewModel.cpp",
+        "qml/pages/SettingsPage.qml"
+      ],
+      "async_notes": "Wave 1: f.1, f.2, and f.4 run in parallel with disjoint files. Wave 2: f.3 depends on f.1, f.2, and f.4 and is the only task in this phase allowed to modify qml/Main.qml.",
+      "risk_notes": "Waveform rendering must consume bounded snapshots rather than touching realtime buffers directly. The GUI must stay responsive during capture/export and must clearly distinguish application streams, system mix/monitor sources, and physical inputs. Avoid visual complexity that turns the utility into a DAW.",
+      "estimated_task_count": 4,
+      "task_hints": [
+        {
+          "title": "Build live source browser and source cards",
+          "selected_backend": "antigravity_cli",
+          "model": "gemini-3.7-flash-medium"
+        },
+        {
+          "title": "Build realtime waveform and meter bridge",
+          "selected_backend": "codex_cli",
+          "model": "gpt-5.6-sol"
+        },
+        {
+          "title": "Build integrated capture page and application shell",
+          "selected_backend": "codex_cli",
+          "model": "gpt-5.6-terra"
+        },
+        {
+          "title": "Build settings page and settings view model",
+          "selected_backend": "antigravity_cli",
+          "model": "gemini-3.7-flash-medium"
+        }
+      ]
+    },
+    {
+      "phase_id": "g",
+      "goal": "Add the polished product layer around capture: recording history, details/actions, desktop notifications, theme/accessibility, and About/product identity. Materialize exactly four narrow tasks, one per hint.",
+      "expected_changed_files": [
+        "src/history/RecordingIndex.hpp",
+        "src/history/RecordingIndex.cpp",
+        "src/ui/RecordingsViewModel.hpp",
+        "src/ui/RecordingsViewModel.cpp",
+        "qml/pages/RecordingsPage.qml",
+        "src/ui/NotificationService.hpp",
+        "src/ui/NotificationService.cpp",
+        "src/ui/CaptureViewModel.cpp",
+        "qml/theme/AbracaptureTheme.qml",
+        "qml/pages/AboutPage.qml",
+        "qml/Main.qml"
+      ],
+      "async_notes": "Wave 1: g.1, g.3, and g.4 may run in parallel; their write paths are disjoint. Wave 2: g.2 depends on g.1 and consumes the recording index. g.4 is the only task in this phase allowed to modify qml/Main.qml; g.3 is the only task allowed to modify src/ui/CaptureViewModel.cpp.",
+      "risk_notes": "History should index Abracapture outputs and sidecar metadata without becoming a media library/database project. Notifications must not block capture. Theme work must preserve keyboard operation, readable scaling, and clear capture-state indicators.",
+      "estimated_task_count": 4,
+      "task_hints": [
+        {
+          "title": "Implement lightweight recording history index",
+          "selected_backend": "antigravity_cli",
+          "model": "gemini-3.7-flash-medium"
+        },
+        {
+          "title": "Build recordings browser and recording details",
+          "selected_backend": "antigravity_cli",
+          "model": "gemini-3.7-flash-medium"
+        },
+        {
+          "title": "Add nonblocking desktop capture notifications",
+          "selected_backend": "antigravity_cli",
+          "model": "gemini-3.7-flash-medium"
+        },
+        {
+          "title": "Add Abracapture theme accessibility and About experience",
+          "selected_backend": "codex_cli",
+          "model": "gpt-5.6-luna"
+        }
+      ]
+    },
+    {
+      "phase_id": "h",
+      "goal": "Harden Abracapture for public distribution with focused deterministic tests, real PipeWire recovery/stress coverage, Linux desktop packaging metadata/install rules, and concise user/build documentation. Materialize exactly four narrow tasks, one per hint.",
+      "expected_changed_files": [
+        "tests/core/test_audio_format.cpp",
+        "tests/core/test_ring_buffer.cpp",
+        "tests/core/test_output_path_policy.cpp",
+        "tests/integration/test_pipewire_registry.cpp",
+        "tests/integration/test_capture_recovery.cpp",
+        "packaging/abracapture.desktop",
+        "packaging/abracapture.metainfo.xml",
+        "packaging/install.cmake",
+        "CMakeLists.txt",
+        "README.md",
+        "docs/USER_GUIDE.md"
+      ],
+      "async_notes": "Wave 1: h.1, h.2, h.3, and h.4 may run in parallel only if materialization keeps their write paths exactly disjoint as listed. h.3 alone may modify CMakeLists.txt. Final phase verification performs the release build, focused CTest suite, and integration checks after all four tasks finish.",
+      "risk_notes": "Live PipeWire tests must be bounded and clean up every temporary stream/link they create. Packaging must not bundle incompatible third-party licenses or silently vendor Qt/PipeWire. Documentation must state native capture versus conversion behavior accurately and must not promise bit-perfect capture when PipeWire negotiation or resampling says otherwise.",
+      "estimated_task_count": 4,
+      "task_hints": [
+        {
+          "title": "Add deterministic core unit tests",
+          "selected_backend": "codex_cli",
+          "model": "gpt-5.6-luna"
+        },
+        {
+          "title": "Add PipeWire registry capture and recovery integration tests",
+          "selected_backend": "codex_cli",
+          "model": "gpt-5.6-sol"
+        },
+        {
+          "title": "Add Linux desktop packaging metadata and install rules",
+          "selected_backend": "codex_cli",
+          "model": "gpt-5.6-luna"
+        },
+        {
+          "title": "Write concise public README and user guide",
+          "selected_backend": "codex_cli",
+          "model": "gpt-5.6-luna"
+        }
+      ]
+    }
+  ]
+}
