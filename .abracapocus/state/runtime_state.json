@@ -9,9 +9,9 @@
       "task_id": "c.4",
       "title": "Implement capture session lifecycle and source reconnection",
       "phase": "C",
-      "status": "planned",
+      "status": "completed",
       "backend": "codex_cli",
-      "last_run": null,
+      "last_run": "2026-08-15T23:59:26.154485",
       "notes": ""
     }
   ],
@@ -105,6 +105,15 @@
       "reviewer_status": "approved",
       "verifier_status": "passed",
       "timestamp": "2026-08-15T23:55:13.365015"
+    },
+    {
+      "run_id": "326938a8-f967-4085-82e8-518122fed761",
+      "task_id": "c.4",
+      "backend": "codex_cli",
+      "status": "ok",
+      "reviewer_status": "approved",
+      "verifier_status": "passed",
+      "timestamp": "2026-08-15T23:59:26.154666"
     }
   ],
   "operator_overrides": {},
