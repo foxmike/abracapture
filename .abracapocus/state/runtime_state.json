@@ -1,17 +1,17 @@
 {
   "project_name": "abracapture",
-  "plan_version": "task-b.1",
+  "plan_version": "task-b.2",
   "active_phase": "B",
   "default_backend": "codex_cli",
   "routing_mode": "manual",
   "tasks": [
     {
-      "task_id": "b.1",
-      "title": "Implement PipeWire registry and object lifetime engine",
+      "task_id": "b.2",
+      "title": "Define source descriptors and source classification",
       "phase": "B",
-      "status": "completed",
+      "status": "planned",
       "backend": "codex_cli",
-      "last_run": "2026-08-15T23:25:23.952025",
+      "last_run": null,
       "notes": ""
     }
   ],
