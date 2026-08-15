@@ -1,0 +1,116 @@
+{
+  "run_at": "2026-08-15T23:29:58.326259",
+  "phase_dir": "/home/mike/dev/mike/music/python/abracapture/.abracapocus/b",
+  "status": "passed",
+  "counts": {
+    "passed": 4,
+    "failed": 0,
+    "blocked": 0,
+    "skipped": 0,
+    "unverified": 0
+  },
+  "tasks": [
+    {
+      "task_id": "b.1",
+      "task_file": "/home/mike/dev/mike/music/python/abracapture/.abracapocus/b/task_b.1_implement_pipewire_registry_and_object_lifetime_engine.json",
+      "status": "passed",
+      "acceptance_status": "accepted",
+      "task_verification": {
+        "status": "failed",
+        "checks": [
+          {
+            "name": "syntax_check",
+            "status": "failed"
+          },
+          {
+            "name": "no_shell_out",
+            "status": "passed"
+          }
+        ],
+        "owner": "abracapocus"
+      },
+      "run_id": "09a219ae-572e-45a2-bc7d-210776402e42",
+      "write_policy_violations": [],
+      "failure_classification": null,
+      "reviewer_summary": "b.1:Review complete"
+    },
+    {
+      "task_id": "b.2",
+      "task_file": "/home/mike/dev/mike/music/python/abracapture/.abracapocus/b/task_b.2_define_source_descriptors_and_source_classification.json",
+      "status": "passed",
+      "acceptance_status": "accepted",
+      "task_verification": {
+        "status": "passed",
+        "checks": [
+          {
+            "name": "syntax_check",
+            "status": "passed"
+          },
+          {
+            "name": "has_source_category_enum",
+            "status": "passed"
+          }
+        ],
+        "owner": "abracapocus"
+      },
+      "run_id": "ce489b3e-1504-4641-b0c7-33950ffbdc40",
+      "write_policy_violations": [],
+      "failure_classification": null,
+      "reviewer_summary": "b.2:Review complete"
+    },
+    {
+      "task_id": "b.3",
+      "task_file": "/home/mike/dev/mike/music/python/abracapture/.abracapocus/b/task_b.3_normalize_pipewire_application_and_device_metadata.json",
+      "status": "passed",
+      "acceptance_status": "accepted",
+      "task_verification": {
+        "status": "failed",
+        "checks": [
+          {
+            "name": "syntax_check",
+            "status": "failed"
+          },
+          {
+            "name": "has_extract_display_name",
+            "status": "passed"
+          }
+        ],
+        "owner": "abracapocus"
+      },
+      "run_id": "d28e86c4-9fa8-4e63-af30-dd2c45c0b4a7",
+      "write_policy_violations": [],
+      "failure_classification": null,
+      "reviewer_summary": "b.3:Review complete"
+    },
+    {
+      "task_id": "b.4",
+      "task_file": "/home/mike/dev/mike/music/python/abracapture/.abracapocus/b/task_b.4_build_live_source_catalog_and_activity_model.json",
+      "status": "passed",
+      "acceptance_status": "accepted",
+      "task_verification": {
+        "status": "failed",
+        "checks": [
+          {
+            "name": "syntax_check",
+            "status": "failed"
+          },
+          {
+            "name": "no_shell_out",
+            "status": "passed"
+          }
+        ],
+        "owner": "abracapocus"
+      },
+      "run_id": "eb1046bd-33eb-4221-82df-ecf9e0c93d5e",
+      "write_policy_violations": [],
+      "failure_classification": null,
+      "reviewer_summary": "b.4:Review complete"
+    }
+  ],
+  "phase_verification": {
+    "status": "skipped",
+    "checks": [],
+    "notes": "phase verification deferred until all tasks pass",
+    "run_when": "all_tasks_pass"
+  }
+}

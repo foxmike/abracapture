@@ -1,17 +1,17 @@
 {
   "project_name": "abracapture",
-  "plan_version": "task-b.4",
-  "active_phase": "B",
+  "plan_version": "task-c.1",
+  "active_phase": "C",
   "default_backend": "codex_cli",
   "routing_mode": "manual",
   "tasks": [
     {
-      "task_id": "b.4",
-      "title": "Build live source catalog and activity model",
-      "phase": "B",
-      "status": "completed",
+      "task_id": "c.1",
+      "title": "Implement bounded audio ring buffer",
+      "phase": "C",
+      "status": "planned",
       "backend": "codex_cli",
-      "last_run": "2026-08-15T23:29:58.151987",
+      "last_run": null,
       "notes": ""
     }
   ],
@@ -83,6 +83,6 @@
   "operator_overrides": {},
   "completed_phases": [],
   "remaining_phases": [
-    "B"
+    "C"
   ]
 }
