@@ -116,5 +116,124 @@
       "version": "task-a.1",
       "created_at": "2026-08-15T22:25:12.716043"
     }
+  },
+  {
+    "created_at": "2026-08-15T22:28:06.695657",
+    "project_name": "abracapture",
+    "goal": "Create AppSettings, a QObject wrapper around QSettings that exposes persistent application configuration properties for the Abracapture application.\n\nSTRICT FILE SCOPE: Create or modify ONLY the files listed in this task's allowed_write_paths.\n\nBefore editing, inspect:\n- No prerequisite files; this task has disjoint write paths from other wave-1 tasks.\n\nDo not infer APIs, schemas, behavior, or file contents; inspect the referenced files first.\n\nRequirements:\n1. src/config/AppSettings.hpp must declare a QObject subclass AppSettings with Q_OBJECT.\n2. Expose the following Q_PROPERTYs with NOTIFY signals and persistent backing via QSettings:\n   - outputDirectory (QString, default: QStandardPaths::writableLocation(MusicLocation) + \"/Abracapture\")\n   - fileNamingPattern (QString, default: \"{source}_{date}_{time}\")\n   - masterFormat (QString, default: \"wav\", allowed: \"wav\" or \"flac\")\n   - autoStartEnabled (bool, default: false)\n   - autoStopEnabled (bool, default: false)\n   - preRollSeconds (int, default: 0)\n   - postRollSeconds (int, default: 0)\n3. Implement load() and save() methods. load() reads from QSettings on construction; save() writes on each property change.\n4. Use QSettings with organization \"Abracapture\" and application \"Abracapture\".\n5. Do not depend on AppController, AudioFormat, PipeWire, or any other Abracapture module.",
+    "plan_template": {
+      "project_name": "abracapture",
+      "summary": "Task run: Implement persistent application settings",
+      "phases": [
+        {
+          "name": "A",
+          "objective": "Create AppSettings, a QObject wrapper around QSettings that exposes persistent application configuration properties for the Abracapture application.\n\nSTRICT FILE SCOPE: Create or modify ONLY the files listed in this task's allowed_write_paths.\n\nBefore editing, inspect:\n- No prerequisite files; this task has disjoint write paths from other wave-1 tasks.\n\nDo not infer APIs, schemas, behavior, or file contents; inspect the referenced files first.\n\nRequirements:\n1. src/config/AppSettings.hpp must declare a QObject subclass AppSettings with Q_OBJECT.\n2. Expose the following Q_PROPERTYs with NOTIFY signals and persistent backing via QSettings:\n   - outputDirectory (QString, default: QStandardPaths::writableLocation(MusicLocation) + \"/Abracapture\")\n   - fileNamingPattern (QString, default: \"{source}_{date}_{time}\")\n   - masterFormat (QString, default: \"wav\", allowed: \"wav\" or \"flac\")\n   - autoStartEnabled (bool, default: false)\n   - autoStopEnabled (bool, default: false)\n   - preRollSeconds (int, default: 0)\n   - postRollSeconds (int, default: 0)\n3. Implement load() and save() methods. load() reads from QSettings on construction; save() writes on each property change.\n4. Use QSettings with organization \"Abracapture\" and application \"Abracapture\".\n5. Do not depend on AppController, AudioFormat, PipeWire, or any other Abracapture module.",
+          "status": "completed",
+          "tasks": [
+            {
+              "task": {
+                "task_id": "a.3",
+                "title": "Implement persistent application settings",
+                "description": "Create AppSettings, a QObject wrapper around QSettings that exposes persistent application configuration properties for the Abracapture application.\n\nSTRICT FILE SCOPE: Create or modify ONLY the files listed in this task's allowed_write_paths.\n\nBefore editing, inspect:\n- No prerequisite files; this task has disjoint write paths from other wave-1 tasks.\n\nDo not infer APIs, schemas, behavior, or file contents; inspect the referenced files first.\n\nRequirements:\n1. src/config/AppSettings.hpp must declare a QObject subclass AppSettings with Q_OBJECT.\n2. Expose the following Q_PROPERTYs with NOTIFY signals and persistent backing via QSettings:\n   - outputDirectory (QString, default: QStandardPaths::writableLocation(MusicLocation) + \"/Abracapture\")\n   - fileNamingPattern (QString, default: \"{source}_{date}_{time}\")\n   - masterFormat (QString, default: \"wav\", allowed: \"wav\" or \"flac\")\n   - autoStartEnabled (bool, default: false)\n   - autoStopEnabled (bool, default: false)\n   - preRollSeconds (int, default: 0)\n   - postRollSeconds (int, default: 0)\n3. Implement load() and save() methods. load() reads from QSettings on construction; save() writes on each property change.\n4. Use QSettings with organization \"Abracapture\" and application \"Abracapture\".\n5. Do not depend on AppController, AudioFormat, PipeWire, or any other Abracapture module.",
+                "phase": "A",
+                "dependencies": [],
+                "exclusivity_category": null,
+                "max_in_category": null,
+                "status": "completed",
+                "acceptance_criteria": [
+                  "src/config/AppSettings.hpp exists and declares AppSettings as a QObject subclass with Q_OBJECT",
+                  "AppSettings exposes outputDirectory, fileNamingPattern, masterFormat, autoStartEnabled, autoStopEnabled, preRollSeconds, and postRollSeconds as Q_PROPERTYs",
+                  "src/config/AppSettings.cpp implements property getters/setters that persist via QSettings",
+                  "AppSettings constructor calls load() to restore settings from QSettings",
+                  "No dependency on AppController, AudioFormat, PipeWire, or other Abracapture modules",
+                  "No file outside the task's allowed_write_paths is created or modified"
+                ],
+                "created_at": "2026-08-15T22:26:56.343161",
+                "selected_backend": "antigravity_cli",
+                "model": "gemini-3.7-flash-medium",
+                "provider": null,
+                "task_timeout_seconds": 600.0,
+                "verification_profile": "focused",
+                "verification_commands": [
+                  {
+                    "name": "has_qobject",
+                    "command": [
+                      "bash",
+                      "-c",
+                      "grep -q 'QObject' src/config/AppSettings.hpp"
+                    ]
+                  },
+                  {
+                    "name": "has_q_property",
+                    "command": [
+                      "bash",
+                      "-c",
+                      "grep -q 'Q_PROPERTY' src/config/AppSettings.hpp"
+                    ]
+                  },
+                  {
+                    "name": "has_qsettings",
+                    "command": [
+                      "bash",
+                      "-c",
+                      "grep -q 'QSettings' src/config/AppSettings.cpp"
+                    ]
+                  },
+                  {
+                    "name": "has_output_directory_property",
+                    "command": [
+                      "bash",
+                      "-c",
+                      "grep -q 'outputDirectory' src/config/AppSettings.hpp"
+                    ]
+                  }
+                ],
+                "allowed_write_paths": [
+                  "src/config/AppSettings.hpp",
+                  "src/config/AppSettings.cpp"
+                ],
+                "forbidden_changes": [
+                  "modify CMakeLists.txt or any cmake file",
+                  "modify any file outside src/config/",
+                  "depend on AppController or AudioFormat or PipeWire headers",
+                  "add third-party dependencies"
+                ],
+                "allowed_symbols": [
+                  "AppSettings",
+                  "outputDirectory",
+                  "fileNamingPattern",
+                  "masterFormat",
+                  "autoStartEnabled",
+                  "autoStopEnabled",
+                  "preRollSeconds",
+                  "postRollSeconds",
+                  "load",
+                  "save"
+                ],
+                "decision_budget": {
+                  "allowed": [
+                    "choose QSettings scope and storage format",
+                    "add default value constants"
+                  ],
+                  "forbidden": [
+                    "introduce a database or custom file format for settings",
+                    "add audio or capture settings not listed in requirements",
+                    "depend on other Abracapture modules"
+                  ]
+                },
+                "forbidden_patterns_override": null
+              },
+              "dependencies": [],
+              "status": "completed"
+            }
+          ],
+          "completed": true,
+          "completed_at": "2026-08-15T22:28:06.509662",
+          "human_checkpoint": null
+        }
+      ],
+      "version": "task-a.3",
+      "created_at": "2026-08-15T22:26:56.499832"
+    }
   }
 ]

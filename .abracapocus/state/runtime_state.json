@@ -1,17 +1,17 @@
 {
   "project_name": "abracapture",
-  "plan_version": "task-a.3",
+  "plan_version": "task-a.4",
   "active_phase": "A",
   "default_backend": "codex_cli",
   "routing_mode": "manual",
   "tasks": [
     {
-      "task_id": "a.3",
-      "title": "Implement persistent application settings",
+      "task_id": "a.4",
+      "title": "Define audio format and conversion domain types",
       "phase": "A",
-      "status": "completed",
-      "backend": "antigravity_cli",
-      "last_run": "2026-08-15T22:28:06.536321",
+      "status": "planned",
+      "backend": "codex_cli",
+      "last_run": null,
       "notes": ""
     }
   ],
