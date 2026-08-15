@@ -9,9 +9,9 @@
       "task_id": "b.1",
       "title": "Implement PipeWire registry and object lifetime engine",
       "phase": "B",
-      "status": "planned",
+      "status": "completed",
       "backend": "codex_cli",
-      "last_run": null,
+      "last_run": "2026-08-15T23:25:23.952025",
       "notes": ""
     }
   ],
@@ -42,6 +42,15 @@
       "reviewer_status": "approved",
       "verifier_status": "passed",
       "timestamp": "2026-08-15T22:29:03.600593"
+    },
+    {
+      "run_id": "09a219ae-572e-45a2-bc7d-210776402e42",
+      "task_id": "b.1",
+      "backend": "codex_cli",
+      "status": "ok",
+      "reviewer_status": "approved",
+      "verifier_status": "failed",
+      "timestamp": "2026-08-15T23:25:23.952640"
     }
   ],
   "operator_overrides": {},
