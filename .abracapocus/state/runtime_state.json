@@ -9,9 +9,9 @@
       "task_id": "b.3",
       "title": "Normalize PipeWire application and device metadata",
       "phase": "B",
-      "status": "planned",
+      "status": "completed",
       "backend": "codex_cli",
-      "last_run": null,
+      "last_run": "2026-08-15T23:28:04.345447",
       "notes": ""
     }
   ],
@@ -60,6 +60,15 @@
       "reviewer_status": "approved",
       "verifier_status": "passed",
       "timestamp": "2026-08-15T23:26:26.853947"
+    },
+    {
+      "run_id": "d28e86c4-9fa8-4e63-af30-dd2c45c0b4a7",
+      "task_id": "b.3",
+      "backend": "codex_cli",
+      "status": "ok",
+      "reviewer_status": "approved",
+      "verifier_status": "failed",
+      "timestamp": "2026-08-15T23:28:04.345661"
     }
   ],
   "operator_overrides": {},
