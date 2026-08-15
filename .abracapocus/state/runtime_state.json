@@ -9,9 +9,9 @@
       "task_id": "b.2",
       "title": "Define source descriptors and source classification",
       "phase": "B",
-      "status": "planned",
+      "status": "completed",
       "backend": "codex_cli",
-      "last_run": null,
+      "last_run": "2026-08-15T23:26:26.853414",
       "notes": ""
     }
   ],
@@ -51,6 +51,15 @@
       "reviewer_status": "approved",
       "verifier_status": "failed",
       "timestamp": "2026-08-15T23:25:23.952640"
+    },
+    {
+      "run_id": "ce489b3e-1504-4641-b0c7-33950ffbdc40",
+      "task_id": "b.2",
+      "backend": "codex_cli",
+      "status": "ok",
+      "reviewer_status": "approved",
+      "verifier_status": "passed",
+      "timestamp": "2026-08-15T23:26:26.853947"
     }
   ],
   "operator_overrides": {},
