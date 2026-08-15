@@ -1,17 +1,17 @@
 {
   "project_name": "abracapture",
-  "plan_version": "task-c.2",
+  "plan_version": "task-c.3",
   "active_phase": "C",
   "default_backend": "codex_cli",
   "routing_mode": "manual",
   "tasks": [
     {
-      "task_id": "c.2",
-      "title": "Implement negotiated PipeWire capture stream",
+      "task_id": "c.3",
+      "title": "Implement lock-light capture metrics snapshots",
       "phase": "C",
-      "status": "completed",
+      "status": "planned",
       "backend": "codex_cli",
-      "last_run": "2026-08-15T23:53:40.201514",
+      "last_run": null,
       "notes": ""
     }
   ],

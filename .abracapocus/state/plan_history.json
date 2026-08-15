@@ -566,5 +566,118 @@
       "version": "task-c.1",
       "created_at": "2026-08-15T23:45:27.326517"
     }
+  },
+  {
+    "created_at": "2026-08-15T23:53:40.310464",
+    "project_name": "abracapture",
+    "goal": "Create the PipeWire capture stream wrapper that connects to a PipeWire source, negotiates format/rate/channels, and copies audio into a caller-supplied ring buffer from the realtime process callback.\n\nBefore editing, inspect:\n- src/audio/AudioRingBuffer.hpp for the ring buffer write() interface this stream will target.\n- src/pipewire/PipeWireContext.hpp for the pw_thread_loop and pw_core objects established in Phase B; this stream must use the Phase-B-owned thread loop rather than creating a new one.\n- Any existing PipeWire or audio headers under src/ for conventions.\n- The PipeWire 0.3 spa_pod and pw_stream APIs for format negotiation patterns.\n\nDo not infer APIs, schemas, behavior, or file contents; inspect the referenced files first.\n\nImplement PipeWireCaptureStream with:\n- Construction accepting a target node ID (or default source), desired sample format, sample rate, and channel count.\n- Format negotiation: build an SPA pod with the requested params, register the stream, and read back the negotiated format from the param_changed callback. Expose the negotiated format, sample rate, and channel count so callers know exactly what was agreed.\n- A realtime process callback (on_process) that copies frames from the PipeWire buffer into the ring buffer. The callback must not allocate, lock, do file I/O, touch Qt, or call into compression libraries.\n- Stream lifecycle: start(), stop(), and destroy/cleanup methods. Handle the PipeWire thread loop correctly (lock/unlock around state changes, not inside the process callback).\n- Expose whether the negotiated format matches the requested format (native capture) versus requiring quantization or resampling, so downstream can report capture fidelity honestly.\n- Emit lightweight status changes (connected, disconnected, error, format-renegotiated) via an enum or callback, not via Qt signals.\n\nDo not perform any file writing, compression, or GUI work in this unit.\n\nSTRICT FILE SCOPE: Create or modify ONLY the files listed in this task's allowed_write_paths.\n\nVisualization contract: PipeWireCaptureStream owns a bounded, preallocated CaptureVisualizationSnapshot publisher. The realtime callback may decimate/copy frames into a fixed-size double buffer and publish a sequence number, but must not allocate or notify Qt. The snapshot contains a bounded sample window with corresponding peak/RMS data; it is separate from, and must never drain or retain references into, AudioRingBuffer.",
+    "plan_template": {
+      "project_name": "abracapture",
+      "summary": "Task run: Implement negotiated PipeWire capture stream",
+      "phases": [
+        {
+          "name": "C",
+          "objective": "Create the PipeWire capture stream wrapper that connects to a PipeWire source, negotiates format/rate/channels, and copies audio into a caller-supplied ring buffer from the realtime process callback.\n\nBefore editing, inspect:\n- src/audio/AudioRingBuffer.hpp for the ring buffer write() interface this stream will target.\n- src/pipewire/PipeWireContext.hpp for the pw_thread_loop and pw_core objects established in Phase B; this stream must use the Phase-B-owned thread loop rather than creating a new one.\n- Any existing PipeWire or audio headers under src/ for conventions.\n- The PipeWire 0.3 spa_pod and pw_stream APIs for format negotiation patterns.\n\nDo not infer APIs, schemas, behavior, or file contents; inspect the referenced files first.\n\nImplement PipeWireCaptureStream with:\n- Construction accepting a target node ID (or default source), desired sample format, sample rate, and channel count.\n- Format negotiation: build an SPA pod with the requested params, register the stream, and read back the negotiated format from the param_changed callback. Expose the negotiated format, sample rate, and channel count so callers know exactly what was agreed.\n- A realtime process callback (on_process) that copies frames from the PipeWire buffer into the ring buffer. The callback must not allocate, lock, do file I/O, touch Qt, or call into compression libraries.\n- Stream lifecycle: start(), stop(), and destroy/cleanup methods. Handle the PipeWire thread loop correctly (lock/unlock around state changes, not inside the process callback).\n- Expose whether the negotiated format matches the requested format (native capture) versus requiring quantization or resampling, so downstream can report capture fidelity honestly.\n- Emit lightweight status changes (connected, disconnected, error, format-renegotiated) via an enum or callback, not via Qt signals.\n\nDo not perform any file writing, compression, or GUI work in this unit.\n\nSTRICT FILE SCOPE: Create or modify ONLY the files listed in this task's allowed_write_paths.\n\nVisualization contract: PipeWireCaptureStream owns a bounded, preallocated CaptureVisualizationSnapshot publisher. The realtime callback may decimate/copy frames into a fixed-size double buffer and publish a sequence number, but must not allocate or notify Qt. The snapshot contains a bounded sample window with corresponding peak/RMS data; it is separate from, and must never drain or retain references into, AudioRingBuffer.",
+          "status": "completed",
+          "tasks": [
+            {
+              "task": {
+                "task_id": "c.2",
+                "title": "Implement negotiated PipeWire capture stream",
+                "description": "Create the PipeWire capture stream wrapper that connects to a PipeWire source, negotiates format/rate/channels, and copies audio into a caller-supplied ring buffer from the realtime process callback.\n\nBefore editing, inspect:\n- src/audio/AudioRingBuffer.hpp for the ring buffer write() interface this stream will target.\n- src/pipewire/PipeWireContext.hpp for the pw_thread_loop and pw_core objects established in Phase B; this stream must use the Phase-B-owned thread loop rather than creating a new one.\n- Any existing PipeWire or audio headers under src/ for conventions.\n- The PipeWire 0.3 spa_pod and pw_stream APIs for format negotiation patterns.\n\nDo not infer APIs, schemas, behavior, or file contents; inspect the referenced files first.\n\nImplement PipeWireCaptureStream with:\n- Construction accepting a target node ID (or default source), desired sample format, sample rate, and channel count.\n- Format negotiation: build an SPA pod with the requested params, register the stream, and read back the negotiated format from the param_changed callback. Expose the negotiated format, sample rate, and channel count so callers know exactly what was agreed.\n- A realtime process callback (on_process) that copies frames from the PipeWire buffer into the ring buffer. The callback must not allocate, lock, do file I/O, touch Qt, or call into compression libraries.\n- Stream lifecycle: start(), stop(), and destroy/cleanup methods. Handle the PipeWire thread loop correctly (lock/unlock around state changes, not inside the process callback).\n- Expose whether the negotiated format matches the requested format (native capture) versus requiring quantization or resampling, so downstream can report capture fidelity honestly.\n- Emit lightweight status changes (connected, disconnected, error, format-renegotiated) via an enum or callback, not via Qt signals.\n\nDo not perform any file writing, compression, or GUI work in this unit.\n\nSTRICT FILE SCOPE: Create or modify ONLY the files listed in this task's allowed_write_paths.\n\nVisualization contract: PipeWireCaptureStream owns a bounded, preallocated CaptureVisualizationSnapshot publisher. The realtime callback may decimate/copy frames into a fixed-size double buffer and publish a sequence number, but must not allocate or notify Qt. The snapshot contains a bounded sample window with corresponding peak/RMS data; it is separate from, and must never drain or retain references into, AudioRingBuffer.",
+                "phase": "C",
+                "dependencies": [
+                  "c.1"
+                ],
+                "exclusivity_category": null,
+                "max_in_category": null,
+                "status": "completed",
+                "acceptance_criteria": [
+                  "src/audio/PipeWireCaptureStream.hpp exists and declares the capture stream class with start(), stop(), and negotiated-format accessors",
+                  "src/audio/PipeWireCaptureStream.cpp exists and compiles cleanly against PipeWire 0.3 headers",
+                  "The process callback (on_process or equivalent) contains no std::mutex, no malloc/new, no file I/O, no Qt includes, and no compression calls",
+                  "Negotiated format, sample rate, and channel count are exposed via public accessors",
+                  "A method or accessor reports whether the capture is native or converted (quantized/resampled)",
+                  "Stream lifecycle methods (start, stop, cleanup) lock the PipeWire thread loop outside the process callback",
+                  "No #include of Qt, libsndfile, or FLAC headers appears in either file",
+                  "g++ -std=c++20 -fsyntax-only src/audio/PipeWireCaptureStream.cpp -I src $(pkg-config --cflags libpipewire-0.3) passes or cmake --build build compiles the unit",
+                  "No file outside the task's allowed_write_paths is created or modified",
+                  "PipeWireCaptureStream exposes a bounded CaptureVisualizationSnapshot reader/publisher interface; its callback publishes only preallocated snapshot storage and never emits Qt signals or drains AudioRingBuffer"
+                ],
+                "created_at": "2026-08-15T23:47:01.270964",
+                "selected_backend": "codex_cli",
+                "model": "gpt-5.6-sol",
+                "provider": null,
+                "task_timeout_seconds": 900.0,
+                "verification_profile": "focused",
+                "verification_commands": [
+                  {
+                    "name": "syntax_check",
+                    "command": [
+                      "bash",
+                      "-c",
+                      "g++ -std=c++20 -fsyntax-only src/audio/PipeWireCaptureStream.cpp -I src $(pkg-config --cflags libpipewire-0.3)"
+                    ]
+                  },
+                  {
+                    "name": "no_qt_or_file_io",
+                    "command": [
+                      "bash",
+                      "-c",
+                      "! grep -qE '#include.*<Q|std::ofstream|fopen' src/audio/PipeWireCaptureStream.hpp src/audio/PipeWireCaptureStream.cpp"
+                    ]
+                  }
+                ],
+                "allowed_write_paths": [
+                  "src/audio/PipeWireCaptureStream.hpp",
+                  "src/audio/PipeWireCaptureStream.cpp"
+                ],
+                "forbidden_changes": [
+                  "modify any file outside src/audio/PipeWireCaptureStream.hpp and src/audio/PipeWireCaptureStream.cpp",
+                  "include Qt, libsndfile, or FLAC headers",
+                  "perform file I/O or compression in the process callback",
+                  "use blocking locks inside the realtime process callback",
+                  "add third-party dependencies beyond PipeWire 0.3 and the C++ standard library",
+                  "modify AudioRingBuffer files"
+                ],
+                "allowed_symbols": [
+                  "PipeWireCaptureStream",
+                  "start",
+                  "stop",
+                  "negotiatedFormat",
+                  "negotiatedSampleRate",
+                  "negotiatedChannels",
+                  "isNativeCapture",
+                  "StreamStatus",
+                  "StatusCallback",
+                  "on_process"
+                ],
+                "decision_budget": {
+                  "allowed": [
+                    "choose SPA format enumeration strategy for negotiation",
+                    "choose between enum-based status and callback-based status notification",
+                    "choose internal pointer vs reference for ring buffer dependency"
+                  ],
+                  "forbidden": [
+                    "implement file writing or encoding",
+                    "add Qt signal/slot integration",
+                    "implement automatic resampling in this unit",
+                    "create a PipeWire main loop or context manager in this file"
+                  ]
+                },
+                "forbidden_patterns_override": null
+              },
+              "dependencies": [],
+              "status": "completed"
+            }
+          ],
+          "completed": true,
+          "completed_at": "2026-08-15T23:53:40.174457",
+          "human_checkpoint": null
+        }
+      ],
+      "version": "task-c.2",
+      "created_at": "2026-08-15T23:47:01.465553"
+    }
   }
 ]
