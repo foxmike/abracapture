@@ -9,9 +9,9 @@
       "task_id": "a.4",
       "title": "Define audio format and conversion domain types",
       "phase": "A",
-      "status": "planned",
+      "status": "completed",
       "backend": "codex_cli",
-      "last_run": null,
+      "last_run": "2026-08-15T22:29:03.600424",
       "notes": ""
     }
   ],
@@ -33,6 +33,15 @@
       "reviewer_status": "approved",
       "verifier_status": "passed",
       "timestamp": "2026-08-15T22:28:06.536788"
+    },
+    {
+      "run_id": "03b6d8fb-9bc5-4139-a5dc-4330c191ef47",
+      "task_id": "a.4",
+      "backend": "codex_cli",
+      "status": "ok",
+      "reviewer_status": "approved",
+      "verifier_status": "passed",
+      "timestamp": "2026-08-15T22:29:03.600593"
     }
   ],
   "operator_overrides": {},
