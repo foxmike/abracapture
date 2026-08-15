@@ -9,9 +9,9 @@
       "task_id": "c.1",
       "title": "Implement bounded audio ring buffer",
       "phase": "C",
-      "status": "planned",
+      "status": "completed",
       "backend": "codex_cli",
-      "last_run": null,
+      "last_run": "2026-08-15T23:47:00.977238",
       "notes": ""
     }
   ],
@@ -78,6 +78,15 @@
       "reviewer_status": "approved",
       "verifier_status": "failed",
       "timestamp": "2026-08-15T23:29:58.152348"
+    },
+    {
+      "run_id": "e9f3b357-c727-4a58-b5ce-50b43b0199bd",
+      "task_id": "c.1",
+      "backend": "codex_cli",
+      "status": "ok",
+      "reviewer_status": "approved",
+      "verifier_status": "passed",
+      "timestamp": "2026-08-15T23:47:00.977653"
     }
   ],
   "operator_overrides": {},
