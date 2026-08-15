@@ -22,3 +22,5 @@
 2026-08-15 19:26:26 | INFO | abracapocus.backends.codex_cli | backend=codex_cli retry_count=0
 2026-08-15 19:26:26 | INFO | abracapocus | run=ce489b3e-1504-4641-b0c7-33950ffbdc40 phases=1 verification=passed
 2026-08-15 19:28:03 | INFO | abracapocus.backends.codex_cli | backend=codex_cli retry_count=0
+2026-08-15 19:28:04 | INFO | abracapocus | run=d28e86c4-9fa8-4e63-af30-dd2c45c0b4a7 phases=1 verification=failed
+2026-08-15 19:29:57 | INFO | abracapocus.backends.codex_cli | backend=codex_cli retry_count=0

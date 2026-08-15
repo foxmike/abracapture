@@ -1,17 +1,17 @@
 {
   "project_name": "abracapture",
-  "plan_version": "task-b.3",
+  "plan_version": "task-b.4",
   "active_phase": "B",
   "default_backend": "codex_cli",
   "routing_mode": "manual",
   "tasks": [
     {
-      "task_id": "b.3",
-      "title": "Normalize PipeWire application and device metadata",
+      "task_id": "b.4",
+      "title": "Build live source catalog and activity model",
       "phase": "B",
-      "status": "completed",
+      "status": "planned",
       "backend": "codex_cli",
-      "last_run": "2026-08-15T23:28:04.345447",
+      "last_run": null,
       "notes": ""
     }
   ],
