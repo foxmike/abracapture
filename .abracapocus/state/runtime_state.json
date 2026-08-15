@@ -9,9 +9,9 @@
       "task_id": "b.4",
       "title": "Build live source catalog and activity model",
       "phase": "B",
-      "status": "planned",
+      "status": "completed",
       "backend": "codex_cli",
-      "last_run": null,
+      "last_run": "2026-08-15T23:29:58.151987",
       "notes": ""
     }
   ],
@@ -69,6 +69,15 @@
       "reviewer_status": "approved",
       "verifier_status": "failed",
       "timestamp": "2026-08-15T23:28:04.345661"
+    },
+    {
+      "run_id": "eb1046bd-33eb-4221-82df-ecf9e0c93d5e",
+      "task_id": "b.4",
+      "backend": "codex_cli",
+      "status": "ok",
+      "reviewer_status": "approved",
+      "verifier_status": "failed",
+      "timestamp": "2026-08-15T23:29:58.152348"
     }
   ],
   "operator_overrides": {},
