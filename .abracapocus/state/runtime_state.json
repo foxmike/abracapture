@@ -1,0 +1,24 @@
+{
+  "project_name": "abracapture",
+  "plan_version": "task-a.1",
+  "active_phase": "A",
+  "default_backend": "codex_cli",
+  "routing_mode": "manual",
+  "tasks": [
+    {
+      "task_id": "a.1",
+      "title": "Define CMake and system dependency baseline",
+      "phase": "A",
+      "status": "planned",
+      "backend": "codex_cli",
+      "last_run": null,
+      "notes": ""
+    }
+  ],
+  "history": [],
+  "operator_overrides": {},
+  "completed_phases": [],
+  "remaining_phases": [
+    "A"
+  ]
+}
