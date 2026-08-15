@@ -9,9 +9,9 @@
       "task_id": "c.3",
       "title": "Implement lock-light capture metrics snapshots",
       "phase": "C",
-      "status": "planned",
+      "status": "completed",
       "backend": "codex_cli",
-      "last_run": null,
+      "last_run": "2026-08-15T23:55:13.364776",
       "notes": ""
     }
   ],
@@ -96,6 +96,15 @@
       "reviewer_status": "approved",
       "verifier_status": "passed",
       "timestamp": "2026-08-15T23:53:40.201703"
+    },
+    {
+      "run_id": "8a8943c9-12d3-4bca-8833-bb9cd40c6724",
+      "task_id": "c.3",
+      "backend": "codex_cli",
+      "status": "ok",
+      "reviewer_status": "approved",
+      "verifier_status": "passed",
+      "timestamp": "2026-08-15T23:55:13.365015"
     }
   ],
   "operator_overrides": {},
