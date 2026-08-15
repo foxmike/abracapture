@@ -11,6 +11,15 @@ include(cmake/Dependencies.cmake)
 
 add_executable(abracapture
     src/app/main.cpp
+    src/app/AppController.cpp
+    src/app/AppController.hpp
+)
+
+qt_add_qml_module(abracapture
+    URI Abracapture
+    VERSION 1.0
+    QML_FILES
+        qml/Main.qml
 )
 
 target_link_libraries(abracapture

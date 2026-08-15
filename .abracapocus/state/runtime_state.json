@@ -1,17 +1,17 @@
 {
   "project_name": "abracapture",
-  "plan_version": "task-a.1",
+  "plan_version": "task-a.3",
   "active_phase": "A",
   "default_backend": "codex_cli",
   "routing_mode": "manual",
   "tasks": [
     {
-      "task_id": "a.1",
-      "title": "Define CMake and system dependency baseline",
+      "task_id": "a.3",
+      "title": "Implement persistent application settings",
       "phase": "A",
-      "status": "completed",
-      "backend": "codex_cli",
-      "last_run": "2026-08-15T22:26:02.623615",
+      "status": "planned",
+      "backend": "antigravity_cli",
+      "last_run": null,
       "notes": ""
     }
   ],

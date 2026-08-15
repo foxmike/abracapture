@@ -1,1 +1,6 @@
 2026-08-15 18:26:02 | INFO | abracapocus.backends.codex_cli | backend=codex_cli retry_count=0
+2026-08-15 18:26:02 | INFO | abracapocus | run=77cabce1-8628-4f88-8d74-5fca60eadcc6 phases=1 verification=passed
+2026-08-15 18:26:55 | INFO | abracapocus.backends.codex_cli | backend=codex_cli retry_count=0
+2026-08-15 18:26:56 | INFO | abracapocus | run=3ebce084-b9d2-4257-b192-356f10012836 phase=A phase_gate=blocked result_status=failed verification_status=failed
+2026-08-15 18:26:56 | INFO | abracapocus | run=3ebce084-b9d2-4257-b192-356f10012836 phases=1 verification=failed
+2026-08-15 18:28:06 | INFO | abracapocus.backends.antigravity_cli | backend=antigravity_cli retry_count=0

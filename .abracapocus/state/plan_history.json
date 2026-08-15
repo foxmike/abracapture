@@ -1,0 +1,120 @@
+[
+  {
+    "created_at": "2026-08-15T22:26:02.697691",
+    "project_name": "abracapture",
+    "goal": "Create the top-level CMakeLists.txt and cmake/Dependencies.cmake that establish the C++20 build contract for Abracapture.\n\nSTRICT FILE SCOPE: Create or modify ONLY the files listed in this task's allowed_write_paths.\n\nBefore editing, inspect:\n- No existing files; this is a greenfield project.\n\nDo not infer APIs, schemas, behavior, or file contents; inspect the referenced files first.\n\nRequirements:\n1. CMakeLists.txt must declare `project(Abracapture LANGUAGES CXX)` with `cmake_minimum_required(VERSION 3.22)`.\n2. Set `CMAKE_CXX_STANDARD 20`, `CMAKE_CXX_STANDARD_REQUIRED ON`, `CMAKE_CXX_EXTENSIONS OFF`.\n3. Include `cmake/Dependencies.cmake` via `include()`.\n4. Declare an executable target `abracapture` with placeholder `src/app/main.cpp` in its source list.\n5. cmake/Dependencies.cmake must use `find_package()` for: Qt6 (COMPONENTS Core Quick QuickControls2), PkgConfig, then `pkg_check_modules` for libpipewire-0.3, sndfile, and flac. Declare imported targets where pkg_check_modules provides them.\n6. Link the `abracapture` target against Qt6::Core, Qt6::Quick, Qt6::QuickControls2, PipeWire, sndfile, and FLAC libraries.\n7. Enable `CMAKE_EXPORT_COMPILE_COMMANDS ON`.\n8. Do not use FetchContent, ExternalProject, vcpkg, Conan, or any download mechanism.\n9. Do not vendor or bundle third-party source code.",
+    "plan_template": {
+      "project_name": "abracapture",
+      "summary": "Task run: Define CMake and system dependency baseline",
+      "phases": [
+        {
+          "name": "A",
+          "objective": "Create the top-level CMakeLists.txt and cmake/Dependencies.cmake that establish the C++20 build contract for Abracapture.\n\nSTRICT FILE SCOPE: Create or modify ONLY the files listed in this task's allowed_write_paths.\n\nBefore editing, inspect:\n- No existing files; this is a greenfield project.\n\nDo not infer APIs, schemas, behavior, or file contents; inspect the referenced files first.\n\nRequirements:\n1. CMakeLists.txt must declare `project(Abracapture LANGUAGES CXX)` with `cmake_minimum_required(VERSION 3.22)`.\n2. Set `CMAKE_CXX_STANDARD 20`, `CMAKE_CXX_STANDARD_REQUIRED ON`, `CMAKE_CXX_EXTENSIONS OFF`.\n3. Include `cmake/Dependencies.cmake` via `include()`.\n4. Declare an executable target `abracapture` with placeholder `src/app/main.cpp` in its source list.\n5. cmake/Dependencies.cmake must use `find_package()` for: Qt6 (COMPONENTS Core Quick QuickControls2), PkgConfig, then `pkg_check_modules` for libpipewire-0.3, sndfile, and flac. Declare imported targets where pkg_check_modules provides them.\n6. Link the `abracapture` target against Qt6::Core, Qt6::Quick, Qt6::QuickControls2, PipeWire, sndfile, and FLAC libraries.\n7. Enable `CMAKE_EXPORT_COMPILE_COMMANDS ON`.\n8. Do not use FetchContent, ExternalProject, vcpkg, Conan, or any download mechanism.\n9. Do not vendor or bundle third-party source code.",
+          "status": "completed",
+          "tasks": [
+            {
+              "task": {
+                "task_id": "a.1",
+                "title": "Define CMake and system dependency baseline",
+                "description": "Create the top-level CMakeLists.txt and cmake/Dependencies.cmake that establish the C++20 build contract for Abracapture.\n\nSTRICT FILE SCOPE: Create or modify ONLY the files listed in this task's allowed_write_paths.\n\nBefore editing, inspect:\n- No existing files; this is a greenfield project.\n\nDo not infer APIs, schemas, behavior, or file contents; inspect the referenced files first.\n\nRequirements:\n1. CMakeLists.txt must declare `project(Abracapture LANGUAGES CXX)` with `cmake_minimum_required(VERSION 3.22)`.\n2. Set `CMAKE_CXX_STANDARD 20`, `CMAKE_CXX_STANDARD_REQUIRED ON`, `CMAKE_CXX_EXTENSIONS OFF`.\n3. Include `cmake/Dependencies.cmake` via `include()`.\n4. Declare an executable target `abracapture` with placeholder `src/app/main.cpp` in its source list.\n5. cmake/Dependencies.cmake must use `find_package()` for: Qt6 (COMPONENTS Core Quick QuickControls2), PkgConfig, then `pkg_check_modules` for libpipewire-0.3, sndfile, and flac. Declare imported targets where pkg_check_modules provides them.\n6. Link the `abracapture` target against Qt6::Core, Qt6::Quick, Qt6::QuickControls2, PipeWire, sndfile, and FLAC libraries.\n7. Enable `CMAKE_EXPORT_COMPILE_COMMANDS ON`.\n8. Do not use FetchContent, ExternalProject, vcpkg, Conan, or any download mechanism.\n9. Do not vendor or bundle third-party source code.",
+                "phase": "A",
+                "dependencies": [],
+                "exclusivity_category": null,
+                "max_in_category": null,
+                "status": "completed",
+                "acceptance_criteria": [
+                  "CMakeLists.txt exists and declares project(Abracapture LANGUAGES CXX) with CMAKE_CXX_STANDARD 20",
+                  "cmake/Dependencies.cmake exists and calls find_package(Qt6 COMPONENTS Core Quick QuickControls2)",
+                  "cmake/Dependencies.cmake uses pkg_check_modules for libpipewire-0.3 and sndfile",
+                  "CMakeLists.txt includes cmake/Dependencies.cmake and declares add_executable(abracapture)",
+                  "No FetchContent, ExternalProject, vcpkg, or Conan usage appears in any file",
+                  "No file outside the task's allowed_write_paths is created or modified"
+                ],
+                "created_at": "2026-08-15T22:25:12.513464",
+                "selected_backend": "codex_cli",
+                "model": "gpt-5.6-luna",
+                "provider": null,
+                "task_timeout_seconds": 600.0,
+                "verification_profile": "focused",
+                "verification_commands": [
+                  {
+                    "name": "has_project_declaration",
+                    "command": [
+                      "bash",
+                      "-c",
+                      "grep -q 'project(Abracapture' CMakeLists.txt"
+                    ]
+                  },
+                  {
+                    "name": "has_cxx20_standard",
+                    "command": [
+                      "bash",
+                      "-c",
+                      "grep -q 'CMAKE_CXX_STANDARD 20' CMakeLists.txt"
+                    ]
+                  },
+                  {
+                    "name": "has_qt6_find_package",
+                    "command": [
+                      "bash",
+                      "-c",
+                      "grep -q 'find_package(Qt6' cmake/Dependencies.cmake"
+                    ]
+                  },
+                  {
+                    "name": "has_pkg_check_modules",
+                    "command": [
+                      "bash",
+                      "-c",
+                      "grep -q 'pkg_check_modules' cmake/Dependencies.cmake"
+                    ]
+                  },
+                  {
+                    "name": "no_fetch_content",
+                    "command": [
+                      "bash",
+                      "-c",
+                      "! grep -qE 'FetchContent|ExternalProject|vcpkg|conan' CMakeLists.txt cmake/Dependencies.cmake"
+                    ]
+                  }
+                ],
+                "allowed_write_paths": [
+                  "CMakeLists.txt",
+                  "cmake/Dependencies.cmake"
+                ],
+                "forbidden_changes": [
+                  "create or modify any file outside CMakeLists.txt and cmake/Dependencies.cmake",
+                  "use FetchContent or ExternalProject or any package-download mechanism",
+                  "vendor or bundle third-party source code",
+                  "introduce JUCE or any second GUI framework"
+                ],
+                "allowed_symbols": [
+                  "abracapture"
+                ],
+                "decision_budget": {
+                  "allowed": [
+                    "choose pkg_check_modules vs find_package for PipeWire and sndfile",
+                    "set default CMAKE_BUILD_TYPE"
+                  ],
+                  "forbidden": [
+                    "introduce a package manager",
+                    "add FetchContent or ExternalProject downloads",
+                    "add source files beyond placeholder main.cpp reference"
+                  ]
+                },
+                "forbidden_patterns_override": null
+              },
+              "dependencies": [],
+              "status": "completed"
+            }
+          ],
+          "completed": true,
+          "completed_at": "2026-08-15T22:26:02.599523",
+          "human_checkpoint": null
+        }
+      ],
+      "version": "task-a.1",
+      "created_at": "2026-08-15T22:25:12.716043"
+    }
+  }
+]
