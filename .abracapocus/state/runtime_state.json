@@ -9,9 +9,9 @@
       "task_id": "d.2",
       "title": "Implement FLAC lossless master writer",
       "phase": "D",
-      "status": "planned",
+      "status": "completed",
       "backend": "codex_cli",
-      "last_run": null,
+      "last_run": "2026-08-16T00:04:33.436943",
       "notes": ""
     }
   ],
@@ -123,6 +123,15 @@
       "reviewer_status": "approved",
       "verifier_status": "passed",
       "timestamp": "2026-08-16T00:02:11.218311"
+    },
+    {
+      "run_id": "5001f0f0-5854-4c1d-bbca-f064156b9878",
+      "task_id": "d.2",
+      "backend": "codex_cli",
+      "status": "ok",
+      "reviewer_status": "approved",
+      "verifier_status": "passed",
+      "timestamp": "2026-08-16T00:04:33.437149"
     }
   ],
   "operator_overrides": {},
