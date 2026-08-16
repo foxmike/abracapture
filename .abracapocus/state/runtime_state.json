@@ -9,9 +9,9 @@
       "task_id": "d.1",
       "title": "Implement WAV lossless master writer",
       "phase": "D",
-      "status": "planned",
+      "status": "completed",
       "backend": "codex_cli",
-      "last_run": null,
+      "last_run": "2026-08-16T00:02:11.218004",
       "notes": ""
     }
   ],
@@ -114,6 +114,15 @@
       "reviewer_status": "approved",
       "verifier_status": "passed",
       "timestamp": "2026-08-15T23:59:26.154666"
+    },
+    {
+      "run_id": "8a1eb92d-35e2-4bb7-955e-cbc06f64b821",
+      "task_id": "d.1",
+      "backend": "codex_cli",
+      "status": "ok",
+      "reviewer_status": "approved",
+      "verifier_status": "passed",
+      "timestamp": "2026-08-16T00:02:11.218311"
     }
   ],
   "operator_overrides": {},
