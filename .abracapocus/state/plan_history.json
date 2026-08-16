@@ -1120,5 +1120,109 @@
       "version": "task-d.2",
       "created_at": "2026-08-16T00:02:11.513043"
     }
+  },
+  {
+    "created_at": "2026-08-16T00:27:39.098758",
+    "project_name": "abracapture",
+    "goal": "Create OutputPathPolicy, a configurable policy class that determines the output directory and filename for capture files based on user settings, source metadata, timestamp, and format.\n\nBefore editing, inspect:\n- Any existing src/recording/ files for naming conventions and types\n- Any existing settings or configuration types that OutputPathPolicy should reference\n\nDo not infer APIs, schemas, behavior, or file contents; inspect the referenced files first.\n\nImplementation requirements:\n1. Declare class OutputPathPolicy in OutputPathPolicy.hpp. It should accept configuration parameters: base output directory (std::filesystem::path), filename template (std::string with placeholders), and default format extension.\n2. Supported filename placeholders: {date}, {time}, {datetime}, {source}, {format}, {samplerate}, {channels}, {counter}. The policy resolves these at capture-start time.\n3. Implement resolveOutputPath(metadata) -> std::filesystem::path in OutputPathPolicy.cpp. metadata should carry source name, sample rate, channel count, and format. The method returns the fully resolved absolute path.\n4. On resolveOutputPath(), create the output directory if it does not exist (std::filesystem::create_directories). If directory creation fails, return an error or throw.\n5. Handle filename collisions: if the resolved path already exists, append an incrementing suffix (_001, _002, etc.) before the extension.\n6. Validate the base directory is writable at construction or via a validate() method.\n7. Keep the implementation pure C++ standard library (std::filesystem, std::chrono, std::format or ostringstream). No Qt dependency.\n\nSTRICT FILE SCOPE: Create or modify ONLY the files listed in this task's allowed_write_paths.",
+    "plan_template": {
+      "project_name": "abracapture",
+      "summary": "Task run: Implement output directory and filename policy",
+      "phases": [
+        {
+          "name": "D",
+          "objective": "Create OutputPathPolicy, a configurable policy class that determines the output directory and filename for capture files based on user settings, source metadata, timestamp, and format.\n\nBefore editing, inspect:\n- Any existing src/recording/ files for naming conventions and types\n- Any existing settings or configuration types that OutputPathPolicy should reference\n\nDo not infer APIs, schemas, behavior, or file contents; inspect the referenced files first.\n\nImplementation requirements:\n1. Declare class OutputPathPolicy in OutputPathPolicy.hpp. It should accept configuration parameters: base output directory (std::filesystem::path), filename template (std::string with placeholders), and default format extension.\n2. Supported filename placeholders: {date}, {time}, {datetime}, {source}, {format}, {samplerate}, {channels}, {counter}. The policy resolves these at capture-start time.\n3. Implement resolveOutputPath(metadata) -> std::filesystem::path in OutputPathPolicy.cpp. metadata should carry source name, sample rate, channel count, and format. The method returns the fully resolved absolute path.\n4. On resolveOutputPath(), create the output directory if it does not exist (std::filesystem::create_directories). If directory creation fails, return an error or throw.\n5. Handle filename collisions: if the resolved path already exists, append an incrementing suffix (_001, _002, etc.) before the extension.\n6. Validate the base directory is writable at construction or via a validate() method.\n7. Keep the implementation pure C++ standard library (std::filesystem, std::chrono, std::format or ostringstream). No Qt dependency.\n\nSTRICT FILE SCOPE: Create or modify ONLY the files listed in this task's allowed_write_paths.",
+          "status": "completed",
+          "tasks": [
+            {
+              "task": {
+                "task_id": "d.4",
+                "title": "Implement output directory and filename policy",
+                "description": "Create OutputPathPolicy, a configurable policy class that determines the output directory and filename for capture files based on user settings, source metadata, timestamp, and format.\n\nBefore editing, inspect:\n- Any existing src/recording/ files for naming conventions and types\n- Any existing settings or configuration types that OutputPathPolicy should reference\n\nDo not infer APIs, schemas, behavior, or file contents; inspect the referenced files first.\n\nImplementation requirements:\n1. Declare class OutputPathPolicy in OutputPathPolicy.hpp. It should accept configuration parameters: base output directory (std::filesystem::path), filename template (std::string with placeholders), and default format extension.\n2. Supported filename placeholders: {date}, {time}, {datetime}, {source}, {format}, {samplerate}, {channels}, {counter}. The policy resolves these at capture-start time.\n3. Implement resolveOutputPath(metadata) -> std::filesystem::path in OutputPathPolicy.cpp. metadata should carry source name, sample rate, channel count, and format. The method returns the fully resolved absolute path.\n4. On resolveOutputPath(), create the output directory if it does not exist (std::filesystem::create_directories). If directory creation fails, return an error or throw.\n5. Handle filename collisions: if the resolved path already exists, append an incrementing suffix (_001, _002, etc.) before the extension.\n6. Validate the base directory is writable at construction or via a validate() method.\n7. Keep the implementation pure C++ standard library (std::filesystem, std::chrono, std::format or ostringstream). No Qt dependency.\n\nSTRICT FILE SCOPE: Create or modify ONLY the files listed in this task's allowed_write_paths.",
+                "phase": "D",
+                "dependencies": [],
+                "exclusivity_category": null,
+                "max_in_category": null,
+                "status": "completed",
+                "acceptance_criteria": [
+                  "src/recording/OutputPathPolicy.hpp exists and declares OutputPathPolicy with resolveOutputPath and validate public interface",
+                  "src/recording/OutputPathPolicy.cpp exists and implements placeholder resolution for {date}, {time}, {datetime}, {source}, {format}, {samplerate}, {channels}, {counter}",
+                  "OutputPathPolicy creates the output directory if it does not exist",
+                  "OutputPathPolicy handles filename collisions with incrementing suffixes",
+                  "OutputPathPolicy validates that the base directory is writable",
+                  "Implementation uses only C++ standard library, no Qt dependency",
+                  "No file outside the task's allowed_write_paths is created or modified"
+                ],
+                "created_at": "2026-08-16T00:26:08.183559",
+                "selected_backend": "antigravity_cli",
+                "model": "gemini-3.7-flash-medium",
+                "provider": null,
+                "task_timeout_seconds": 900.0,
+                "verification_profile": "focused",
+                "verification_commands": [
+                  {
+                    "name": "syntax_check",
+                    "command": [
+                      "g++",
+                      "-std=c++20",
+                      "-fsyntax-only",
+                      "src/recording/OutputPathPolicy.cpp",
+                      "-I",
+                      "src"
+                    ]
+                  },
+                  {
+                    "name": "no_qt",
+                    "command": [
+                      "bash",
+                      "-c",
+                      "! grep -q '#include.*<Q' src/recording/OutputPathPolicy.hpp src/recording/OutputPathPolicy.cpp"
+                    ]
+                  }
+                ],
+                "allowed_write_paths": [
+                  "src/recording/OutputPathPolicy.hpp",
+                  "src/recording/OutputPathPolicy.cpp"
+                ],
+                "forbidden_changes": [
+                  "modify any file outside src/recording/OutputPathPolicy.hpp and src/recording/OutputPathPolicy.cpp",
+                  "modify CMakeLists.txt",
+                  "introduce Qt dependencies",
+                  "modify src/recording/WavWriter.hpp or WavWriter.cpp",
+                  "modify src/recording/FlacWriter.hpp or FlacWriter.cpp",
+                  "modify src/recording/RecordingSink.hpp or RecordingSink.cpp"
+                ],
+                "allowed_symbols": [
+                  "OutputPathPolicy",
+                  "CaptureMetadata",
+                  "resolveOutputPath",
+                  "validate"
+                ],
+                "decision_budget": {
+                  "allowed": [
+                    "define CaptureMetadata struct locally",
+                    "choose between std::format and ostringstream for placeholder substitution",
+                    "choose collision suffix format and maximum retry count"
+                  ],
+                  "forbidden": [
+                    "introduce third-party dependencies",
+                    "add Qt classes or headers",
+                    "define writer or encoder logic"
+                  ]
+                },
+                "forbidden_patterns_override": null
+              },
+              "dependencies": [],
+              "status": "completed"
+            }
+          ],
+          "completed": true,
+          "completed_at": "2026-08-16T00:27:38.913591",
+          "human_checkpoint": null
+        }
+      ],
+      "version": "task-d.4",
+      "created_at": "2026-08-16T00:26:08.371158"
+    }
   }
 ]

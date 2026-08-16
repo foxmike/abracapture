@@ -1,0 +1,219 @@
+{
+  "plan_summary": "Task run: Implement output directory and filename policy",
+  "backend_executions": [
+    {
+      "backend": "antigravity_cli",
+      "command": [
+        "agy",
+        "--model",
+        "gemini-3.7-flash-medium",
+        "-p",
+        "Task: Implement output directory and filename policy\nPhase: D\nDescription: Create OutputPathPolicy, a configurable policy class that determines the output directory and filename for capture files based on user settings, source metadata, timestamp, and format.\n\nBefore editing, inspect:\n- Any existing src/recording/ files for naming conventions and types\n- Any existing settings or configuration types that OutputPathPolicy should reference\n\nDo not infer APIs, schemas, behavior, or file contents; inspect the referenced files first.\n\nImplementation requirements:\n1. Declare class OutputPathPolicy in OutputPathPolicy.hpp. It should accept configuration parameters: base output directory (std::filesystem::path), filename template (std::string with placeholders), and default format extension.\n2. Supported filename placeholders: {date}, {time}, {datetime}, {source}, {format}, {samplerate}, {channels}, {counter}. The policy resolves these at capture-start time.\n3. Implement resolveOutputPath(metadata) -> std::filesystem::path in OutputPathPolicy.cpp. metadata should carry source name, sample rate, channel count, and format. The method returns the fully resolved absolute path.\n4. On resolveOutputPath(), create the output directory if it does not exist (std::filesystem::create_directories). If directory creation fails, return an error or throw.\n5. Handle filename collisions: if the resolved path already exists, append an incrementing suffix (_001, _002, etc.) before the extension.\n6. Validate the base directory is writable at construction or via a validate() method.\n7. Keep the implementation pure C++ standard library (std::filesystem, std::chrono, std::format or ostringstream). No Qt dependency.\n\nSTRICT FILE SCOPE: Create or modify ONLY the files listed in this task's allowed_write_paths.\nContext: AGENTS.md guidance:\n# AGENTS.md\n## Purpose\nThis repository is operated by an autonomous multi-agent system (abracapocus_2).\nAll agents must follow these rules when modifying the codebase.\n---\n## Core Principles\n- Minimal blast radius: only modify what is required for the task\n- Deterministic verification: all changes must be verifiable via code (tests, compile, scripts)\n- No architecture drift: do not introduce new frameworks or major design changes unless explicitly required\n- No unrelated refactors\n- All changes must be reproducible from a clean clone\n---\n## Project Structure\n- docs/ → design, plans, architecture constraints\n- plans/ → master plans\n- phases/ → phase definitions\n- tasks/ → executable task documents\n- backends/ → CLI backend adapters\n- agents/ → specialist agents\n- runtime/ → orchestration, routing, state\n...(truncated)\n\n## Task Contract Constraints\n\n{\n  \"allowed_symbols\": [\n    \"OutputPathPolicy\",\n    \"CaptureMetadata\",\n    \"resolveOutputPath\",\n    \"validate\"\n  ],\n  \"allowed_write_paths\": [\n    \"src/recording/OutputPathPolicy.hpp\",\n    \"src/recording/OutputPathPolicy.cpp\"\n  ],\n  \"decision_budget\": {\n    \"allowed\": [\n      \"define CaptureMetadata struct locally\",\n      \"choose between std::format and ostringstream for placeholder substitution\",\n      \"choose collision suffix format and maximum retry count\"\n    ],\n    \"forbidden\": [\n      \"introduce third-party dependencies\",\n      \"add Qt classes or headers\",\n      \"define writer or encoder logic\"\n    ]\n  },\n  \"forbidden_changes\": [\n    \"modify any file outside src/recording/OutputPathPolicy.hpp and src/recording/OutputPathPolicy.cpp\",\n    \"modify CMakeLists.txt\",\n    \"introduce Qt dependencies\",\n    \"modify src/recording/WavWriter.hpp or WavWriter.cpp\",\n    \"modify src/recording/FlacWriter.hpp or FlacWriter.cpp\",\n    \"modify src/recording/RecordingSink.hpp or RecordingSink.cpp\"\n  ]\n}\n\n## Language Context\n\n# C++ Language Adapter\n\n## Detection and Classification\n\n- **Language name**: `cpp`\n- **Extensions**: `.cpp`, `.cc`, `.cxx`, `.c++`, `.hpp`, `.hh`, `.hxx`,\n  `.h++`, `.ipp`, `.inl`, `.tpp`, `.ixx`, `.cppm`, and `.h`.\n- **Shared headers**: C and C++ both claim `.h`. Registry lookup with a\n  repository root or language hint selects the adapter for the detected\n  project. Context-free `.h` lookup remains assigned to C for compatibility.\n- **Project detection**: Deterministic filesystem and CMake text inspection\n  recognizes C++ source extensions, `project(... LANGUAGES ... CXX ...)`,\n  `enable_language(CXX)`, C++ target sources, JUCE CMake targets in C++\n  repositories, and `FILE_SET CXX_MODULES`. A CMake project containing only C\n  files is not identified as C++ merely because `CMakeLists.txt` exists.\n- **Classification**: C++ files are tests when their names use the supported\n  test prefixes or suffixes, or when they are under `test/` or `tests/`.\n  Established native build files are classified as configuration; other\n  supported files are source.\n- **Discovery exclusions**: `.git`, `JUCE`, `build`, `cmake-build-*`,\n  `CMakeFiles`, and `_deps` directory names are excluded. Ordinary\n  project-owned directories are not excluded merely because their name\n  contains `build`.\n\n## Extraction Logic\n\nThe adapter extracts quoted and angle-bracket includes in source order after\nmasking comments and literals. Its lightweight standard-library-only lexical\npass identifies common namespaces, types, aliases, concepts, free functions,\nmethods, constructors, destructors, qualified definitions, operators, and\nC++20 module declarations. These symbols feed shaping, context compilation,\nand narrative code review through the shared adapter paths.\n\nThe extractor is intentionally not a complete C++ parser. Complex macro\nexpansion, generated declarations, highly ambiguous declarators, dependent\ntemplate syntax, and declarations that require semantic type information may\nnot be recognized. No compiler, `clangd`, `ctags`, tree-sitter, or other\nthird-party parser is invoked.\n\n## Static CMake Model\n\nThe adapter reads CMake commands with balanced parentheses, quoted arguments,\ncomments, literal `add_subdirectory` relationships, and conservative expansion\nof simple `set(...)` and `list(APPEND ...)` variables. It recognizes:\n\n- `project`, `enable_language`, and `add_subdirectory`\n- `add_executable`, `add_library`, and `target_sources`\n- `FILE_SET HEADERS` and `FILE_SET CXX_MODULES`\n- `add_test` and relevant test-target references\n- `juce_add_plugin`, `juce_add_console_app`, `juce_add_gui_app`, and\n  `juce_add_binary_data`\n\nTouched files are grouped by their applicable top-level configure roots.\nLiteral nested subdirectories are followed while generated, JUCE, and\nvendored dependency trees are avoided. Explicit target source lists, file\nsets, and statically expanded variables establish target ownership. The\nadapter does not infer target names from filenames, product names, or directory\nnames.\n\nThis reader does not execute CMake and does not evaluate functions, macros,\ngenerator expressions in general, `FetchContent`, `ExternalProject`, package\ndownloads, configure scripts, or arbitrary CMake control flow. Unresolved\ndynamic expressions cause conservative project-wide fallback behavior.\n\n## CMake Presets\n\nRepository-owned `CMakePresets.json` configure presets are preferred when they\ncan be resolved statically. The resolver supports configure, build, and test\npreset families, inheritance through hidden base presets, literal\n`${sourceDir}` binary-directory expansion, configuration fields, and simple\nplatform conditions.\n\nHidden leaf presets, unresolved environment or vendor macros, uncertain\nconditions, and machine-local `CMakeUserPresets.json` configurations without a\nrepository preset relationship are not selected. If a configure preset is\nusable but no matching build or test preset exists, its resolved binary\ndirectory is used with ordinary build and CTest commands. Otherwise command\ngeneration falls back to the portable non-preset sequence.\n\n## Verification Commands\n\nLanguage detection and CMake availability are intentionally separate. A\nrepository can be detected as C++ from its source files before it has a CMake\nproject. Verification commands are generated only when each touched C++ file\nhas an applicable ancestor `CMakeLists.txt` within the configured target\nworking root. A statically usable repository preset is selected only for such\nan applicable project. The adapter does not treat the process current\ndirectory, the target working root by itself, or an unrelated CMake project as\nan implicit configure root.\n\nSource-only projects therefore produce no speculative CMake commands. Callers\ncan use `CppAdapter.suggest_verification()` directly against the current\nrepository state after an applicable `CMakeLists.txt` or preset exists.\nAbracapocus does not automatically inject these adapter suggestions into\nsupervisor task or phase verification. Explicitly authored verification remains\ngoverned by the existing plan and task behavior.\n\nFor a project without a deterministically usable preset, the standard sequence\nis equivalent to:\n\n```text\ncmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_EXPORT_COMPILE_COMMANDS=ON\ncmake --build build --config RelWithDebInfo --parallel\nctest --test-dir build -C RelWithDebInfo --output-on-failure\n```\n\nCommands use `cmake` and `ctest` from the operator's `PATH`; no CMake path is\nhard-coded. Detection and command generation never execute CMake; they only\nreturn commands for the existing verifier.\n\nWhen touched files are explicitly owned by targets, build commands are narrowed\nto those targets in deterministic order. Explicitly owned headers and C++20\nmodule files participate in the same mapping. An unmapped header, touched build\nconfiguration, unresolved source expression, or otherwise uncertain ownership\nuses the full-project build.\n\nCTest is narrowed with a safely escaped test-name pattern only when a touched\ntest executable maps deterministically to one or more declared CTest tests.\nProduction targets and unresolved test relationships run the applicable\nproject test suite. Files spanning independent configure roots receive separate\ndeduplicated configure, build, and test sequences.\n\n## Read-Only Inspection\n\n`python -m scripts.ops language-inspect` exposes the current registry selection\nand the C++ adapter's static verification inspection for operator review. The\ninspection result comes from the same CMake root resolution, project model,\npreset selection, target ownership, CTest mapping, and command generation used\nby `suggest_verification()`. It can describe multiple independent configure\nroots and explicitly labels full-project build or CTest fallback when ownership\ncannot be resolved.\n\nThe inspection reads the repository state at invocation time. It previews\ngenerated commands but never executes them and never creates build directories,\nstate, reports, or cache files. Source-only projects without applicable CMake\nmetadata report no CMake root and no generated verification. Development-time\nadapter and inspection tests exercise this inference without creating runtime\nenforcement.\n\nLint and formatting suggestions are advisory and focused on touched\nproject-owned C++ files. `clang-tidy` suggestions include a source file and\ncompile-database location; formatting checks use\n`clang-format --dry-run --Werror` rather than scanning the whole repository.\n\n## Quality Doctrine\n\nAdvisory C++ review guidance lives at\n`abracapocus/languages/cpp/docs/quality_doctrine.md`.\n\n\nAGENTS.md guidance:\n# AGENTS.md\n\n## Purpose\n\nThis repository is operated by an autonomous multi-agent system (abracapocus_2).\nAll agents must follow these rules when modifying the codebase.\n\n---\n\n## Core Principles\n\n- Minimal blast radius: only modify what is required for the task\n- Deterministic verification: all changes must be verifiable via code (tests, compile, scripts)\n- No architecture drift: do not introduce new frameworks or major design changes unless explicitly required\n- No unrelated refactors\n- All changes must be reproducible from a clean clone\n\n---\n\n## Project Structure\n\n- docs/ → design, plans, architecture constraints\n- plans/ → master plans\n- phases/ → phase definitions\n- tasks/ → executable task documents\n- backends/ → CLI backend adapters\n- agents/ → specialist agents\n- runtime/ → orchestration, routing, state\n- reports/ → execution reports (DO NOT MODIFY MANUALLY)\n- state/runtime_state.json → runtime state (DO NOT COMMIT)\n\n---\n\n## Task Execution Rules\n\n- Always operate from a task document when available\n- Respect:\n  - selected_backend\n  - verification_profile\n  - acceptance_criteria\n- If a task conflicts with architecture constraints or phase scope:\n  - STOP and report conflict\n\n---\n\n## Backend Rules\n\n- Backends must:\n  - execute commands deterministically\n  - capture stdout, stderr, exit_code\n  - not silently fail\n- Do not invent backend interfaces; use existing adapters\n- Codex CLI, Aider, Gemini, Claude Code should be invoked through backends only\n\n---\n\n## Verification Rules\n\n- Verification must be deterministic\n- Preferred checks:\n  - pytest\n  - python -m py_compile\n- Do not rely on model self-evaluation\n\n---\n\n## Execution Control Flow (PERMANENT ARCHITECTURAL RULE)\n\n**HEURISTIC INFERENCE MUST NEVER PARTICIPATE IN ABRACAPOCUS EXECUTION CONTROL FLOW.**\n\nAbracapocus must not determine execution success, failure, acceptance,\nrejection, blocking, retry eligibility, phase progression, or completion from\nheuristic inference. A heuristic is any conclusion that is *inferred* rather\nthan *directly established by an explicit executable contract or a concrete\nruntime fact*.\n\nRuntime status is derived ONLY from concrete, mechanically observable facts:\n\n1. The backend process exit code. A backend that exits `0` (with no hard\n   write-policy violation) is a successful execution.\n2. Objectively observed hard write-policy violations (changed paths outside the\n   declared allowed write paths).\n3. Explicit operator-authored commands (task/phase verification the plan\n   explicitly contains). Their raw results are reported, kept DISTINCT from\n   backend execution status.\n4. Objective orchestrator failures with direct evidence (backend could not\n   launch, required document could not be parsed, subprocess infrastructure\n   failed).\n\n**Verification results are observational and must not rewrite backend execution\nstatus.** A verifier returning non-zero must NEVER, by itself, turn a\nsuccessful backend execution into rejected/blocked, fail a task, block a phase,\nor trigger an automatic rerun. Verification is the result of a command, not\nauthority to rewrite history.\n\nDo NOT reintroduce -- under any name, feature flag, \"advisory\" wrapper, or\ncompatibility mode -- context completeness/sufficiency scoring, change or\narchitecture assessment used as a gate, intent/scope matching, reconciliation\ngates, no-progress judgments, confidence/risk scores, model/LLM/reviewer\njudgments over status, shadow/adaptive/secondary-verification gates, or\nheuristic retry/failure-classification control flow. Failure classification may\nonly *summarize* an already-established concrete failure; it must never create\none. Retries are permitted only for explicitly defined mechanical backend\nfailures. Future agents must not add these systems back.\n\n---\n\n## Git Rules\n\n- Do not commit:\n  - runtime_state.json\n  - reports/\n  - logs/\n  - virtual environments\n- Do not modify .gitignore unless required by task\n- Do not create excessive commits; prefer grouped logical commits\n\n---\n\n## Allowed Changes\n\n- Implement task requirements\n- Fix failing verification\n- Update relevant tests\n- Improve documentation tied to the task\n\n---\n\n## Forbidden Changes\n\n- Changing architecture without explicit instruction\n- Adding dependencies without justification\n- Modifying unrelated files\n- Deleting important files\n- Bypassing verification\n\n---\n\n## Planning Rules\n\n- Plans are multi-phase\n- Completed sections are immutable\n- Remaining sections may be updated\n- Tasks must align with:\n  - project brief\n  - architecture constraints\n  - active phase\n\n---\n\n## Reporting\n\n- All executions must produce structured reports\n- Reports must include:\n  - changed files\n  - verification results\n  - assessment\n\n---\n\n## Behavior\n\n- Do not ask unnecessary questions\n- Do not stall execution\n- Do not perform broad scans unless required\n- Prefer direct action over analysis\n\n---\n\n## Priority Order\n\nThis ordering guides *implementation decisions* only. It does NOT make\nverification an acceptance authority: verification results are observational\n(see \"Execution Control Flow\"), and never override a concrete backend\nexecution result.\n\n1. Architecture constraints\n2. Task definition\n3. Verification results (observational signal, not acceptance authority)\n4. Plan guidance\n\nIf conflicts occur, follow this order.\n",
+        "--dangerously-skip-permissions",
+        "--add-dir",
+        "/home/mike/dev/mike/music/python/abracapture",
+        "--log-file",
+        "/tmp/abracapocus-antigravity-62dd4598e1cb413aba0ae307b27fcd60.log"
+      ],
+      "stdout": "I have implemented [`OutputPathPolicy`](file:///home/mike/dev/mike/music/python/abracapture/src/recording/OutputPathPolicy.hpp) and [`CaptureMetadata`](file:///home/mike/dev/mike/music/python/abracapture/src/recording/OutputPathPolicy.hpp#L10-L17) in `src/recording/OutputPathPolicy.hpp` and `src/recording/OutputPathPolicy.cpp`.\n\n### Summary of Changes\n\n1. **[`src/recording/OutputPathPolicy.hpp`](file:///home/mike/dev/mike/music/python/abracapture/src/recording/OutputPathPolicy.hpp)**:\n   - Declared [`CaptureMetadata`](file:///home/mike/dev/mike/music/python/abracapture/src/recording/OutputPathPolicy.hpp#L10-L17) holding `source`, `sampleRate`, `channels`, `format`, `counter`, and `timestamp`.\n   - Declared [`OutputPathPolicy`](file:///home/mike/dev/mike/music/python/abracapture/src/recording/OutputPathPolicy.hpp#L19-L43) with configuration parameters (base output directory, filename template, default format extension) and public methods:\n     - [`resolveOutputPath(metadata)`](file:///home/mike/dev/mike/music/python/abracapture/src/recording/OutputPathPolicy.hpp#L35)\n     - [`validate()`](file:///home/mike/dev/mike/music/python/abracapture/src/recording/OutputPathPolicy.hpp#L36)\n\n2. **[`src/recording/OutputPathPolicy.cpp`](file:///home/mike/dev/mike/music/python/abracapture/src/recording/OutputPathPolicy.cpp)**:\n   - Implemented template placeholder substitution for `{date}`, `{time}`, `{datetime}`, `{source}`, `{format}`, `{samplerate}`, `{channels}`, and `{counter}`, sanitizing filename characters and validating placeholder syntax.\n   - Handled automatic output directory creation with `std::filesystem::create_directories`.\n   - Implemented numeric suffix collision resolution (`_001`, `_002`, etc.) when candidate paths exist.\n   - Implemented [`validate()`](file:///home/mike/dev/mike/music/python/abracapture/src/recording/OutputPathPolicy.cpp#L69-L124) writability checking for the configured base directory.\n   - Built exclusively using the C++ standard library (`<filesystem>`, `<chrono>`, `<sstream>`, `<iomanip>`) with zero Qt dependencies.\n\n### Verification\n\n- Passed syntax verification: `g++ -std=c++20 -fsyntax-only src/recording/OutputPathPolicy.cpp -I src`\n- Passed Qt isolation check: `! grep -q '#include.*<Q' src/recording/OutputPathPolicy.hpp src/recording/OutputPathPolicy.cpp`\n- Validated placeholder expansion, directory creation, collision avoidance, and invalid placeholder rejection via unit tests.\n",
+      "stderr": "",
+      "exit_code": 0,
+      "duration_seconds": 88.12946367263794,
+      "model": "gemini-3.7-flash-medium",
+      "model_tags": [],
+      "task_type": "coding",
+      "working_directory": "/home/mike/dev/mike/music/python/abracapture",
+      "changed_files": [
+        {
+          "path": "src/recording/OutputPathPolicy.cpp",
+          "status": "untracked",
+          "code": "??"
+        },
+        {
+          "path": "src/recording/OutputPathPolicy.hpp",
+          "status": "untracked",
+          "code": "??"
+        }
+      ],
+      "diff_summary": "git diff reported no changes",
+      "model_attempts": [
+        {
+          "backend": "antigravity_cli",
+          "model": "gemini-3.7-flash-medium",
+          "exit_code": 0,
+          "stdout": "I have implemented [`OutputPathPolicy`](file:///home/mike/dev/mike/music/python/abracapture/src/recording/OutputPathPolicy.hpp) and [`CaptureMetadata`](file:///home/mike/dev/mike/music/python/abracapture/src/recording/OutputPathPolicy.hpp#L10-L17) in `src/recording/OutputPathPolicy.hpp` and `src/recording/OutputPathPolicy.cpp`.\n\n### Summary of Changes\n\n1. **[`src/recording/OutputPathPolicy.hpp`](file:///home/mike/dev/mike/music/python/abracapture/src/recording/OutputPathPolicy.hpp)**:\n   - Declared [`CaptureMetadata`](file:///home/mike/dev/mike/music/python/abracapture/src/recording/OutputPathPolicy.hpp#L10-L17) holding `source`, `sampleRate`, `channels`, `format`, `counter`, and `timestamp`.\n   - Declared [`OutputPathPolicy`](file:///home/mike/dev/mike/music/python/abracapture/src/recording/OutputPathPolicy.hpp#L19-L43) with configuration parameters (base output directory, filename template, default format extension) and public methods:\n     - [`resolveOutputPath(metadata)`](file:///home/mike/dev/mike/music/python/abracapture/src/recording/OutputPathPolicy.hpp#L35)\n     - [`validate()`](file:///home/mike/dev/mike/music/python/abracapture/src/recording/OutputPathPolicy.hpp#L36)\n\n2. **[`src/recording/OutputPathPolicy.cpp`](file:///home/mike/dev/mike/music/python/abracapture/src/recording/OutputPathPolicy.cpp)**:\n   - Implemented template placeholder substitution for `{date}`, `{time}`, `{datetime}`, `{source}`, `{format}`, `{samplerate}`, `{channels}`, and `{counter}`, sanitizing filename characters and validating placeholder syntax.\n   - Handled automatic output directory creation with `std::filesystem::create_directories`.\n   - Implemented numeric suffix collision resolution (`_001`, `_002`, etc.) when candidate paths exist.\n   - Implemented [`validate()`](file:///home/mike/dev/mike/music/python/abracapture/src/recording/OutputPathPolicy.cpp#L69-L124) writability checking for the configured base directory.\n   - Built exclusively using the C++ standard library (`<filesystem>`, `<chrono>`, `<sstream>`, `<iomanip>`) with zero Qt dependencies.\n\n### Verification\n\n- Passed syntax verification: `g++ -std=c++20 -fsyntax-only src/recording/OutputPathPolicy.cpp -I src`\n- Passed Qt isolation check: `! grep -q '#include.*<Q' src/recording/OutputPathPolicy.hpp src/recording/OutputPathPolicy.cpp`\n- Validated placeholder expansion, directory creation, collision avoidance, and invalid placeholder rejection via unit tests.\n",
+          "stderr": "",
+          "duration_seconds": 88.12946367263794,
+          "changed_files": [
+            {
+              "path": "src/recording/OutputPathPolicy.cpp",
+              "status": "untracked",
+              "code": "??"
+            },
+            {
+              "path": "src/recording/OutputPathPolicy.hpp",
+              "status": "untracked",
+              "code": "??"
+            }
+          ],
+          "diff_summary": "git diff reported no changes",
+          "outcome_classification": "backend_completed_with_changes",
+          "backend_timeout": false,
+          "backend_verification_timeout": false,
+          "timeout_seconds": null
+        }
+      ],
+      "write_policy_violations": [],
+      "outcome_classification": "backend_completed_with_changes",
+      "backend_timeout": false,
+      "backend_verification_timeout": false,
+      "timeout_seconds": null,
+      "changed_files_at_timeout_exit": [],
+      "abracapocus_verification_ran_after_backend_timeout": false,
+      "verification_owner": "abracapocus",
+      "verification_result": "passed"
+    }
+  ],
+  "review": {
+    "status": "approved",
+    "findings": [],
+    "summary": "d.4:Review complete",
+    "created_at": "2026-08-16T00:27:39.060124"
+  },
+  "verification": {
+    "status": "passed",
+    "checks": [
+      {
+        "name": "syntax_check",
+        "status": "passed",
+        "detail": "ok",
+        "command": [
+          "g++",
+          "-std=c++20",
+          "-fsyntax-only",
+          "src/recording/OutputPathPolicy.cpp",
+          "-I",
+          "src"
+        ],
+        "exit_code": 0
+      },
+      {
+        "name": "no_qt",
+        "status": "passed",
+        "detail": "ok",
+        "command": [
+          "bash",
+          "-c",
+          "! grep -q '#include.*<Q' src/recording/OutputPathPolicy.hpp src/recording/OutputPathPolicy.cpp"
+        ],
+        "exit_code": 0
+      }
+    ],
+    "created_at": "2026-08-16T00:27:39.060170",
+    "notes": "D:passed",
+    "profile": "focused"
+  },
+  "change_assessment": {
+    "task_intent": "Create OutputPathPolicy, a configurable policy class that determines the output directory and filename for capture files based on user settings, source metadata, timestamp, and format.\n\nBefore editing, inspect:\n- Any existing src/recording/ files for naming conventions and types\n- Any existing settings or configuration types that OutputPathPolicy should reference\n\nDo not infer APIs, schemas, behavior, or file contents; inspect the referenced files first.\n\nImplementation requirements:\n1. Declare class OutputPathPolicy in OutputPathPolicy.hpp. It should accept configuration parameters: base output directory (std::filesystem::path), filename template (std::string with placeholders), and default format extension.\n2. Supported filename placeholders: {date}, {time}, {datetime}, {source}, {format}, {samplerate}, {channels}, {counter}. The policy resolves these at capture-start time.\n3. Implement resolveOutputPath(metadata) -> std::filesystem::path in OutputPathPolicy.cpp. metadata should carry source name, sample rate, channel count, and format. The method returns the fully resolved absolute path.\n4. On resolveOutputPath(), create the output directory if it does not exist (std::filesystem::create_directories). If directory creation fails, return an error or throw.\n5. Handle filename collisions: if the resolved path already exists, append an incrementing suffix (_001, _002, etc.) before the extension.\n6. Validate the base directory is writable at construction or via a validate() method.\n7. Keep the implementation pure C++ standard library (std::filesystem, std::chrono, std::format or ostringstream). No Qt dependency.\n\nSTRICT FILE SCOPE: Create or modify ONLY the files listed in this task's allowed_write_paths.",
+    "changed_files_summary": "Change assessment disabled",
+    "verification_summary": "passed",
+    "assessment_status": "skipped",
+    "notes": "Change assessment disabled; set ABRACAPOCUS_CHANGE_ASSESSMENT_ENABLED=true to enable advisory telemetry",
+    "matches_intent": null,
+    "scope_status": "unknown",
+    "architecture_violation": false,
+    "affected_modules": [
+      "src"
+    ],
+    "boundary_crossings": [],
+    "risk_level": "unknown",
+    "unrelated_changes": [],
+    "public_contract_changes": [],
+    "new_dependencies": [],
+    "assessment_summary": "change_assessment disabled"
+  },
+  "metadata": {
+    "run_id": "261f8a00-ba63-4984-862d-d36a1aa8f169",
+    "project_name": "abracapture",
+    "plan_version": "task-d.4",
+    "task_id": "d.4",
+    "task_title": "Implement output directory and filename policy",
+    "task_status": "completed",
+    "selected_backend": "antigravity_cli",
+    "verification_profile": "focused",
+    "backend_reason": "phase_based",
+    "frame_failures": [],
+    "agents_md": {
+      "loaded": true,
+      "path": "/home/mike/dev/mike/abracapocus/python/abracapocus_2/AGENTS.md",
+      "rule_count": 77,
+      "sha256_12": "6542ba83ce0c"
+    },
+    "phase_results": [
+      {
+        "phase_name": "D",
+        "status": "passed",
+        "verification": "passed",
+        "task_results": [
+          {
+            "task_id": "d.4",
+            "status": "passed",
+            "acceptance_status": "accepted",
+            "backend": "antigravity_cli",
+            "backend_outcome_classification": "backend_completed_with_changes",
+            "changed_files": [
+              {
+                "path": "src/recording/OutputPathPolicy.cpp",
+                "status": "untracked",
+                "code": "??"
+              },
+              {
+                "path": "src/recording/OutputPathPolicy.hpp",
+                "status": "untracked",
+                "code": "??"
+              }
+            ],
+            "reconciliation_status": null,
+            "backend_timeout": false,
+            "backend_elapsed_seconds": 88.12946367263794,
+            "backend_timeout_seconds": null,
+            "changed_files_at_timeout_exit": [],
+            "abracapocus_verification_ran_after_backend_timeout": false,
+            "verification_owner": "abracapocus",
+            "verification_result": "passed",
+            "verification_status": "passed",
+            "verification_checks": [
+              {
+                "name": "syntax_check",
+                "status": "passed",
+                "detail": "ok",
+                "command": [
+                  "g++",
+                  "-std=c++20",
+                  "-fsyntax-only",
+                  "src/recording/OutputPathPolicy.cpp",
+                  "-I",
+                  "src"
+                ],
+                "exit_code": 0
+              },
+              {
+                "name": "no_qt",
+                "status": "passed",
+                "detail": "ok",
+                "command": [
+                  "bash",
+                  "-c",
+                  "! grep -q '#include.*<Q' src/recording/OutputPathPolicy.hpp src/recording/OutputPathPolicy.cpp"
+                ],
+                "exit_code": 0
+              }
+            ],
+            "frame_failure": false,
+            "retry_attempts": []
+          }
+        ]
+      }
+    ]
+  }
+}

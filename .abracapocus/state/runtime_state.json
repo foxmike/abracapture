@@ -1,17 +1,17 @@
 {
   "project_name": "abracapture",
-  "plan_version": "task-d.4",
+  "plan_version": "task-d.3",
   "active_phase": "D",
   "default_backend": "codex_cli",
   "routing_mode": "manual",
   "tasks": [
     {
-      "task_id": "d.4",
-      "title": "Implement output directory and filename policy",
+      "task_id": "d.3",
+      "title": "Implement atomic recording sink and safe finalization",
       "phase": "D",
-      "status": "completed",
-      "backend": "antigravity_cli",
-      "last_run": "2026-08-16T00:27:38.977413",
+      "status": "planned",
+      "backend": "codex_cli",
+      "last_run": null,
       "notes": ""
     }
   ],
