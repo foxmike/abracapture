@@ -1,0 +1,119 @@
+{
+  "path": null,
+  "run_id": "261f8a00-ba63-4984-862d-d36a1aa8f169",
+  "task_id": "d.4",
+  "phase_name": "D",
+  "task_title": "Implement output directory and filename policy",
+  "task_file": null,
+  "acceptance_criteria": [
+    "src/recording/OutputPathPolicy.hpp exists and declares OutputPathPolicy with resolveOutputPath and validate public interface",
+    "src/recording/OutputPathPolicy.cpp exists and implements placeholder resolution for {date}, {time}, {datetime}, {source}, {format}, {samplerate}, {channels}, {counter}",
+    "OutputPathPolicy creates the output directory if it does not exist",
+    "OutputPathPolicy handles filename collisions with incrementing suffixes",
+    "OutputPathPolicy validates that the base directory is writable",
+    "Implementation uses only C++ standard library, no Qt dependency",
+    "No file outside the task's allowed_write_paths is created or modified"
+  ],
+  "selected_backend": "antigravity_cli",
+  "selected_model": "gemini-3.7-flash-medium",
+  "routing_reason": "phase_based",
+  "task_type": "coding",
+  "task_complexity": null,
+  "risk_level": null,
+  "commit_before": null,
+  "commit_after": null,
+  "exit_code": 0,
+  "stdout": "I have implemented [`OutputPathPolicy`](file:///home/mike/dev/mike/music/python/abracapture/src/recording/OutputPathPolicy.hpp) and [`CaptureMetadata`](file:///home/mike/dev/mike/music/python/abracapture/src/recording/OutputPathPolicy.hpp#L10-L17) in `src/recording/OutputPathPolicy.hpp` and `src/recording/OutputPathPolicy.cpp`.\n\n### Summary of Changes\n\n1. **[`src/recording/OutputPathPolicy.hpp`](file:///home/mike/dev/mike/music/python/abracapture/src/recording/OutputPathPolicy.hpp)**:\n   - Declared [`CaptureMetadata`](file:///home/mike/dev/mike/music/python/abracapture/src/recording/OutputPathPolicy.hpp#L10-L17) holding `source`, `sampleRate`, `channels`, `format`, `counter`, and `timestamp`.\n   - Declared [`OutputPathPolicy`](file:///home/mike/dev/mike/music/python/abracapture/src/recording/OutputPathPolicy.hpp#L19-L43) with configuration parameters (base output directory, filename template, default format extension) and public methods:\n     - [`resolveOutputPath(metadata)`](file:///home/mike/dev/mike/music/python/abracapture/src/recording/OutputPathPolicy.hpp#L35)\n     - [`validate()`](file:///home/mike/dev/mike/music/python/abracapture/src/recording/OutputPathPolicy.hpp#L36)\n\n2. **[`src/recording/OutputPathPolicy.cpp`](file:///home/mike/dev/mike/music/python/abracapture/src/recording/OutputPathPolicy.cpp)**:\n   - Implemented template placeholder substitution for `{date}`, `{time}`, `{datetime}`, `{source}`, `{format}`, `{samplerate}`, `{channels}`, and `{counter}`, sanitizing filename characters and validating placeholder syntax.\n   - Handled automatic output directory creation with `std::filesystem::create_directories`.\n   - Implemented numeric suffix collision resolution (`_001`, `_002`, etc.) when candidate paths exist.\n   - Implemented [`validate()`](file:///home/mike/dev/mike/music/python/abracapture/src/recording/OutputPathPolicy.cpp#L69-L124) writability checking for the configured base directory.\n   - Built exclusively using the C++ standard library (`<filesystem>`, `<chrono>`, `<sstream>`, `<iomanip>`) with zero Qt dependencies.\n\n### Verification\n\n- Passed syntax verification: `g++ -std=c++20 -fsyntax-only src/recording/OutputPathPolicy.cpp -I src`\n- Passed Qt isolation check: `! grep -q '#include.*<Q' src/recording/OutputPathPolicy.hpp src/recording/OutputPathPolicy.cpp`\n- Validated placeholder expansion, directory creation, collision avoidance, and invalid placeholder rejection via unit tests.\n",
+  "stderr": "",
+  "duration_seconds": 88.12946367263794,
+  "changed_files": [
+    {
+      "path": "src/recording/OutputPathPolicy.cpp",
+      "status": "untracked",
+      "code": null
+    },
+    {
+      "path": "src/recording/OutputPathPolicy.hpp",
+      "status": "untracked",
+      "code": null
+    }
+  ],
+  "write_policy_violations": [],
+  "diff_summary": "git diff reported no changes",
+  "backend_outcome_classification": "backend_completed_with_changes",
+  "backend_timeout": false,
+  "backend_elapsed_seconds": 88.12946367263794,
+  "backend_timeout_seconds": null,
+  "changed_files_at_timeout_exit": [],
+  "abracapocus_verification_ran_after_backend_timeout": false,
+  "verification_owner": "abracapocus",
+  "verification_result": "passed",
+  "verification_status": "passed",
+  "verification_checks": [
+    {
+      "name": "syntax_check",
+      "status": "passed"
+    },
+    {
+      "name": "no_qt",
+      "status": "passed"
+    }
+  ],
+  "acceptance_status": "accepted",
+  "failure_classification": null,
+  "failure_summary": "",
+  "change_assessment": null,
+  "task_reconciliation": null,
+  "evidence": {
+    "exit_code": 0,
+    "stdout": "I have implemented [`OutputPathPolicy`](file:///home/mike/dev/mike/music/python/abracapture/src/recording/OutputPathPolicy.hpp) and [`CaptureMetadata`](file:///home/mike/dev/mike/music/python/abracapture/src/recording/OutputPathPolicy.hpp#L10-L17) in `src/recording/OutputPathPolicy.hpp` and `src/recording/OutputPathPolicy.cpp`.\n\n### Summary of Changes\n\n1. **[`src/recording/OutputPathPolicy.hpp`](file:///home/mike/dev/mike/music/python/abracapture/src/recording/OutputPathPolicy.hpp)**:\n   - Declared [`CaptureMetadata`](file:///home/mike/dev/mike/music/python/abracapture/src/recording/OutputPathPolicy.hpp#L10-L17) holding `source`, `sampleRate`, `channels`, `format`, `counter`, and `timestamp`.\n   - Declared [`OutputPathPolicy`](file:///home/mike/dev/mike/music/python/abracapture/src/recording/OutputPathPolicy.hpp#L19-L43) with configuration parameters (base output directory, filename template, default format extension) and public methods:\n     - [`resolveOutputPath(metadata)`](file:///home/mike/dev/mike/music/python/abracapture/src/recording/OutputPathPolicy.hpp#L35)\n     - [`validate()`](file:///home/mike/dev/mike/music/python/abracapture/src/recording/OutputPathPolicy.hpp#L36)\n\n2. **[`src/recording/OutputPathPolicy.cpp`](file:///home/mike/dev/mike/music/python/abracapture/src/recording/OutputPathPolicy.cpp)**:\n   - Implemented template placeholder substitution for `{date}`, `{time}`, `{datetime}`, `{source}`, `{format}`, `{samplerate}`, `{channels}`, and `{counter}`, sanitizing filename characters and validating placeholder syntax.\n   - Handled automatic output directory creation with `std::filesystem::create_directories`.\n   - Implemented numeric suffix collision resolution (`_001`, `_002`, etc.) when candidate paths exist.\n   - Implemented [`validate()`](file:///home/mike/dev/mike/music/python/abracapture/src/recording/OutputPathPolicy.cpp#L69-L124) writability checking for the configured base directory.\n   - Built exclusively using the C++ standard library (`<filesystem>`, `<chrono>`, `<sstream>`, `<iomanip>`) with zero Qt dependencies.\n\n### Verification\n\n- Passed syntax verification: `g++ -std=c++20 -fsyntax-only src/recording/OutputPathPolicy.cpp -I src`\n- Passed Qt isolation check: `! grep -q '#include.*<Q' src/recording/OutputPathPolicy.hpp src/recording/OutputPathPolicy.cpp`\n- Validated placeholder expansion, directory creation, collision avoidance, and invalid placeholder rejection via unit tests.\n",
+    "stderr": "",
+    "duration_seconds": 88.12946367263794,
+    "verification_output": null,
+    "verification_status": "passed",
+    "verification_checks": [
+      {
+        "name": "syntax_check",
+        "status": "passed"
+      },
+      {
+        "name": "no_qt",
+        "status": "passed"
+      }
+    ],
+    "changed_files": [
+      "src/recording/OutputPathPolicy.cpp",
+      "src/recording/OutputPathPolicy.hpp"
+    ],
+    "affected_modules": [],
+    "scope_status": null,
+    "acceptance_status": "accepted",
+    "rejection_reason": null,
+    "rejected_reason": null,
+    "failure_classification": null,
+    "failure_summary": null,
+    "reconciliation_status": null,
+    "reconciliation_source": null,
+    "reconciliation_detail": null,
+    "risk_level": null,
+    "backend_outcome_classification": "backend_completed_with_changes",
+    "backend_timeout": false,
+    "backend_elapsed_seconds": 88.12946367263794,
+    "backend_timeout_seconds": null,
+    "changed_files_at_timeout_exit": [],
+    "abracapocus_verification_ran_after_backend_timeout": false,
+    "verification_owner": "abracapocus",
+    "verification_result": "passed",
+    "runtime_startup_attempted": null,
+    "runtime_startup_failed": null,
+    "runtime_startup_error": null,
+    "dependency_advisory": null,
+    "lifecycle_state": "accepted"
+  },
+  "shadow_execution": null,
+  "artifact_references": [
+    "reports/run-261f8a00-ba63-4984-862d-d36a1aa8f169.json"
+  ],
+  "created_at": "2026-08-16T00:27:38.330240",
+  "lifecycle_state": "accepted"
+}

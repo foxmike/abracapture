@@ -1,17 +1,17 @@
 {
   "project_name": "abracapture",
-  "plan_version": "task-d.2",
+  "plan_version": "task-d.4",
   "active_phase": "D",
   "default_backend": "codex_cli",
   "routing_mode": "manual",
   "tasks": [
     {
-      "task_id": "d.2",
-      "title": "Implement FLAC lossless master writer",
+      "task_id": "d.4",
+      "title": "Implement output directory and filename policy",
       "phase": "D",
-      "status": "completed",
-      "backend": "codex_cli",
-      "last_run": "2026-08-16T00:04:33.436943",
+      "status": "planned",
+      "backend": "antigravity_cli",
+      "last_run": null,
       "notes": ""
     }
   ],
