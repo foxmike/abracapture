@@ -1,17 +1,17 @@
 {
   "project_name": "abracapture",
-  "plan_version": "task-d.1",
+  "plan_version": "task-d.2",
   "active_phase": "D",
   "default_backend": "codex_cli",
   "routing_mode": "manual",
   "tasks": [
     {
-      "task_id": "d.1",
-      "title": "Implement WAV lossless master writer",
+      "task_id": "d.2",
+      "title": "Implement FLAC lossless master writer",
       "phase": "D",
-      "status": "completed",
+      "status": "planned",
       "backend": "codex_cli",
-      "last_run": "2026-08-16T00:02:11.218004",
+      "last_run": null,
       "notes": ""
     }
   ],
