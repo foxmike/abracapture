@@ -790,5 +790,121 @@
       "version": "task-c.3",
       "created_at": "2026-08-15T23:53:40.632928"
     }
+  },
+  {
+    "created_at": "2026-08-15T23:59:26.234652",
+    "project_name": "abracapture",
+    "goal": "Create the CaptureSession class that owns the ring buffer, PipeWire capture stream, and metrics publisher, and manages the full capture lifecycle including source disconnection detection and reconnection.\n\nBefore editing, inspect:\n- src/audio/AudioRingBuffer.hpp for the ring buffer interface (write, read, overflow/underrun reporting).\n- src/audio/PipeWireCaptureStream.hpp for stream lifecycle (start, stop, status callback, negotiated format accessors).\n- src/audio/CaptureMetrics.hpp for the metrics snapshot publisher interface.\n\nDo not infer APIs, schemas, behavior, or file contents; inspect the referenced files first.\n\nImplement CaptureSession with:\n- Ownership of one AudioRingBuffer, one PipeWireCaptureStream, and one CaptureMetrics instance.\n- Session states: Idle, Connecting, Capturing, Reconnecting, Stopped, Error. Expose the current state and state transitions via an enum and a callback or observer.\n- begin(sourceId, format, rate, channels): creates and starts the capture stream with the given parameters. Wires the stream's status callback to detect disconnection.\n- stop(): cleanly stops the stream, flushes remaining ring buffer data to a consumer callback, transitions to Stopped.\n- Source-loss handling: when the PipeWire stream reports disconnection or error, transition to Reconnecting. Re-resolve the source via the SourceCatalog from Phase B using the stable source identity (display name, media class, or device descriptor), not just the original numeric PipeWire node ID, since a reappeared application stream may have a different node ID. Attempt reconnection up to a configurable retry count with backoff. If resolution and reconnection fail after all retries, transition to Error.\n- Expose the negotiated format metadata from the underlying stream so callers can determine native vs converted capture.\n- Expose a CaptureMetricsSnapshot reader that delegates to the owned CaptureMetrics.\n- Do not perform file I/O, compression, or GUI work. The session is the coordination layer between the realtime capture components; a separate writer layer (phase D or later) consumes from the ring buffer.\n\nSTRICT FILE SCOPE: Create or modify ONLY the files listed in this task's allowed_write_paths.\n\nVisualization contract: expose a CaptureVisualizationSnapshot reader that delegates to PipeWireCaptureStream. This is the sole non-recording waveform source: callers receive a value copy and poll/deliver it from a non-realtime coordination path; CaptureSession must never drain AudioRingBuffer for visualization.",
+    "plan_template": {
+      "project_name": "abracapture",
+      "summary": "Task run: Implement capture session lifecycle and source reconnection",
+      "phases": [
+        {
+          "name": "C",
+          "objective": "Create the CaptureSession class that owns the ring buffer, PipeWire capture stream, and metrics publisher, and manages the full capture lifecycle including source disconnection detection and reconnection.\n\nBefore editing, inspect:\n- src/audio/AudioRingBuffer.hpp for the ring buffer interface (write, read, overflow/underrun reporting).\n- src/audio/PipeWireCaptureStream.hpp for stream lifecycle (start, stop, status callback, negotiated format accessors).\n- src/audio/CaptureMetrics.hpp for the metrics snapshot publisher interface.\n\nDo not infer APIs, schemas, behavior, or file contents; inspect the referenced files first.\n\nImplement CaptureSession with:\n- Ownership of one AudioRingBuffer, one PipeWireCaptureStream, and one CaptureMetrics instance.\n- Session states: Idle, Connecting, Capturing, Reconnecting, Stopped, Error. Expose the current state and state transitions via an enum and a callback or observer.\n- begin(sourceId, format, rate, channels): creates and starts the capture stream with the given parameters. Wires the stream's status callback to detect disconnection.\n- stop(): cleanly stops the stream, flushes remaining ring buffer data to a consumer callback, transitions to Stopped.\n- Source-loss handling: when the PipeWire stream reports disconnection or error, transition to Reconnecting. Re-resolve the source via the SourceCatalog from Phase B using the stable source identity (display name, media class, or device descriptor), not just the original numeric PipeWire node ID, since a reappeared application stream may have a different node ID. Attempt reconnection up to a configurable retry count with backoff. If resolution and reconnection fail after all retries, transition to Error.\n- Expose the negotiated format metadata from the underlying stream so callers can determine native vs converted capture.\n- Expose a CaptureMetricsSnapshot reader that delegates to the owned CaptureMetrics.\n- Do not perform file I/O, compression, or GUI work. The session is the coordination layer between the realtime capture components; a separate writer layer (phase D or later) consumes from the ring buffer.\n\nSTRICT FILE SCOPE: Create or modify ONLY the files listed in this task's allowed_write_paths.\n\nVisualization contract: expose a CaptureVisualizationSnapshot reader that delegates to PipeWireCaptureStream. This is the sole non-recording waveform source: callers receive a value copy and poll/deliver it from a non-realtime coordination path; CaptureSession must never drain AudioRingBuffer for visualization.",
+          "status": "completed",
+          "tasks": [
+            {
+              "task": {
+                "task_id": "c.4",
+                "title": "Implement capture session lifecycle and source reconnection",
+                "description": "Create the CaptureSession class that owns the ring buffer, PipeWire capture stream, and metrics publisher, and manages the full capture lifecycle including source disconnection detection and reconnection.\n\nBefore editing, inspect:\n- src/audio/AudioRingBuffer.hpp for the ring buffer interface (write, read, overflow/underrun reporting).\n- src/audio/PipeWireCaptureStream.hpp for stream lifecycle (start, stop, status callback, negotiated format accessors).\n- src/audio/CaptureMetrics.hpp for the metrics snapshot publisher interface.\n\nDo not infer APIs, schemas, behavior, or file contents; inspect the referenced files first.\n\nImplement CaptureSession with:\n- Ownership of one AudioRingBuffer, one PipeWireCaptureStream, and one CaptureMetrics instance.\n- Session states: Idle, Connecting, Capturing, Reconnecting, Stopped, Error. Expose the current state and state transitions via an enum and a callback or observer.\n- begin(sourceId, format, rate, channels): creates and starts the capture stream with the given parameters. Wires the stream's status callback to detect disconnection.\n- stop(): cleanly stops the stream, flushes remaining ring buffer data to a consumer callback, transitions to Stopped.\n- Source-loss handling: when the PipeWire stream reports disconnection or error, transition to Reconnecting. Re-resolve the source via the SourceCatalog from Phase B using the stable source identity (display name, media class, or device descriptor), not just the original numeric PipeWire node ID, since a reappeared application stream may have a different node ID. Attempt reconnection up to a configurable retry count with backoff. If resolution and reconnection fail after all retries, transition to Error.\n- Expose the negotiated format metadata from the underlying stream so callers can determine native vs converted capture.\n- Expose a CaptureMetricsSnapshot reader that delegates to the owned CaptureMetrics.\n- Do not perform file I/O, compression, or GUI work. The session is the coordination layer between the realtime capture components; a separate writer layer (phase D or later) consumes from the ring buffer.\n\nSTRICT FILE SCOPE: Create or modify ONLY the files listed in this task's allowed_write_paths.\n\nVisualization contract: expose a CaptureVisualizationSnapshot reader that delegates to PipeWireCaptureStream. This is the sole non-recording waveform source: callers receive a value copy and poll/deliver it from a non-realtime coordination path; CaptureSession must never drain AudioRingBuffer for visualization.",
+                "phase": "C",
+                "dependencies": [
+                  "c.1",
+                  "c.2",
+                  "c.3"
+                ],
+                "exclusivity_category": null,
+                "max_in_category": null,
+                "status": "completed",
+                "acceptance_criteria": [
+                  "src/audio/CaptureSession.hpp exists and declares CaptureSession with begin(), stop(), state accessors, and reconnection logic",
+                  "src/audio/CaptureSession.cpp exists and compiles cleanly",
+                  "CaptureSession owns or references AudioRingBuffer, PipeWireCaptureStream, and CaptureMetrics (verified by #include of their headers)",
+                  "Session state enum includes at minimum: Idle, Connecting, Capturing, Reconnecting, Stopped, Error",
+                  "Source-loss triggers a transition to Reconnecting with bounded retry attempts",
+                  "Negotiated format metadata is exposed via public accessors delegating to PipeWireCaptureStream",
+                  "No file I/O, compression, or Qt GUI headers appear in either file",
+                  "g++ -std=c++20 -fsyntax-only src/audio/CaptureSession.cpp -I src $(pkg-config --cflags libpipewire-0.3) passes or cmake --build build compiles the unit",
+                  "No file outside the task's allowed_write_paths is created or modified",
+                  "CaptureSession exposes a bounded CaptureVisualizationSnapshot reader delegating to PipeWireCaptureStream and never drains AudioRingBuffer for visualization"
+                ],
+                "created_at": "2026-08-15T23:55:13.514391",
+                "selected_backend": "codex_cli",
+                "model": "gpt-5.6-sol",
+                "provider": null,
+                "task_timeout_seconds": 900.0,
+                "verification_profile": "focused",
+                "verification_commands": [
+                  {
+                    "name": "syntax_check",
+                    "command": [
+                      "bash",
+                      "-c",
+                      "g++ -std=c++20 -fsyntax-only src/audio/CaptureSession.cpp -I src $(pkg-config --cflags libpipewire-0.3)"
+                    ]
+                  },
+                  {
+                    "name": "no_file_io",
+                    "command": [
+                      "bash",
+                      "-c",
+                      "! grep -qE 'std::ofstream|fopen|QFile' src/audio/CaptureSession.hpp src/audio/CaptureSession.cpp"
+                    ]
+                  }
+                ],
+                "allowed_write_paths": [
+                  "src/audio/CaptureSession.hpp",
+                  "src/audio/CaptureSession.cpp"
+                ],
+                "forbidden_changes": [
+                  "modify any file outside src/audio/CaptureSession.hpp and src/audio/CaptureSession.cpp",
+                  "modify AudioRingBuffer, PipeWireCaptureStream, or CaptureMetrics files",
+                  "perform file I/O, compression, or disk writes",
+                  "include Qt GUI or widget headers",
+                  "add third-party dependencies beyond PipeWire 0.3 and the C++ standard library"
+                ],
+                "allowed_symbols": [
+                  "CaptureSession",
+                  "SessionState",
+                  "begin",
+                  "stop",
+                  "state",
+                  "StateCallback",
+                  "negotiatedFormat",
+                  "negotiatedSampleRate",
+                  "negotiatedChannels",
+                  "isNativeCapture",
+                  "metricsSnapshot",
+                  "setMaxReconnectAttempts"
+                ],
+                "decision_budget": {
+                  "allowed": [
+                    "choose callback vs observer pattern for state notification",
+                    "choose reconnection backoff strategy (linear, exponential, fixed)",
+                    "choose whether to expose a consumer callback or let callers poll the ring buffer"
+                  ],
+                  "forbidden": [
+                    "implement file writing or encoding",
+                    "add Qt signal/slot integration",
+                    "create a PipeWire main loop or context in this unit",
+                    "introduce async I/O or thread pool"
+                  ]
+                },
+                "forbidden_patterns_override": null
+              },
+              "dependencies": [],
+              "status": "completed"
+            }
+          ],
+          "completed": true,
+          "completed_at": "2026-08-15T23:59:26.130387",
+          "human_checkpoint": null
+        }
+      ],
+      "version": "task-c.4",
+      "created_at": "2026-08-15T23:55:13.754287"
+    }
   }
 ]
