@@ -9,9 +9,9 @@
       "task_id": "d.4",
       "title": "Implement output directory and filename policy",
       "phase": "D",
-      "status": "planned",
+      "status": "completed",
       "backend": "antigravity_cli",
-      "last_run": null,
+      "last_run": "2026-08-16T00:27:38.977413",
       "notes": ""
     }
   ],
@@ -132,6 +132,15 @@
       "reviewer_status": "approved",
       "verifier_status": "passed",
       "timestamp": "2026-08-16T00:04:33.437149"
+    },
+    {
+      "run_id": "261f8a00-ba63-4984-862d-d36a1aa8f169",
+      "task_id": "d.4",
+      "backend": "antigravity_cli",
+      "status": "ok",
+      "reviewer_status": "approved",
+      "verifier_status": "passed",
+      "timestamp": "2026-08-16T00:27:38.977908"
     }
   ],
   "operator_overrides": {},
