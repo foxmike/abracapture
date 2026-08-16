@@ -9,9 +9,9 @@
       "task_id": "d.3",
       "title": "Implement atomic recording sink and safe finalization",
       "phase": "D",
-      "status": "planned",
+      "status": "completed",
       "backend": "codex_cli",
-      "last_run": null,
+      "last_run": "2026-08-16T00:31:38.546918",
       "notes": ""
     }
   ],
@@ -141,6 +141,15 @@
       "reviewer_status": "approved",
       "verifier_status": "passed",
       "timestamp": "2026-08-16T00:27:38.977908"
+    },
+    {
+      "run_id": "4bdfe9c8-2cbc-4a6e-bf45-b0e211a2f9b1",
+      "task_id": "d.3",
+      "backend": "codex_cli",
+      "status": "ok",
+      "reviewer_status": "approved",
+      "verifier_status": "passed",
+      "timestamp": "2026-08-16T00:31:38.547324"
     }
   ],
   "operator_overrides": {},
