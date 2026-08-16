@@ -125,6 +125,10 @@ void CaptureSession::stop() noexcept {
     transitionTo(SessionState::Stopped);
 }
 
+void CaptureSession::drainPendingSamples() noexcept {
+    flushRingBuffer();
+}
+
 SessionState CaptureSession::state() const noexcept {
     return state_.load(std::memory_order_acquire);
 }
@@ -302,22 +306,26 @@ std::unique_ptr<PipeWireCaptureStream> CaptureSession::makeStream(
 }
 
 void CaptureSession::flushRingBuffer() noexcept {
-    if (!consumerCallback_) {
-        return;
-    }
-
-    std::array<float, 4096> samples{};
+    const std::size_t channels = std::max<std::size_t>(1, requestedChannels_);
+    std::array<float, 4096 * SPA_AUDIO_MAX_CHANNELS> samples{};
     while (ringBuffer_.available() != 0) {
-        const std::size_t count =
-            ringBuffer_.read(samples.data(),
-                             std::min(samples.size(), ringBuffer_.available()));
-        if (count == 0) {
+        const std::size_t availableSamples = ringBuffer_.available();
+        const std::size_t sampleCapacity = std::min(samples.size(), availableSamples);
+        const std::size_t samplesToRead = sampleCapacity - (sampleCapacity % channels);
+        if (samplesToRead == 0) {
             break;
         }
-        try {
-            consumerCallback_(samples.data(), count);
-        } catch (...) {
+        const std::size_t samplesRead = ringBuffer_.read(samples.data(), samplesToRead);
+        const std::size_t frameCount = samplesRead / channels;
+        if (frameCount == 0) {
             break;
+        }
+        if (consumerCallback_) {
+            try {
+                consumerCallback_(samples.data(), frameCount);
+            } catch (...) {
+                break;
+            }
         }
     }
 }

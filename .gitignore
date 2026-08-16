@@ -7,3 +7,6 @@ build/
 state/runs/
 
 .idea/
+
+# Local IDE, build, and Abracapocus runtime artifacts
+cmake-build-*/

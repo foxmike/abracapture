@@ -5,7 +5,7 @@ import QtQuick.Layouts
 Item {
     id: root
 
-    property var settingsViewModel: (typeof appSettingsViewModel !== "undefined" ? appSettingsViewModel : (typeof settingsViewModel !== "undefined" ? settingsViewModel : null))
+    property var settingsViewModel
 
     readonly property var vm: root.settingsViewModel
 
@@ -207,6 +207,7 @@ Item {
                                     var selectedDirectory = appController.selectOutputDirectory(root.vm.outputDirectory)
                                     if (selectedDirectory.length > 0) {
                                         root.vm.outputDirectory = selectedDirectory
+                                        root.vm.save()
                                     }
                                 }
                                 contentItem: Text {

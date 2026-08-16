@@ -60,7 +60,13 @@ std::string PropertyNormalizer::extractMediaClass(const spa_dict* props)
 
 std::optional<std::uint32_t> PropertyNormalizer::extractDeviceId(const spa_dict* props)
 {
-    const char* value = lookup(props, PW_KEY_DEVICE_ID);
+    return extractUInt32(props, PW_KEY_DEVICE_ID);
+}
+
+std::optional<std::uint32_t> PropertyNormalizer::extractUInt32(const spa_dict* props,
+                                                               const char* key)
+{
+    const char* value = lookup(props, key);
     if (value == nullptr || *value == '\0')
         return std::nullopt;
 

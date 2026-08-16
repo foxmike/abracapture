@@ -46,6 +46,7 @@ public:
     [[nodiscard]] bool pushSamples(const std::int32_t* buffer, std::size_t frameCount);
 
     [[nodiscard]] CaptureResult finalize();
+    [[nodiscard]] const std::string& lastError() const noexcept;
     void abort();
 
 private:

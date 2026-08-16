@@ -54,6 +54,7 @@ public:
                              std::uint32_t rate,
                              std::uint32_t channels);
     void stop() noexcept;
+    void drainPendingSamples() noexcept;
 
     [[nodiscard]] SessionState state() const noexcept;
     void setMaxReconnectAttempts(std::size_t attempts) noexcept;

@@ -40,6 +40,7 @@ public:
 
     [[nodiscard]] int postRollDurationMs() const noexcept;
     void setPostRollDurationMs(int durationMs) noexcept;
+    void reset() noexcept;
 
 public slots:
     // Call from the GUI/metering thread, never from a realtime audio callback.
@@ -62,4 +63,3 @@ private:
     QElapsedTimer armedTimer_;
     QElapsedTimer postRollTimer_;
 };
-

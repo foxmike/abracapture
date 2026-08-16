@@ -59,6 +59,13 @@ void AutoRecordController::setPostRollDurationMs(const int durationMs) noexcept 
     postRollDurationMs_ = std::max(0, durationMs);
 }
 
+void AutoRecordController::reset() noexcept {
+    state_ = Idle;
+    consecutiveStartPeaks_ = 0;
+    armedTimer_.invalidate();
+    postRollTimer_.invalidate();
+}
+
 void AutoRecordController::feedLevel(const float peakLinear) {
     const float peakDbfs = peakLinear > 0.0F && !std::isnan(peakLinear)
                                ? 20.0F * std::log10(peakLinear)

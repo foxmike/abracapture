@@ -1,5 +1,6 @@
 #include "AppController.hpp"
 
+#include <QApplication>
 #include <QFileDialog>
 
 AppController::AppController(QObject *parent)
@@ -14,7 +15,15 @@ QString AppController::appVersion() const {
 }
 
 QString AppController::selectOutputDirectory(const QString& currentDirectory) const {
-    return QFileDialog::getExistingDirectory(nullptr,
-                                              QStringLiteral("Select Output Directory"),
-                                              currentDirectory);
+    QFileDialog dialog(QApplication::activeWindow(),
+                       QStringLiteral("Select Output Directory"));
+    dialog.setFileMode(QFileDialog::Directory);
+    dialog.setOption(QFileDialog::ShowDirsOnly, true);
+    dialog.setOption(QFileDialog::DontUseNativeDialog, true);
+    dialog.setDirectory(currentDirectory);
+
+    if (dialog.exec() != QDialog::Accepted || dialog.selectedFiles().isEmpty()) {
+        return {};
+    }
+    return dialog.selectedFiles().constFirst();
 }

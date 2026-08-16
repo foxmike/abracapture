@@ -209,4 +209,5 @@ void AppSettings::save() {
     settings.setValue(QString::fromUtf8(kKeyAutoStopEnabled), m_autoStopEnabled);
     settings.setValue(QString::fromUtf8(kKeyPreRollSeconds), m_preRollSeconds);
     settings.setValue(QString::fromUtf8(kKeyPostRollSeconds), m_postRollSeconds);
+    settings.sync();
 }

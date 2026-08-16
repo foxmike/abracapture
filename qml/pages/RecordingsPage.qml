@@ -6,7 +6,7 @@ import QtQuick.Dialogs
 Item {
     id: root
 
-    property var recordingsViewModel: (typeof appRecordingsViewModel !== "undefined" ? appRecordingsViewModel : (typeof recordingsViewModel !== "undefined" ? recordingsViewModel : null))
+    property var recordingsViewModel: null
 
     readonly property var vm: root.recordingsViewModel
     property int selectedIndex: root.vm ? root.vm.selectedIndex : -1

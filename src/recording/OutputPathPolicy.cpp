@@ -213,7 +213,12 @@ std::filesystem::path OutputPathPolicy::resolveOutputPath(const CaptureMetadata&
     }
 
     std::filesystem::path filenamePath(expanded);
-    if (filenamePath.extension().empty()) {
+    std::string extension = filenamePath.extension().string();
+    std::transform(extension.begin(), extension.end(), extension.begin(), [](unsigned char c) {
+        return static_cast<char>(std::tolower(c));
+    });
+    if (extension != ".wav" && extension != ".wave" && extension != ".rf64" &&
+        extension != ".flac") {
         expanded += "." + fmt;
         filenamePath = std::filesystem::path(expanded);
     }

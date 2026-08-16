@@ -266,6 +266,10 @@ CaptureResult RecordingSink::finalize() {
     return result;
 }
 
+const std::string& RecordingSink::lastError() const noexcept {
+    return lastError_;
+}
+
 void RecordingSink::abort() {
     if (auto* const writer = std::get_if<WavWriter>(&writer_)) {
         writer->abort();

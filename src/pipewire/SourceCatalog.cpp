@@ -3,6 +3,7 @@
 #include "PropertyNormalizer.hpp"
 
 #include <algorithm>
+#include <pipewire/keys.h>
 
 const std::vector<SourceDescriptor>& SourceCatalog::sources() const
 {
@@ -38,14 +39,16 @@ void SourceCatalog::start(PipeWireContext& ctx)
         if (!isCapturableSource(category))
             return;
 
-        SourceDescriptor source{
+            SourceDescriptor source{
             .nodeId = id,
             .category = category,
             .displayName = PropertyNormalizer::extractDisplayName(props),
             .appName = PropertyNormalizer::extractAppName(props),
             .mediaClass = mediaClass,
-            .deviceId = PropertyNormalizer::extractDeviceId(props),
-        };
+                .deviceId = PropertyNormalizer::extractDeviceId(props),
+                .sampleRate = PropertyNormalizer::extractUInt32(props, PW_KEY_AUDIO_RATE),
+                .channels = PropertyNormalizer::extractUInt32(props, PW_KEY_AUDIO_CHANNELS),
+            };
 
         bool inserted = false;
         {

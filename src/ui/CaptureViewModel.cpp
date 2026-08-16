@@ -18,6 +18,11 @@ CaptureViewModel::CaptureViewModel(SourceListModel* const sourceListModel,
     durationTimer_->setInterval(250);
     connect(durationTimer_, &QTimer::timeout, this, &CaptureViewModel::updateDuration);
 
+    connect(&autoRecordController_, &AutoRecordController::startRequested,
+            this, &CaptureViewModel::startCapture);
+    connect(&autoRecordController_, &AutoRecordController::stopRequested,
+            this, &CaptureViewModel::stopCapture);
+
     auto* const notificationService = new NotificationService(this);
 
     connect(this, &CaptureViewModel::startCaptureRequested,
@@ -64,6 +69,24 @@ CaptureViewModel::CaptureViewModel(SourceListModel* const sourceListModel,
                 this, &CaptureViewModel::autoStopEnabledChanged);
         connect(settingsViewModel_, &SettingsViewModel::masterFormatChanged,
                 this, [this](const QString&) { emit formatDescriptionChanged(); });
+        connect(settingsViewModel_, &SettingsViewModel::autoStartThresholdChanged,
+                this, [this](const double threshold) {
+                    autoRecordController_.setStartThreshold(static_cast<float>(threshold));
+                });
+        connect(settingsViewModel_, &SettingsViewModel::preRollSecondsChanged,
+                this, [this](const int seconds) {
+                    autoRecordController_.setPreRollDurationMs(seconds * 1000);
+                });
+        connect(settingsViewModel_, &SettingsViewModel::postRollSecondsChanged,
+                this, [this](const int seconds) {
+                    autoRecordController_.setPostRollDurationMs(seconds * 1000);
+                });
+        autoRecordController_.setStartThreshold(
+            static_cast<float>(settingsViewModel_->autoStartThreshold()));
+        autoRecordController_.setPreRollDurationMs(
+            settingsViewModel_->preRollSeconds() * 1000);
+        autoRecordController_.setPostRollDurationMs(
+            settingsViewModel_->postRollSeconds() * 1000);
     }
 }
 
@@ -160,6 +183,7 @@ void CaptureViewModel::startCapture() {
 
     armed_ = false;
     emit armedChanged();
+    autoRecordController_.reset();
     resetDuration();
     setIntegrityStatus(QStringLiteral("Connecting to source…"));
     setCaptureState(QStringLiteral("connecting"));
@@ -180,6 +204,7 @@ void CaptureViewModel::armCapture() {
     if (armed_) {
         return;
     }
+    autoRecordController_.reset();
     armed_ = true;
     emit armedChanged();
     setIntegrityStatus(QStringLiteral("Armed; waiting for manual or automatic start."));
@@ -189,11 +214,27 @@ void CaptureViewModel::disarmCapture() {
     if (!armed_) {
         return;
     }
+    autoRecordController_.reset();
     armed_ = false;
     emit armedChanged();
     if (captureState_ == QStringLiteral("idle")) {
         setIntegrityStatus(QStringLiteral("Ready"));
     }
+}
+
+void CaptureViewModel::feedAudioLevel(const float peakLinear) {
+    if (!armed_ && autoRecordController_.state() == AutoRecordController::Idle) {
+        return;
+    }
+    autoRecordController_.feedLevel(peakLinear);
+}
+
+void CaptureViewModel::reportCaptureError(const QString& message) {
+    durationTimer_->stop();
+    setCaptureState(QStringLiteral("idle"));
+    setIntegrityStatus(message.isEmpty()
+                           ? QStringLiteral("Capture engine reported an error.")
+                           : message);
 }
 
 void CaptureViewModel::handleSessionState(const abracapture::audio::SessionState state) {
@@ -316,4 +357,3 @@ void CaptureViewModel::resetDuration() {
         emit durationSecondsChanged();
     }
 }
-

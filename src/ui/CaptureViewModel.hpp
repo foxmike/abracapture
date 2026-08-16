@@ -1,6 +1,7 @@
 #pragma once
 
 #include "audio/CaptureSession.hpp"
+#include "automation/AutoRecordController.hpp"
 
 #include <QObject>
 #include <QString>
@@ -67,6 +68,8 @@ public:
     Q_INVOKABLE void stopCapture();
     Q_INVOKABLE void armCapture();
     Q_INVOKABLE void disarmCapture();
+    Q_INVOKABLE void feedAudioLevel(float peakLinear);
+    Q_INVOKABLE void reportCaptureError(const QString& message);
 
 public slots:
     void handleSessionState(abracapture::audio::SessionState state);
@@ -103,6 +106,7 @@ private:
     SourceListModel* sourceListModel_ = nullptr;
     SettingsViewModel* settingsViewModel_ = nullptr;
     QTimer* durationTimer_ = nullptr;
+    AutoRecordController autoRecordController_;
 
     QString captureState_ = QStringLiteral("idle");
     quint32 selectedSourceId_ = 0;

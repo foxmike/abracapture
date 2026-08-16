@@ -88,17 +88,17 @@ ApplicationWindow {
         currentIndex: navigationTabs.currentIndex
 
         Pages.CapturePage {
-            sourceListModel: sourceListModel
-            waveformBridge: waveformBridge
-            captureViewModel: captureViewModel
-            settingsViewModel: settingsViewModel
-        }
-
-        Pages.SettingsPage {
-            settingsViewModel: settingsViewModel
+            sourceListModel: appSourceListModel
+            waveformBridge: appWaveformBridge
+            captureViewModel: appCaptureViewModel
+            settingsViewModel: appSettingsViewModel
         }
 
         Pages.RecordingsPage { }
+
+        Pages.SettingsPage {
+            settingsViewModel: appSettingsViewModel
+        }
 
         Pages.AboutPage {
             onRequestCapture: navigationTabs.currentIndex = 0
