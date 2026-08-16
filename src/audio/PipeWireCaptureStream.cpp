@@ -6,7 +6,7 @@
 #include <pipewire/stream.h>
 #include <pipewire/thread-loop.h>
 #include <spa/buffer/buffer.h>
-#include <spa/param/audio/raw-utils.h>
+#include <spa/param/audio/format-utils.h>
 #include <spa/param/param.h>
 #include <spa/pod/builder.h>
 #include <spa/utils/hook.h>

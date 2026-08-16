@@ -44,32 +44,32 @@ ApplicationWindow {
 
                 TabButton {
                     text: "Capture"
-                    accessibleName: "Capture"
+                    Accessible.name: "Capture"
                 }
                 TabButton {
                     text: "Recordings"
-                    accessibleName: "Recordings"
+                    Accessible.name: "Recordings"
                 }
                 TabButton {
                     text: "Settings"
-                    accessibleName: "Settings"
+                    Accessible.name: "Settings"
                 }
                 TabButton {
                     text: "About"
-                    accessibleName: "About Abracapture"
+                    Accessible.name: "About Abracapture"
                 }
             }
 
             ToolButton {
                 text: Theme.AbracaptureTheme.darkMode ? "Light" : "Dark"
-                accessibleName: Theme.AbracaptureTheme.darkMode
+                Accessible.name: Theme.AbracaptureTheme.darkMode
                                ? "Switch to light theme" : "Switch to dark theme"
                 onClicked: Theme.AbracaptureTheme.darkMode = !Theme.AbracaptureTheme.darkMode
             }
 
             ToolButton {
                 text: Theme.AbracaptureTheme.highContrast ? "Contrast on" : "Contrast"
-                accessibleName: Theme.AbracaptureTheme.highContrast
+                Accessible.name: Theme.AbracaptureTheme.highContrast
                                ? "Disable high contrast" : "Enable high contrast"
                 onClicked: Theme.AbracaptureTheme.highContrast = !Theme.AbracaptureTheme.highContrast
             }

@@ -1,7 +1,6 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import QtQuick.Dialogs
 
 Item {
     id: root
@@ -26,23 +25,6 @@ Item {
         function onSaved() {
             root.showSaveNotification = true
             saveNotificationTimer.restart()
-        }
-    }
-
-    FolderDialog {
-        id: folderDialog
-        title: "Select Output Directory"
-        currentFolder: root.vm && root.vm.outputDirectory ? ("file://" + root.vm.outputDirectory) : ""
-        onAccepted: {
-            if (selectedFolder) {
-                var path = selectedFolder.toString()
-                if (path.indexOf("file://") === 0) {
-                    path = path.substring(7)
-                }
-                if (root.vm) {
-                    root.vm.outputDirectory = decodeURIComponent(path)
-                }
-            }
         }
     }
 
@@ -218,7 +200,15 @@ Item {
                                 id: browseButton
                                 text: "Browse..."
                                 implicitHeight: outputDirField.implicitHeight
-                                onClicked: folderDialog.open()
+                                onClicked: {
+                                    if (!root.vm) {
+                                        return
+                                    }
+                                    var selectedDirectory = appController.selectOutputDirectory(root.vm.outputDirectory)
+                                    if (selectedDirectory.length > 0) {
+                                        root.vm.outputDirectory = selectedDirectory
+                                    }
+                                }
                                 contentItem: Text {
                                     text: browseButton.text
                                     font.pixelSize: 13

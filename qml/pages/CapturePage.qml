@@ -86,7 +86,7 @@ Item {
                 ToolButton {
                     text: "↻"
                     font.pixelSize: 20
-                    accessibleName: "Refresh sources"
+                    Accessible.name: "Refresh sources"
                     onClicked: if (root.sources) root.sources.refresh()
                 }
             }

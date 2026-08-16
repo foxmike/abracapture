@@ -140,7 +140,7 @@ FocusScope {
             Button {
                 id: captureButton
                 text: "Return to Capture"
-                accessibleName: "Return to Capture"
+                Accessible.name: "Return to Capture"
                 activeFocusOnTab: true
                 onClicked: root.requestCapture()
             }

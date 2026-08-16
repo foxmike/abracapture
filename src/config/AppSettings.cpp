@@ -151,21 +151,21 @@ void AppSettings::setPostRollSeconds(int postRollSeconds) {
 }
 
 void AppSettings::load() {
-    QSettings settings(QStringLiteral(kOrgName), QStringLiteral(kAppName));
+    QSettings settings(QString::fromUtf8(kOrgName), QString::fromUtf8(kAppName));
 
-    const QString outDir = settings.value(QStringLiteral(kKeyOutputDirectory), defaultOutputDirectory()).toString();
-    const QString pattern = settings.value(QStringLiteral(kKeyFileNamingPattern), defaultFileNamingPattern()).toString();
-    QString format = settings.value(QStringLiteral(kKeyMasterFormat), defaultMasterFormat()).toString().toLower();
+    const QString outDir = settings.value(QString::fromUtf8(kKeyOutputDirectory), defaultOutputDirectory()).toString();
+    const QString pattern = settings.value(QString::fromUtf8(kKeyFileNamingPattern), defaultFileNamingPattern()).toString();
+    QString format = settings.value(QString::fromUtf8(kKeyMasterFormat), defaultMasterFormat()).toString().toLower();
     if (format != QStringLiteral("wav") && format != QStringLiteral("flac")) {
         format = defaultMasterFormat();
     }
-    const bool autoStart = settings.value(QStringLiteral(kKeyAutoStartEnabled), defaultAutoStartEnabled()).toBool();
-    const bool autoStop = settings.value(QStringLiteral(kKeyAutoStopEnabled), defaultAutoStopEnabled()).toBool();
-    int preRoll = settings.value(QStringLiteral(kKeyPreRollSeconds), defaultPreRollSeconds()).toInt();
+    const bool autoStart = settings.value(QString::fromUtf8(kKeyAutoStartEnabled), defaultAutoStartEnabled()).toBool();
+    const bool autoStop = settings.value(QString::fromUtf8(kKeyAutoStopEnabled), defaultAutoStopEnabled()).toBool();
+    int preRoll = settings.value(QString::fromUtf8(kKeyPreRollSeconds), defaultPreRollSeconds()).toInt();
     if (preRoll < 0) {
         preRoll = 0;
     }
-    int postRoll = settings.value(QStringLiteral(kKeyPostRollSeconds), defaultPostRollSeconds()).toInt();
+    int postRoll = settings.value(QString::fromUtf8(kKeyPostRollSeconds), defaultPostRollSeconds()).toInt();
     if (postRoll < 0) {
         postRoll = 0;
     }
@@ -201,12 +201,12 @@ void AppSettings::load() {
 }
 
 void AppSettings::save() {
-    QSettings settings(QStringLiteral(kOrgName), QStringLiteral(kAppName));
-    settings.setValue(QStringLiteral(kKeyOutputDirectory), m_outputDirectory);
-    settings.setValue(QStringLiteral(kKeyFileNamingPattern), m_fileNamingPattern);
-    settings.setValue(QStringLiteral(kKeyMasterFormat), m_masterFormat);
-    settings.setValue(QStringLiteral(kKeyAutoStartEnabled), m_autoStartEnabled);
-    settings.setValue(QStringLiteral(kKeyAutoStopEnabled), m_autoStopEnabled);
-    settings.setValue(QStringLiteral(kKeyPreRollSeconds), m_preRollSeconds);
-    settings.setValue(QStringLiteral(kKeyPostRollSeconds), m_postRollSeconds);
+    QSettings settings(QString::fromUtf8(kOrgName), QString::fromUtf8(kAppName));
+    settings.setValue(QString::fromUtf8(kKeyOutputDirectory), m_outputDirectory);
+    settings.setValue(QString::fromUtf8(kKeyFileNamingPattern), m_fileNamingPattern);
+    settings.setValue(QString::fromUtf8(kKeyMasterFormat), m_masterFormat);
+    settings.setValue(QString::fromUtf8(kKeyAutoStartEnabled), m_autoStartEnabled);
+    settings.setValue(QString::fromUtf8(kKeyAutoStopEnabled), m_autoStopEnabled);
+    settings.setValue(QString::fromUtf8(kKeyPreRollSeconds), m_preRollSeconds);
+    settings.setValue(QString::fromUtf8(kKeyPostRollSeconds), m_postRollSeconds);
 }

@@ -52,6 +52,8 @@ add_executable(abracapture
     src/recording/WavWriter.hpp
     src/ui/CaptureViewModel.cpp
     src/ui/CaptureViewModel.hpp
+    src/ui/NotificationService.cpp
+    src/ui/NotificationService.hpp
     src/ui/SettingsViewModel.cpp
     src/ui/SettingsViewModel.hpp
     src/ui/SourceListModel.cpp
@@ -69,6 +71,9 @@ qt_add_qml_module(abracapture
         qml/components/WaveformView.qml
         qml/pages/CapturePage.qml
         qml/pages/SettingsPage.qml
+        qml/pages/RecordingsPage.qml
+        qml/pages/AboutPage.qml
+        qml/theme/AbracaptureTheme.qml
 )
 
 target_include_directories(abracapture PRIVATE src)
@@ -78,6 +83,7 @@ target_link_libraries(abracapture
         Qt6::Core
         Qt6::Quick
         Qt6::QuickControls2
+        Qt6::Widgets
         PkgConfig::PIPEWIRE
         PkgConfig::SNDFILE
         PkgConfig::FLAC

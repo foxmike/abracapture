@@ -5,3 +5,5 @@
 .abracapocus/state/
 build/
 state/runs/
+
+.idea/

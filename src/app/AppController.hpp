@@ -13,4 +13,6 @@ public:
 
     QString appName() const;
     QString appVersion() const;
+
+    Q_INVOKABLE QString selectOutputDirectory(const QString& currentDirectory) const;
 };

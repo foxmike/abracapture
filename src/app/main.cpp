@@ -14,7 +14,7 @@
 #include <pipewire/thread-loop.h>
 
 #include <QCoreApplication>
-#include <QGuiApplication>
+#include <QApplication>
 #include <QMetaObject>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
@@ -86,7 +86,7 @@ int main(int argc, char *argv[]) {
         return cliApp.run(argc, argv);
     }
 
-    QGuiApplication application(argc, argv);
+    QApplication application(argc, argv);
     AppController appController;
     SourceListModel sourceListModel;
     WaveformBridge waveformBridge;
@@ -208,7 +208,7 @@ int main(int argc, char *argv[]) {
     engine.rootContext()->setContextProperty("waveformBridge", &waveformBridge);
     engine.rootContext()->setContextProperty("settingsViewModel", &settingsViewModel);
     engine.rootContext()->setContextProperty("captureViewModel", &captureViewModel);
-    engine.load(QUrl(QStringLiteral("qrc:/qt/qml/Abracapture/Main.qml")));
+    engine.load(QUrl(QStringLiteral("qrc:/Abracapture/qml/Main.qml")));
 
     if (engine.rootObjects().isEmpty()) {
         visualizationTimer.stop();

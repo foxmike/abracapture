@@ -317,5 +317,3 @@ void CaptureViewModel::resetDuration() {
     }
 }
 
-#include "NotificationService.cpp"
-

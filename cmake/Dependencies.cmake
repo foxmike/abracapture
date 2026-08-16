@@ -1,4 +1,4 @@
-find_package(Qt6 REQUIRED COMPONENTS Core Quick QuickControls2)
+find_package(Qt6 REQUIRED COMPONENTS Core Quick QuickControls2 Widgets)
 find_package(PkgConfig REQUIRED)
 
 pkg_check_modules(PIPEWIRE REQUIRED IMPORTED_TARGET libpipewire-0.3)
