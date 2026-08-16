@@ -1,0 +1,6 @@
+
+# Abracapocus runtime and local build artifacts
+.abracapocus/logs/
+.abracapocus/reports/
+.abracapocus/state/
+build/

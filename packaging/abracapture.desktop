@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Abracapture
+GenericName=Audio Capture
+Comment=Capture Linux audio streams through PipeWire
+Exec=abracapture
+Icon=audio-x-generic
+Terminal=false
+Categories=Audio;AudioVideo;Recorder;Qt;
