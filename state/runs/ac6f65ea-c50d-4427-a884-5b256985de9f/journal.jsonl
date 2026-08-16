@@ -1,1 +1,0 @@
-{"task_id":"g.1","phase_id":"G","run_id":"ac6f65ea-c50d-4427-a884-5b256985de9f","accepted_at":"2026-08-16T05:32:31.370200","files_added":["src/history/RecordingIndex.cpp","src/history/RecordingIndex.hpp"],"files_modified":[],"public_symbols_added":[],"public_symbols_removed":[],"dependencies_added":[],"description_summary":"Implement lightweight recording history index"}

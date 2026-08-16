@@ -1,1 +1,0 @@
-{"task_id":"c.2","phase_id":"C","run_id":"33a4f560-32c2-407f-b254-6625ffd62e01","accepted_at":"2026-08-15T23:53:40.171867","files_added":["src/audio/PipeWireCaptureStream.cpp","src/audio/PipeWireCaptureStream.hpp"],"files_modified":[],"public_symbols_added":[],"public_symbols_removed":[],"dependencies_added":[],"description_summary":"Implement negotiated PipeWire capture stream"}

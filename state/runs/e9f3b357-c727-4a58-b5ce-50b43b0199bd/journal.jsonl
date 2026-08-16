@@ -1,1 +1,0 @@
-{"task_id":"c.1","phase_id":"C","run_id":"e9f3b357-c727-4a58-b5ce-50b43b0199bd","accepted_at":"2026-08-15T23:47:00.920473","files_added":["src/audio/AudioRingBuffer.cpp","src/audio/AudioRingBuffer.hpp"],"files_modified":[],"public_symbols_added":[],"public_symbols_removed":[],"dependencies_added":[],"description_summary":"Implement bounded audio ring buffer"}

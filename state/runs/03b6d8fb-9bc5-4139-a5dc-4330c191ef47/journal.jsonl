@@ -1,1 +1,0 @@
-{"task_id":"a.4","phase_id":"A","run_id":"03b6d8fb-9bc5-4139-a5dc-4330c191ef47","accepted_at":"2026-08-15T22:29:03.572711","files_added":["src/core/AudioFormat.cpp","src/core/AudioFormat.hpp"],"files_modified":[],"public_symbols_added":[],"public_symbols_removed":[],"dependencies_added":[],"description_summary":"Define audio format and conversion domain types"}
