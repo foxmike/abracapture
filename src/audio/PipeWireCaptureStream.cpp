@@ -16,6 +16,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <cstdio>
 #include <cstring>
 #include <limits>
 #include <utility>
@@ -327,9 +328,15 @@ void PipeWireCaptureStream::onParamChanged(void* const data, const std::uint32_t
     static_cast<PipeWireCaptureStream*>(data)->handleParamChanged(id, param);
 }
 
-void PipeWireCaptureStream::onStateChanged(void* const data, int, const int state,
-                                           const char*) noexcept {
-    static_cast<PipeWireCaptureStream*>(data)->handleStateChanged(state);
+void PipeWireCaptureStream::onStateChanged(void* const data, int oldState, const int state,
+                                           const char* error) noexcept {
+    auto* self = static_cast<PipeWireCaptureStream*>(data);
+    fprintf(stderr, "[abracapture] stream node=%u: %s -> %s%s%s\n",
+            self->targetNodeId_,
+            pw_stream_state_as_string(static_cast<pw_stream_state>(oldState)),
+            pw_stream_state_as_string(static_cast<pw_stream_state>(state)),
+            error ? " error=" : "", error ? error : "");
+    self->handleStateChanged(state);
 }
 
 void PipeWireCaptureStream::process() noexcept {
@@ -427,6 +434,8 @@ void PipeWireCaptureStream::handleParamChanged(const std::uint32_t id,
         setStatus(StreamStatus::Error);
         return;
     }
+    fprintf(stderr, "[abracapture] stream node=%u negotiated: format=%d %u Hz %u ch\n",
+            targetNodeId_, negotiated.format, negotiated.rate, negotiated.channels);
     negotiatedFormat_.store(negotiated.format, std::memory_order_release);
     negotiatedSampleRate_.store(negotiated.rate, std::memory_order_release);
     negotiatedChannels_.store(negotiated.channels, std::memory_order_release);
