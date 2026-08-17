@@ -5,6 +5,8 @@
 #include <string>
 #include <string_view>
 
+#include <spa/param/audio/raw.h>
+
 enum class SourceCategory {
     ApplicationPlayback,
     OutputMonitor,
@@ -22,6 +24,9 @@ struct SourceDescriptor {
     std::optional<std::uint32_t> deviceId;
     std::optional<std::uint32_t> sampleRate;
     std::optional<std::uint32_t> channels;
+    // Current SPA_PARAM_Format reported by this PipeWire node. This is the
+    // source-format domain, never a capture-stream negotiation result.
+    std::optional<spa_audio_info_raw> sourceFormat;
 
     bool operator==(const SourceDescriptor& other) const noexcept;
 };

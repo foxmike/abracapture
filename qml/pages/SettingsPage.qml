@@ -465,7 +465,9 @@ Item {
                                 color: "#e2e8f0"
                             }
 
-                            SpinBox {
+                            Row {
+                                spacing: 8
+                                SpinBox {
                                 id: preRollSpinBox
                                 from: 0
                                 to: 60
@@ -485,7 +487,7 @@ Item {
                                     border.width: 1
                                 }
                                 contentItem: TextInput {
-                                    text: preRollSpinBox.textFromValue(preRollSpinBox.value, preRollSpinBox.locale) + " s"
+                                    text: preRollSpinBox.textFromValue(preRollSpinBox.value, preRollSpinBox.locale)
                                     font.pixelSize: 13
                                     color: "#f8fafc"
                                     horizontalAlignment: Qt.AlignHCenter
@@ -494,6 +496,8 @@ Item {
                                     validator: preRollSpinBox.validator
                                     inputMethodHints: Qt.ImhFormattedNumbersOnly
                                 }
+                                }
+                                Text { text: "s"; color: "#cbd5e1"; font.pixelSize: 13 }
                             }
 
                             Text {
@@ -514,7 +518,9 @@ Item {
                                 color: "#e2e8f0"
                             }
 
-                            SpinBox {
+                            Row {
+                                spacing: 8
+                                SpinBox {
                                 id: postRollSpinBox
                                 from: 0
                                 to: 60
@@ -534,7 +540,7 @@ Item {
                                     border.width: 1
                                 }
                                 contentItem: TextInput {
-                                    text: postRollSpinBox.textFromValue(postRollSpinBox.value, postRollSpinBox.locale) + " s"
+                                    text: postRollSpinBox.textFromValue(postRollSpinBox.value, postRollSpinBox.locale)
                                     font.pixelSize: 13
                                     color: "#f8fafc"
                                     horizontalAlignment: Qt.AlignHCenter
@@ -543,6 +549,8 @@ Item {
                                     validator: postRollSpinBox.validator
                                     inputMethodHints: Qt.ImhFormattedNumbersOnly
                                 }
+                                }
+                                Text { text: "s"; color: "#cbd5e1"; font.pixelSize: 13 }
                             }
 
                             Text {
@@ -610,7 +618,9 @@ Item {
                                 color: "#e2e8f0"
                             }
 
-                            SpinBox {
+                            Row {
+                                spacing: 8
+                                SpinBox {
                                 id: autoStartSpinBox
                                 from: -90
                                 to: 0
@@ -630,12 +640,16 @@ Item {
                                     border.width: 1
                                 }
                                 contentItem: TextInput {
-                                    text: autoStartSpinBox.value + " dBFS"
+                                    text: autoStartSpinBox.value
                                     font.pixelSize: 13
                                     color: "#f8fafc"
                                     horizontalAlignment: Qt.AlignHCenter
                                     verticalAlignment: Qt.AlignVCenter
+                                    validator: autoStartSpinBox.validator
+                                    inputMethodHints: Qt.ImhFormattedNumbersOnly
                                 }
+                                }
+                                Text { text: "dBFS"; color: "#cbd5e1"; font.pixelSize: 13 }
                             }
 
                             Text {
@@ -703,7 +717,9 @@ Item {
                                 color: "#e2e8f0"
                             }
 
-                            SpinBox {
+                            Row {
+                                spacing: 8
+                                SpinBox {
                                 id: autoStopDurationSpinBox
                                 from: 1
                                 to: 60
@@ -723,12 +739,16 @@ Item {
                                     border.width: 1
                                 }
                                 contentItem: TextInput {
-                                    text: autoStopDurationSpinBox.value + " s"
+                                    text: autoStopDurationSpinBox.value
                                     font.pixelSize: 13
                                     color: "#f8fafc"
                                     horizontalAlignment: Qt.AlignHCenter
                                     verticalAlignment: Qt.AlignVCenter
+                                    validator: autoStopDurationSpinBox.validator
+                                    inputMethodHints: Qt.ImhFormattedNumbersOnly
                                 }
+                                }
+                                Text { text: "s"; color: "#cbd5e1"; font.pixelSize: 13 }
                             }
 
                             Text {

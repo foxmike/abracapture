@@ -10,7 +10,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
-
 struct pw_core;
 struct pw_stream;
 struct pw_thread_loop;
@@ -46,9 +45,8 @@ public:
                           pw_core* core,
                           AudioRingBuffer& ringBuffer,
                           std::uint32_t targetNodeId,
-                          spa_audio_format desiredFormat,
-                          std::uint32_t desiredSampleRate,
-                          std::uint32_t desiredChannels,
+                          const spa_audio_info_raw& sourceFormat,
+                          const spa_audio_info_raw& requestedFormat,
                           StatusCallback statusCallback = {});
     ~PipeWireCaptureStream();
 
@@ -98,14 +96,14 @@ private:
     bool streamListenerInstalled_ = false;
 
     const std::uint32_t targetNodeId_;
-    const spa_audio_format desiredFormat_;
-    const std::uint32_t desiredSampleRate_;
-    const std::uint32_t desiredChannels_;
+    const spa_audio_info_raw sourceFormat_;
+    const spa_audio_info_raw requestedFormat_;
     const StatusCallback statusCallback_;
 
     std::atomic<spa_audio_format> negotiatedFormat_{SPA_AUDIO_FORMAT_UNKNOWN};
     std::atomic<std::uint32_t> negotiatedSampleRate_{0};
     std::atomic<std::uint32_t> negotiatedChannels_{0};
+    std::atomic<std::uint32_t> diagnosticBuffersLogged_{0};
     std::atomic<StreamStatus> status_{StreamStatus::Disconnected};
 
     std::array<VisualizationSlot, 2> visualizationSlots_{};

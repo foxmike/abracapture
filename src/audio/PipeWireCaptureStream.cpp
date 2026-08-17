@@ -109,19 +109,55 @@ template <typename Sample>
 }
 
 [[nodiscard]] const std::byte* chunkStart(const spa_data& data) noexcept {
-    if (data.data == nullptr || data.chunk == nullptr || data.maxsize == 0) {
+    if (data.data == nullptr || data.chunk == nullptr || data.maxsize == 0 ||
+        data.chunk->offset >= data.maxsize) {
         return nullptr;
     }
-    const std::size_t offset = data.chunk->offset % data.maxsize;
-    return static_cast<const std::byte*>(data.data) + offset;
+    return static_cast<const std::byte*>(data.data) + data.chunk->offset;
 }
 
 [[nodiscard]] std::size_t contiguousChunkSize(const spa_data& data) noexcept {
-    if (data.data == nullptr || data.chunk == nullptr || data.maxsize == 0) {
+    if (data.data == nullptr || data.chunk == nullptr || data.maxsize == 0 ||
+        data.chunk->offset >= data.maxsize) {
         return 0;
     }
-    const std::size_t offset = data.chunk->offset % data.maxsize;
-    return std::min<std::size_t>(data.chunk->size, data.maxsize - offset);
+    return std::min<std::size_t>(data.chunk->size, data.maxsize - data.chunk->offset);
+}
+
+[[nodiscard]] const char* formatLabel(const spa_audio_format format) noexcept {
+    switch (format) {
+    case SPA_AUDIO_FORMAT_S16: return "S16LE";
+    case SPA_AUDIO_FORMAT_S24: return "S24LE";
+    case SPA_AUDIO_FORMAT_S24_32: return "S24_32LE";
+    case SPA_AUDIO_FORMAT_S32: return "S32LE";
+    case SPA_AUDIO_FORMAT_F32: return "F32LE";
+    case SPA_AUDIO_FORMAT_F64: return "F64LE";
+    default: return "unknown";
+    }
+}
+
+[[nodiscard]] const char* channelLabel(const spa_audio_channel channel) noexcept {
+    switch (channel) {
+    case SPA_AUDIO_CHANNEL_FL: return "FL";
+    case SPA_AUDIO_CHANNEL_FR: return "FR";
+    case SPA_AUDIO_CHANNEL_FC: return "FC";
+    case SPA_AUDIO_CHANNEL_LFE: return "LFE";
+    case SPA_AUDIO_CHANNEL_RL: return "RL";
+    case SPA_AUDIO_CHANNEL_RR: return "RR";
+    case SPA_AUDIO_CHANNEL_SL: return "SL";
+    case SPA_AUDIO_CHANNEL_SR: return "SR";
+    default: return "UNKNOWN";
+    }
+}
+
+void logFormat(const char* const domain, const spa_audio_info_raw& format) noexcept {
+    std::fprintf(stderr, "[abracapture] %s format=%s rate=%u channels=%u positions=",
+                 domain, formatLabel(format.format), format.rate, format.channels);
+    for (std::uint32_t index = 0; index < format.channels; ++index) {
+        std::fprintf(stderr, "%s%s", index == 0 ? "" : " ",
+                     channelLabel(static_cast<spa_audio_channel>(format.position[index])));
+    }
+    std::fputc('\n', stderr);
 }
 
 } // namespace
@@ -130,17 +166,15 @@ PipeWireCaptureStream::PipeWireCaptureStream(pw_thread_loop* const threadLoop,
                                              pw_core* const core,
                                              AudioRingBuffer& ringBuffer,
                                              const std::uint32_t targetNodeId,
-                                             const spa_audio_format desiredFormat,
-                                             const std::uint32_t desiredSampleRate,
-                                             const std::uint32_t desiredChannels,
+                                             const spa_audio_info_raw& sourceFormat,
+                                             const spa_audio_info_raw& requestedFormat,
                                              StatusCallback statusCallback)
     : threadLoop_(threadLoop),
       core_(core),
       ringBuffer_(&ringBuffer),
       targetNodeId_(targetNodeId),
-      desiredFormat_(desiredFormat),
-      desiredSampleRate_(desiredSampleRate),
-      desiredChannels_(desiredChannels),
+      sourceFormat_(sourceFormat),
+      requestedFormat_(requestedFormat),
       statusCallback_(std::move(statusCallback)) {}
 
 PipeWireCaptureStream::~PipeWireCaptureStream() {
@@ -149,8 +183,10 @@ PipeWireCaptureStream::~PipeWireCaptureStream() {
 
 bool PipeWireCaptureStream::start() {
     if (threadLoop_ == nullptr || core_ == nullptr || ringBuffer_ == nullptr ||
-        desiredChannels_ == 0 || desiredChannels_ > SPA_AUDIO_MAX_CHANNELS ||
-        (desiredFormat_ != SPA_AUDIO_FORMAT_UNKNOWN && bytesPerSample(desiredFormat_) == 0)) {
+        requestedFormat_.format == SPA_AUDIO_FORMAT_UNKNOWN ||
+        requestedFormat_.rate == 0 || requestedFormat_.channels == 0 ||
+        requestedFormat_.channels > SPA_AUDIO_MAX_CHANNELS ||
+        bytesPerSample(requestedFormat_.format) == 0) {
         setStatus(StreamStatus::Error);
         return false;
     }
@@ -177,6 +213,14 @@ bool PipeWireCaptureStream::start() {
             PW_KEY_MEDIA_ROLE, "Music",
             PW_KEY_APP_NAME, "Abracapture",
             nullptr);
+        char targetNode[32]{};
+        std::snprintf(targetNode, sizeof(targetNode), "%u", targetNodeId_);
+        // PW_KEY_NODE_TARGET is the session-manager target selector.  Do not pass
+        // a node id to pw_stream_connect(): that direct target-id path is legacy.
+        // Keeping AUTOCONNECT lets WirePlumber create channel-matched links to this
+        // exact node instead of falling back to the default Audio/Source.
+        pw_properties_set(properties, PW_KEY_NODE_TARGET, targetNode);
+        pw_properties_set(properties, PW_KEY_NODE_AUTOCONNECT, "true");
         stream_ = pw_stream_new(core_, "Abracapture capture", properties);
         if (stream_ == nullptr) {
             if (lockNeeded) {
@@ -203,21 +247,21 @@ bool PipeWireCaptureStream::start() {
 
     alignas(8) std::array<std::byte, 1024> podStorage{};
     spa_pod_builder builder = SPA_POD_BUILDER_INIT(podStorage.data(), podStorage.size());
-    spa_audio_info_raw requested{};
-    requested.format = desiredFormat_;
-    requested.rate = desiredSampleRate_;
-    requested.channels = desiredChannels_;
-    requested.flags = SPA_AUDIO_FLAG_UNPOSITIONED;
-    const spa_pod* params[]{spa_format_audio_raw_build(&builder, SPA_PARAM_EnumFormat, &requested)};
+    spa_audio_info_raw requested = requestedFormat_;
+    const spa_pod* params[]{spa_format_audio_raw_build(&builder, SPA_PARAM_EnumFormat,
+                                                        &requested)};
 
     negotiatedFormat_.store(SPA_AUDIO_FORMAT_UNKNOWN, std::memory_order_release);
     negotiatedSampleRate_.store(0, std::memory_order_release);
     negotiatedChannels_.store(0, std::memory_order_release);
+    diagnosticBuffersLogged_.store(0, std::memory_order_release);
+    logFormat("source", sourceFormat_);
+    fprintf(stderr, "[abracapture] internal processing=F32\n");
     setStatus(StreamStatus::Connecting);
     const auto flags = static_cast<pw_stream_flags>(PW_STREAM_FLAG_AUTOCONNECT |
                                                     PW_STREAM_FLAG_MAP_BUFFERS |
                                                     PW_STREAM_FLAG_RT_PROCESS);
-    const int result = pw_stream_connect(stream_, PW_DIRECTION_INPUT, targetNodeId_, flags,
+    const int result = pw_stream_connect(stream_, PW_DIRECTION_INPUT, PW_ID_ANY, flags,
                                          params, 1);
     if (lockNeeded) {
         pw_thread_loop_unlock(threadLoop_);
@@ -280,9 +324,9 @@ std::uint32_t PipeWireCaptureStream::negotiatedChannels() const noexcept {
 }
 
 bool PipeWireCaptureStream::isNativeCapture() const noexcept {
-    return (desiredFormat_ == SPA_AUDIO_FORMAT_UNKNOWN || negotiatedFormat() == desiredFormat_) &&
-           (desiredSampleRate_ == 0 || negotiatedSampleRate() == desiredSampleRate_) &&
-           negotiatedChannels() == desiredChannels_;
+    return negotiatedFormat() == sourceFormat_.format &&
+           negotiatedSampleRate() == sourceFormat_.rate &&
+           negotiatedChannels() == sourceFormat_.channels;
 }
 
 PipeWireCaptureStream::StreamStatus PipeWireCaptureStream::status() const noexcept {
@@ -350,6 +394,32 @@ void PipeWireCaptureStream::process() noexcept {
     const std::size_t channels = negotiatedChannels_.load(std::memory_order_relaxed);
     const std::size_t sampleBytes = bytesPerSample(format);
     std::array<float, ConversionSampleCapacity> converted{};
+    const std::uint32_t diagnosticIndex = diagnosticBuffersLogged_.fetch_add(
+        1, std::memory_order_relaxed);
+    const bool logDiagnostics = diagnosticIndex < 3;
+    std::size_t diagnosticFrames = 0;
+    std::size_t diagnosticSamples = 0;
+    float diagnosticPeak = 0.0F;
+    double diagnosticSumSquares = 0.0;
+
+    if (logDiagnostics) {
+        fprintf(stderr, "[abracapture] n_datas=%u\n", buffer != nullptr ? buffer->n_datas : 0U);
+        if (buffer != nullptr) {
+            for (std::uint32_t index = 0; index < buffer->n_datas; ++index) {
+                const spa_data& data = buffer->datas[index];
+                if (data.chunk != nullptr) {
+                    fprintf(stderr,
+                            "[abracapture] data[%u].chunk offset=%u size=%u stride=%d\n",
+                            index, data.chunk->offset, data.chunk->size, data.chunk->stride);
+                } else {
+                    fprintf(stderr, "[abracapture] data[%u].chunk unavailable\n", index);
+                }
+            }
+            fprintf(stderr, "[abracapture] negotiated format=%d rate=%u channels=%u\n",
+                    format, negotiatedSampleRate_.load(std::memory_order_relaxed),
+                    static_cast<unsigned int>(channels));
+        }
+    }
 
     if (buffer != nullptr && channels != 0 && sampleBytes != 0) {
         if (!isPlanar(format) && buffer->n_datas >= 1) {
@@ -361,6 +431,8 @@ void PipeWireCaptureStream::process() noexcept {
             const std::size_t byteCount = contiguousChunkSize(data);
             if (source != nullptr && frameStride >= sampleBytes * channels) {
                 const std::size_t frameCount = byteCount / frameStride;
+                diagnosticFrames = frameCount;
+                diagnosticSamples = frameCount * channels;
                 std::size_t frameOffset = 0;
                 while (frameOffset < frameCount) {
                     const std::size_t framesThisPass = std::min(
@@ -373,8 +445,11 @@ void PipeWireCaptureStream::process() noexcept {
                         const std::byte* const frameData =
                             source + (frameOffset + frame) * frameStride;
                         for (std::size_t channel = 0; channel < channels; ++channel) {
-                            converted[frame * channels + channel] =
-                                pcmToFloat(frameData + channel * sampleBytes, format);
+                            const float sample = pcmToFloat(
+                                frameData + channel * sampleBytes, format);
+                            converted[frame * channels + channel] = sample;
+                            diagnosticPeak = std::max(diagnosticPeak, std::abs(sample));
+                            diagnosticSumSquares += static_cast<double>(sample) * sample;
                         }
                     }
                     static_cast<void>(ringBuffer_->write(converted.data(), samplesThisPass));
@@ -390,6 +465,10 @@ void PipeWireCaptureStream::process() noexcept {
                                                ? static_cast<std::size_t>(plane.chunk->stride)
                                                : sampleBytes;
                 frameCount = std::min(frameCount, contiguousChunkSize(plane) / stride);
+            }
+            if (frameCount != std::numeric_limits<std::size_t>::max()) {
+                diagnosticFrames = frameCount;
+                diagnosticSamples = frameCount * channels;
             }
             std::size_t frameOffset = 0;
             while (frameOffset < frameCount) {
@@ -409,8 +488,11 @@ void PipeWireCaptureStream::process() noexcept {
                         continue;
                     }
                     for (std::size_t frame = 0; frame < framesThisPass; ++frame) {
-                        converted[frame * channels + channel] =
-                            pcmToFloat(source + (frameOffset + frame) * stride, format);
+                        const float sample = pcmToFloat(
+                            source + (frameOffset + frame) * stride, format);
+                        converted[frame * channels + channel] = sample;
+                        diagnosticPeak = std::max(diagnosticPeak, std::abs(sample));
+                        diagnosticSumSquares += static_cast<double>(sample) * sample;
                     }
                 }
                 static_cast<void>(ringBuffer_->write(converted.data(), samplesThisPass));
@@ -418,6 +500,14 @@ void PipeWireCaptureStream::process() noexcept {
                 frameOffset += framesThisPass;
             }
         }
+    }
+    if (logDiagnostics) {
+        const double rms = diagnosticSamples != 0
+                               ? std::sqrt(diagnosticSumSquares /
+                                           static_cast<double>(diagnosticSamples))
+                               : 0.0;
+        fprintf(stderr, "[abracapture] frames=%zu peak=%.9g rms=%.9g\n",
+                diagnosticFrames, diagnosticPeak, rms);
     }
     static_cast<void>(pw_stream_queue_buffer(stream_, pipeWireBuffer));
 }
@@ -434,8 +524,19 @@ void PipeWireCaptureStream::handleParamChanged(const std::uint32_t id,
         setStatus(StreamStatus::Error);
         return;
     }
-    fprintf(stderr, "[abracapture] stream node=%u negotiated: format=%d %u Hz %u ch\n",
-            targetNodeId_, negotiated.format, negotiated.rate, negotiated.channels);
+    logFormat("capture", negotiated);
+    if (requestedFormat_.format == sourceFormat_.format &&
+        requestedFormat_.rate == sourceFormat_.rate &&
+        requestedFormat_.channels == sourceFormat_.channels &&
+        (negotiated.format != sourceFormat_.format ||
+         negotiated.rate != sourceFormat_.rate ||
+         negotiated.channels != sourceFormat_.channels ||
+         !std::equal(sourceFormat_.position, sourceFormat_.position + sourceFormat_.channels,
+                     negotiated.position))) {
+        fprintf(stderr, "[abracapture] fidelity error: capture format differs from selected source\n");
+        setStatus(StreamStatus::Error);
+        return;
+    }
     negotiatedFormat_.store(negotiated.format, std::memory_order_release);
     negotiatedSampleRate_.store(negotiated.rate, std::memory_order_release);
     negotiatedChannels_.store(negotiated.channels, std::memory_order_release);

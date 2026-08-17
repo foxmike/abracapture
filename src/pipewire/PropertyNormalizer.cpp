@@ -58,6 +58,11 @@ std::string PropertyNormalizer::extractMediaClass(const spa_dict* props)
     return sanitizedProperty(props, PW_KEY_MEDIA_CLASS);
 }
 
+std::string PropertyNormalizer::extractNodeName(const spa_dict* props)
+{
+    return sanitizedProperty(props, PW_KEY_NODE_NAME);
+}
+
 std::optional<std::uint32_t> PropertyNormalizer::extractDeviceId(const spa_dict* props)
 {
     return extractUInt32(props, PW_KEY_DEVICE_ID);

@@ -70,6 +70,7 @@ public:
     Q_INVOKABLE void disarmCapture();
     Q_INVOKABLE void feedAudioLevel(float peakLinear);
     Q_INVOKABLE void reportCaptureError(const QString& message);
+    [[nodiscard]] bool completeAutomaticRecording();
 
 public slots:
     void handleSessionState(abracapture::audio::SessionState state);
@@ -102,6 +103,7 @@ private:
     void setCaptureState(const QString& state);
     void setIntegrityStatus(const QString& status);
     void resetDuration();
+    void stopAutomaticRecording();
 
     SourceListModel* sourceListModel_ = nullptr;
     SettingsViewModel* settingsViewModel_ = nullptr;
@@ -116,5 +118,6 @@ private:
     QString integrityStatus_ = QStringLiteral("Ready");
     CaptureKind captureKind_ = Native;
     bool armed_ = false;
+    bool automaticStopPending_ = false;
     qint64 captureStartedAtMs_ = 0;
 };

@@ -181,9 +181,15 @@ bool RecordingsViewModel::removeEntry(const int index) {
 }
 
 void RecordingsViewModel::refreshEntries() {
-    beginResetModel();
     auto* idx = externalIndex_ ? externalIndex_ : &ownedIndex_;
-    static_cast<void>(idx->load());
+    if (recordingsDirectory_.isEmpty() || !idx->importDirectory(recordingsDirectory_)) {
+        static_cast<void>(idx->load());
+    }
+    rebuildModel();
+}
+
+void RecordingsViewModel::rebuildModel() {
+    beginResetModel();
     syncEntries();
     if (selectedIndex_ >= entries_.size()) {
         selectedIndex_ = entries_.isEmpty() ? -1 : 0;
@@ -194,9 +200,10 @@ void RecordingsViewModel::refreshEntries() {
 }
 
 bool RecordingsViewModel::importDirectory(const QString& directoryPath) {
+    recordingsDirectory_ = QDir(directoryPath).absolutePath();
     auto* idx = externalIndex_ ? externalIndex_ : &ownedIndex_;
     const bool success = idx->importDirectory(directoryPath);
-    refreshEntries();
+    rebuildModel();
     return success;
 }
 

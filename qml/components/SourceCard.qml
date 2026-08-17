@@ -8,9 +8,10 @@ ItemDelegate {
     property int cardSourceId: model.sourceId !== undefined ? model.sourceId : 0
     property string cardDisplayName: model.displayName !== undefined ? model.displayName : ""
     property string cardSourceKind: model.sourceKind !== undefined ? model.sourceKind : ""
-    property int cardChannelCount: model.channelCount !== undefined ? model.channelCount : 2
-    property int cardSampleRate: model.sampleRate !== undefined ? model.sampleRate : 48000
+    property int cardChannelCount: model.channelCount !== undefined ? model.channelCount : 0
+    property int cardSampleRate: model.sampleRate !== undefined ? model.sampleRate : 0
     property int cardBitDepth: model.bitDepth !== undefined ? model.bitDepth : 0
+    property string cardSampleFormat: model.sampleFormat !== undefined ? model.sampleFormat : "Unknown"
     property bool cardIsActive: model.isActive !== undefined ? model.isActive : false
     property bool cardIsSelected: model.isSelected !== undefined ? model.isSelected : (ListView.isCurrentItem || false)
 
@@ -18,7 +19,7 @@ ItemDelegate {
 
     function formatSampleRate(rate) {
         if (!rate || rate <= 0) {
-            return "48.0 kHz"
+            return "rate unknown"
         }
         if (rate >= 1000) {
             var khz = (rate / 1000).toFixed(1)
@@ -37,7 +38,7 @@ ItemDelegate {
         if (channels > 2) {
             return channels + " ch"
         }
-        return "2 ch"
+        return "channels unknown"
     }
 
     function formatBitrate() {
@@ -229,7 +230,7 @@ ItemDelegate {
                 }
 
                 Text {
-                    text: root.formatBitrate()
+                    text: root.cardSampleFormat
                     font.pixelSize: 12
                     color: "#94a3b8"
                 }

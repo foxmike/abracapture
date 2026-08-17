@@ -13,6 +13,7 @@ struct PropertyNormalizer final {
     static std::string extractDisplayName(const spa_dict* props);
     static std::string extractAppName(const spa_dict* props);
     static std::string extractMediaClass(const spa_dict* props);
+    static std::string extractNodeName(const spa_dict* props);
     static std::optional<std::uint32_t> extractDeviceId(const spa_dict* props);
     static std::optional<std::uint32_t> extractUInt32(const spa_dict* props,
                                                       const char* key);

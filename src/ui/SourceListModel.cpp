@@ -48,6 +48,8 @@ QVariant SourceListModel::data(const QModelIndex& index, int role) const {
         return item.sampleRate;
     case BitDepthRole:
         return item.bitDepth;
+    case SampleFormatRole:
+        return item.sampleFormat;
     case IsActiveRole:
         return item.isActive;
     case AppNameRole:
@@ -72,6 +74,7 @@ QHash<int, QByteArray> SourceListModel::roleNames() const {
     roles[ChannelCountRole] = "channelCount";
     roles[SampleRateRole] = "sampleRate";
     roles[BitDepthRole] = "bitDepth";
+    roles[SampleFormatRole] = "sampleFormat";
     roles[IsActiveRole] = "isActive";
     roles[NodeIdRole] = "nodeId";
     roles[AppNameRole] = "appName";
@@ -205,6 +208,7 @@ QVariantMap SourceListModel::get(int index) const {
     map[QStringLiteral("channelCount")] = item.channelCount;
     map[QStringLiteral("sampleRate")] = item.sampleRate;
     map[QStringLiteral("bitDepth")] = item.bitDepth;
+    map[QStringLiteral("sampleFormat")] = item.sampleFormat;
     map[QStringLiteral("isActive")] = item.isActive;
     map[QStringLiteral("mediaClass")] = item.mediaClass;
     map[QStringLiteral("nodeName")] = item.nodeName;
@@ -227,6 +231,7 @@ QVariantMap SourceListModel::getSourceById(std::uint32_t sourceId) const {
             map[QStringLiteral("channelCount")] = item.channelCount;
             map[QStringLiteral("sampleRate")] = item.sampleRate;
             map[QStringLiteral("bitDepth")] = item.bitDepth;
+            map[QStringLiteral("sampleFormat")] = item.sampleFormat;
             map[QStringLiteral("isActive")] = item.isActive;
             map[QStringLiteral("mediaClass")] = item.mediaClass;
             map[QStringLiteral("nodeName")] = item.nodeName;
@@ -310,9 +315,10 @@ void SourceListModel::updateSourcesFromVariants(const QVariantList& sources) {
         item.displayName = map.value(QStringLiteral("displayName")).toString();
         item.appName = map.value(QStringLiteral("appName")).toString();
         item.sourceKind = map.value(QStringLiteral("sourceKind")).toString();
-        item.channelCount = map.value(QStringLiteral("channelCount"), 2).toInt();
-        item.sampleRate = map.value(QStringLiteral("sampleRate"), 48000).toInt();
+        item.channelCount = map.value(QStringLiteral("channelCount"), 0).toInt();
+        item.sampleRate = map.value(QStringLiteral("sampleRate"), 0).toInt();
         item.bitDepth = map.value(QStringLiteral("bitDepth"), 0).toInt();
+        item.sampleFormat = map.value(QStringLiteral("sampleFormat")).toString();
         item.isActive = map.value(QStringLiteral("isActive"), false).toBool();
         item.mediaClass = map.value(QStringLiteral("mediaClass")).toString();
         item.nodeName = map.value(QStringLiteral("nodeName")).toString();

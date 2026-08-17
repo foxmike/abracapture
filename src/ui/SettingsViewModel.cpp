@@ -6,6 +6,8 @@
 #include <QRegularExpression>
 #include <QSettings>
 
+#include <cmath>
+
 namespace {
 constexpr double kDefaultAutoStartThreshold = -30.0;
 constexpr int kDefaultAutoStopSilenceDuration = 3;
@@ -90,7 +92,7 @@ void SettingsViewModel::setExportEnabled(bool exportEnabled) {
     }
     exportEnabled_ = exportEnabled;
     emit exportEnabledChanged(exportEnabled_);
-    validate();
+    save();
 }
 
 QString SettingsViewModel::exportFormat() const {
@@ -99,12 +101,16 @@ QString SettingsViewModel::exportFormat() const {
 
 void SettingsViewModel::setExportFormat(const QString& exportFormat) {
     const QString normalized = exportFormat.trimmed().toLower();
+    if (normalized != QStringLiteral("mp3") && normalized != QStringLiteral("flac") &&
+        normalized != QStringLiteral("ogg") && normalized != QStringLiteral("wav")) {
+        return;
+    }
     if (exportFormat_ == normalized) {
         return;
     }
     exportFormat_ = normalized;
     emit exportFormatChanged(exportFormat_);
-    validate();
+    save();
 }
 
 bool SettingsViewModel::autoStartEnabled() const noexcept {
@@ -117,6 +123,7 @@ void SettingsViewModel::setAutoStartEnabled(bool autoStartEnabled) {
     }
     autoStartEnabled_ = autoStartEnabled;
     emit autoStartEnabledChanged(autoStartEnabled_);
+    save();
 }
 
 double SettingsViewModel::autoStartThreshold() const noexcept {
@@ -124,12 +131,16 @@ double SettingsViewModel::autoStartThreshold() const noexcept {
 }
 
 void SettingsViewModel::setAutoStartThreshold(double autoStartThreshold) {
+    if (autoStartThreshold > 0.0 || autoStartThreshold < -120.0 ||
+        std::isnan(autoStartThreshold)) {
+        return;
+    }
     if (qFuzzyCompare(autoStartThreshold_, autoStartThreshold)) {
         return;
     }
     autoStartThreshold_ = autoStartThreshold;
     emit autoStartThresholdChanged(autoStartThreshold_);
-    validate();
+    save();
 }
 
 bool SettingsViewModel::autoStopEnabled() const noexcept {
@@ -142,6 +153,7 @@ void SettingsViewModel::setAutoStopEnabled(bool autoStopEnabled) {
     }
     autoStopEnabled_ = autoStopEnabled;
     emit autoStopEnabledChanged(autoStopEnabled_);
+    save();
 }
 
 int SettingsViewModel::autoStopSilenceDuration() const noexcept {
@@ -149,15 +161,15 @@ int SettingsViewModel::autoStopSilenceDuration() const noexcept {
 }
 
 void SettingsViewModel::setAutoStopSilenceDuration(int autoStopSilenceDuration) {
-    if (autoStopSilenceDuration < 0) {
-        autoStopSilenceDuration = 0;
+    if (autoStopSilenceDuration < 1 || autoStopSilenceDuration > 300) {
+        return;
     }
     if (autoStopSilenceDuration_ == autoStopSilenceDuration) {
         return;
     }
     autoStopSilenceDuration_ = autoStopSilenceDuration;
     emit autoStopSilenceDurationChanged(autoStopSilenceDuration_);
-    validate();
+    save();
 }
 
 int SettingsViewModel::preRollSeconds() const noexcept {
@@ -165,15 +177,15 @@ int SettingsViewModel::preRollSeconds() const noexcept {
 }
 
 void SettingsViewModel::setPreRollSeconds(int preRollSeconds) {
-    if (preRollSeconds < 0) {
-        preRollSeconds = 0;
+    if (preRollSeconds < 0 || preRollSeconds > 300) {
+        return;
     }
     if (preRollSeconds_ == preRollSeconds) {
         return;
     }
     preRollSeconds_ = preRollSeconds;
     emit preRollSecondsChanged(preRollSeconds_);
-    validate();
+    save();
 }
 
 int SettingsViewModel::postRollSeconds() const noexcept {
@@ -181,15 +193,15 @@ int SettingsViewModel::postRollSeconds() const noexcept {
 }
 
 void SettingsViewModel::setPostRollSeconds(int postRollSeconds) {
-    if (postRollSeconds < 0) {
-        postRollSeconds = 0;
+    if (postRollSeconds < 0 || postRollSeconds > 300) {
+        return;
     }
     if (postRollSeconds_ == postRollSeconds) {
         return;
     }
     postRollSeconds_ = postRollSeconds;
     emit postRollSecondsChanged(postRollSeconds_);
-    validate();
+    save();
 }
 
 bool SettingsViewModel::isValid() const noexcept {
@@ -256,7 +268,7 @@ void SettingsViewModel::load() {
     }
     const double autoStartThresh = settings.value(QStringLiteral("autoStartThreshold"), kDefaultAutoStartThreshold).toDouble();
     int autoStopDuration = settings.value(QStringLiteral("autoStopSilenceDuration"), kDefaultAutoStopSilenceDuration).toInt();
-    if (autoStopDuration < 0) {
+    if (autoStopDuration < 1 || autoStopDuration > 300) {
         autoStopDuration = kDefaultAutoStopSilenceDuration;
     }
 
@@ -416,8 +428,8 @@ bool SettingsViewModel::validate() {
         return false;
     }
 
-    if (autoStopSilenceDuration_ < 0 || autoStopSilenceDuration_ > 300) {
-        const QString err = QStringLiteral("Auto-stop silence duration must be between 0 and 300 seconds.");
+    if (autoStopSilenceDuration_ < 1 || autoStopSilenceDuration_ > 300) {
+        const QString err = QStringLiteral("Auto-stop silence duration must be between 1 and 300 seconds.");
         setErrorMessage(err);
         setIsValid(false);
         emit errorOccurred(err);

@@ -9,6 +9,7 @@
 #include <QJsonValue>
 #include <QSaveFile>
 #include <QStandardPaths>
+#include <QSet>
 
 #include <sndfile.h>
 
@@ -173,7 +174,21 @@ bool RecordingIndex::importDirectory(const QString& directoryPath) {
     const QStringList filters{QStringLiteral("*.wav"), QStringLiteral("*.wave"),
                               QStringLiteral("*.rf64"), QStringLiteral("*.flac")};
     const QFileInfoList files = directory.entryInfoList(filters, QDir::Files, QDir::Time);
+    QSet<QString> currentPaths;
+    for (const QFileInfo& file : files) {
+        currentPaths.insert(file.absoluteFilePath());
+    }
     bool changed = false;
+
+    for (qsizetype index = entries_.size() - 1; index >= 0; --index) {
+        const QFileInfo entryInfo(entries_.at(index).filePath);
+        if (entryInfo.absolutePath() == directory.absolutePath() &&
+            !currentPaths.contains(entryInfo.absoluteFilePath())) {
+            entries_.removeAt(index);
+            changed = true;
+        }
+    }
+
     for (const QFileInfo& file : files) {
         const QString path = file.absoluteFilePath();
         auto existing = std::find_if(entries_.begin(), entries_.end(), [&path](const RecordingEntry& entry) {
@@ -184,9 +199,10 @@ bool RecordingIndex::importDirectory(const QString& directoryPath) {
             entry = *existing;
         } else {
             entry.filePath = path;
-            entry.format = file.suffix().toLower();
-            entry.timestamp = file.lastModified();
         }
+        entry.filePath = path;
+        entry.format = file.suffix().toLower();
+        entry.timestamp = file.lastModified();
         SF_INFO info{};
         if (SNDFILE* audio = sf_open(path.toLocal8Bit().constData(), SFM_READ, &info)) {
             entry.sampleRate = static_cast<std::uint32_t>(info.samplerate);
@@ -204,8 +220,7 @@ bool RecordingIndex::importDirectory(const QString& directoryPath) {
             sf_close(audio);
         }
         if (existing != entries_.end()) {
-            if (existing->sampleRate != entry.sampleRate || existing->bitDepth != entry.bitDepth ||
-                existing->channels != entry.channels || !qFuzzyCompare(existing->duration + 1.0, entry.duration + 1.0)) {
+            if (*existing != entry) {
                 *existing = entry;
                 changed = true;
             }

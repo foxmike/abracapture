@@ -16,9 +16,10 @@ struct SourceItem {
     QString displayName;
     QString appName;
     QString sourceKind; // e.g. "Application", "Monitor", "Hardware", "Other"
-    int channelCount = 2;
-    int sampleRate = 48000;
+    int channelCount = 0;
+    int sampleRate = 0;
     int bitDepth = 0;
+    QString sampleFormat;
     bool isActive = false;
     QString mediaClass;
     QString nodeName;
@@ -31,6 +32,7 @@ struct SourceItem {
                channelCount == other.channelCount &&
                sampleRate == other.sampleRate &&
                bitDepth == other.bitDepth &&
+               sampleFormat == other.sampleFormat &&
                isActive == other.isActive &&
                mediaClass == other.mediaClass &&
                nodeName == other.nodeName;
@@ -53,6 +55,7 @@ public:
         ChannelCountRole,
         SampleRateRole,
         BitDepthRole,
+        SampleFormatRole,
         IsActiveRole,
         NodeIdRole,
         AppNameRole,

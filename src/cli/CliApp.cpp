@@ -317,17 +317,25 @@ int CliApp::runRecord(const QStringList& recordArgs) {
         return 2;
     }
 
-    std::uint32_t captureRate = selectedSource->sampleRate.value_or(48000);
-    if (captureRate == 0) {
-        captureRate = 48000;
+    const auto sourceFormatDeadline = std::chrono::steady_clock::now() + std::chrono::seconds(2);
+    while (!selectedSource->sourceFormat && std::chrono::steady_clock::now() < sourceFormatDeadline) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        selectedSource = catalog.sourceById(selectedSource->nodeId);
+        if (!selectedSource) {
+            break;
+        }
     }
-    std::uint32_t captureChannels = selectedSource->channels.value_or(2);
-    if (captureChannels == 0) {
-        captureChannels = 2;
+    if (!selectedSource || !selectedSource->sourceFormat) {
+        std::cerr << "Capture error: selected source has no current PipeWire format\n";
+        catalog.stop();
+        ctx.stop();
+        return 3;
     }
 
-    const spa_audio_format desiredSpaFormat =
-        (formatArg == QStringLiteral("flac")) ? SPA_AUDIO_FORMAT_S16 : SPA_AUDIO_FORMAT_F32;
+    std::cerr << "[abracapture] source selection: target=node=" << selectedSource->nodeId
+              << " node.name=" << selectedSource->nodeName
+              << " app=" << selectedSource->appName << "\n";
+
     const SampleFormat fileSampleFormat =
         (formatArg == QStringLiteral("flac")) ? SampleFormat::Int16 : SampleFormat::Float32;
 
@@ -354,30 +362,10 @@ int CliApp::runRecord(const QStringList& recordArgs) {
         pathPolicy.setDefaultFormat(formatArg.toStdString());
     }
 
-    abracapture::recording::CaptureMetadata captureMeta{
-        .source = selectedSource->displayName.empty() ? selectedSource->appName : selectedSource->displayName,
-        .sampleRate = captureRate,
-        .channels = static_cast<std::uint16_t>(captureChannels),
-        .format = formatArg.toStdString(),
-    };
-
-    const AudioFormat targetAudioFormat{
-        .sampleRate = captureRate,
-        .channels = static_cast<std::uint16_t>(captureChannels),
-        .sampleFormat = fileSampleFormat,
-    };
-
     abracapture::recording::RecordingSink sink;
-    if (!sink.open(targetAudioFormat, captureMeta, pathPolicy)) {
-        std::cerr << "Capture error: Unable to open recording sink\n";
-        catalog.stop();
-        ctx.stop();
-        return 3;
-    }
 
     pw_thread_loop* const captureLoop = pw_thread_loop_new("abracapture-cli-stream", nullptr);
     if (captureLoop == nullptr) {
-        sink.abort();
         catalog.stop();
         ctx.stop();
         return 3;
@@ -386,7 +374,6 @@ int CliApp::runRecord(const QStringList& recordArgs) {
     pw_context* const captureContext = pw_context_new(pw_thread_loop_get_loop(captureLoop), nullptr, 0);
     if (captureContext == nullptr) {
         pw_thread_loop_destroy(captureLoop);
-        sink.abort();
         catalog.stop();
         ctx.stop();
         return 3;
@@ -396,7 +383,6 @@ int CliApp::runRecord(const QStringList& recordArgs) {
     if (captureCore == nullptr) {
         pw_context_destroy(captureContext);
         pw_thread_loop_destroy(captureLoop);
-        sink.abort();
         catalog.stop();
         ctx.stop();
         return 3;
@@ -406,7 +392,6 @@ int CliApp::runRecord(const QStringList& recordArgs) {
         pw_core_disconnect(captureCore);
         pw_context_destroy(captureContext);
         pw_thread_loop_destroy(captureLoop);
-        sink.abort();
         catalog.stop();
         ctx.stop();
         return 3;
@@ -415,7 +400,7 @@ int CliApp::runRecord(const QStringList& recordArgs) {
     abracapture::audio::AudioRingBuffer ringBuffer(65536 * 4);
     abracapture::audio::PipeWireCaptureStream stream(
         captureLoop, captureCore, ringBuffer, selectedSource->nodeId,
-        desiredSpaFormat, captureRate, captureChannels);
+        *selectedSource->sourceFormat, *selectedSource->sourceFormat);
 
     if (!stream.start()) {
         std::cerr << "Capture error: Failed to start PipeWire stream\n";
@@ -423,7 +408,54 @@ int CliApp::runRecord(const QStringList& recordArgs) {
         pw_core_disconnect(captureCore);
         pw_context_destroy(captureContext);
         pw_thread_loop_destroy(captureLoop);
-        sink.abort();
+        catalog.stop();
+        ctx.stop();
+        return 3;
+    }
+
+    const auto negotiationDeadline = std::chrono::steady_clock::now() + std::chrono::seconds(2);
+    while ((stream.negotiatedFormat() == SPA_AUDIO_FORMAT_UNKNOWN ||
+            stream.negotiatedSampleRate() == 0 || stream.negotiatedChannels() == 0) &&
+           std::chrono::steady_clock::now() < negotiationDeadline) {
+        QCoreApplication::processEvents();
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    }
+    const spa_audio_format negotiatedSpaFormat = stream.negotiatedFormat();
+    const std::uint32_t captureRate = stream.negotiatedSampleRate();
+    const std::uint32_t captureChannels = stream.negotiatedChannels();
+    if (negotiatedSpaFormat == SPA_AUDIO_FORMAT_UNKNOWN || captureRate == 0 ||
+        captureChannels == 0) {
+        std::cerr << "Capture error: PipeWire did not negotiate a capture format\n";
+        stream.stop();
+        stream.destroy();
+        pw_thread_loop_stop(captureLoop);
+        pw_core_disconnect(captureCore);
+        pw_context_destroy(captureContext);
+        pw_thread_loop_destroy(captureLoop);
+        catalog.stop();
+        ctx.stop();
+        return 3;
+    }
+
+    const abracapture::recording::CaptureMetadata captureMeta{
+        .source = selectedSource->displayName.empty() ? selectedSource->appName : selectedSource->displayName,
+        .sampleRate = captureRate,
+        .channels = static_cast<std::uint16_t>(captureChannels),
+        .format = formatArg.toStdString(),
+    };
+    const AudioFormat targetAudioFormat{
+        .sampleRate = captureRate,
+        .channels = static_cast<std::uint16_t>(captureChannels),
+        .sampleFormat = fileSampleFormat,
+    };
+    if (!sink.open(targetAudioFormat, captureMeta, pathPolicy)) {
+        std::cerr << "Capture error: Unable to open recording sink\n";
+        stream.stop();
+        stream.destroy();
+        pw_thread_loop_stop(captureLoop);
+        pw_core_disconnect(captureCore);
+        pw_context_destroy(captureContext);
+        pw_thread_loop_destroy(captureLoop);
         catalog.stop();
         ctx.stop();
         return 3;
@@ -440,7 +472,7 @@ int CliApp::runRecord(const QStringList& recordArgs) {
         QObject::connect(&autoController, &AutoRecordController::startRequested, [&]() {
             isCapturingActive.store(true, std::memory_order_release);
         });
-        QObject::connect(&autoController, &AutoRecordController::stopRequested, [&]() {
+        QObject::connect(&autoController, &AutoRecordController::automaticStopRequested, [&]() {
             shouldStop.store(true, std::memory_order_release);
         });
     }
@@ -562,11 +594,8 @@ int CliApp::runRecord(const QStringList& recordArgs) {
 
     abracapture::recording::CaptureIntegrity integrity;
     integrity.sourceStream = captureMeta.source;
-    const spa_audio_format negotiatedSpa = stream.negotiatedFormat();
-    const std::uint32_t negotiatedRate = stream.negotiatedSampleRate() != 0 ? stream.negotiatedSampleRate() : captureRate;
     integrity.setNegotiatedFormat(
-        negotiatedSpa != SPA_AUDIO_FORMAT_UNKNOWN ? sampleFormatFromSpa(negotiatedSpa) : fileSampleFormat,
-        negotiatedRate);
+        sampleFormatFromSpa(negotiatedSpaFormat), captureRate);
     integrity.setFileFormat(finalizeResult.sampleFormat, finalizeResult.sampleRate);
     integrity.totalFrames = finalizeResult.totalFrames;
     integrity.durationSeconds = finalizeResult.duration.count();

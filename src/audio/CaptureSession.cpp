@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cstdio>
 #include <limits>
 #include <utility>
 
@@ -71,7 +72,8 @@ bool CaptureSession::begin(const std::uint32_t sourceId,
     }
 
     const auto source = sourceCatalog_.sourceById(sourceId);
-    if (!source || threadLoop_ == nullptr || core_ == nullptr || channels == 0) {
+    if (!source || !source->sourceFormat || threadLoop_ == nullptr || core_ == nullptr ||
+        channels > SPA_AUDIO_MAX_CHANNELS) {
         transitionTo(SessionState::Error);
         return false;
     }
@@ -87,8 +89,12 @@ bool CaptureSession::begin(const std::uint32_t sourceId,
         requestedFormat_ = format;
         requestedRate_ = rate;
         requestedChannels_ = channels;
-        stream_ = makeStream(source->nodeId);
+        activeChannels_.store(0, std::memory_order_release);
+        stream_ = makeStream(*source);
     }
+
+    fprintf(stderr, "[abracapture] source selection: target=node=%u node.name=%s app=%s\n",
+            source->nodeId, source->nodeName.c_str(), source->appName.c_str());
 
     stopRequested_.store(false, std::memory_order_release);
     transitionTo(SessionState::Connecting);
@@ -116,6 +122,7 @@ void CaptureSession::stop() noexcept {
     {
         std::lock_guard streamLock(streamMutex_);
         if (stream_) {
+            activeChannels_.store(stream_->negotiatedChannels(), std::memory_order_release);
             stream_->stop();
             stream_.reset();
         }
@@ -260,7 +267,7 @@ void CaptureSession::reconnectLoop() {
                 stream_->stop();
                 stream_.reset();
             }
-            stream_ = makeStream(source->nodeId);
+            stream_ = makeStream(*source);
             suppressStreamStatus_.store(false, std::memory_order_release);
             if (stream_ && stream_->start() &&
                 stream_->status() != PipeWireCaptureStream::StreamStatus::Error &&
@@ -296,16 +303,33 @@ std::optional<SourceDescriptor> CaptureSession::resolveSource() const {
 }
 
 std::unique_ptr<PipeWireCaptureStream> CaptureSession::makeStream(
-    const std::uint32_t nodeId) {
+    const SourceDescriptor& source) {
+    spa_audio_info_raw requested = *source.sourceFormat;
+    // A non-zero rate is an explicit user conversion request. Otherwise the
+    // current source node's rate, channels, sample representation and layout
+    // are proposed unchanged.
+    if (requestedRate_ != 0) {
+        requested.rate = requestedRate_;
+    }
     return std::make_unique<PipeWireCaptureStream>(
-        threadLoop_, core_, ringBuffer_, nodeId, requestedFormat_, requestedRate_,
-        requestedChannels_, [this](const PipeWireCaptureStream::StreamStatus status) {
+        threadLoop_, core_, ringBuffer_, source.nodeId, *source.sourceFormat, requested,
+        [this](const PipeWireCaptureStream::StreamStatus status) {
             handleStreamStatus(status);
         });
 }
 
 void CaptureSession::flushRingBuffer() noexcept {
-    const std::size_t channels = std::max<std::size_t>(1, requestedChannels_);
+    std::size_t channels = activeChannels_.load(std::memory_order_acquire);
+    if (channels == 0) {
+        std::lock_guard streamLock(streamMutex_);
+        if (stream_) {
+            channels = stream_->negotiatedChannels();
+            activeChannels_.store(static_cast<std::uint32_t>(channels), std::memory_order_release);
+        }
+    }
+    if (channels == 0) {
+        return;
+    }
     std::array<float, 4096 * SPA_AUDIO_MAX_CHANNELS> samples{};
     while (ringBuffer_.available() != 0) {
         const std::size_t availableSamples = ringBuffer_.available();

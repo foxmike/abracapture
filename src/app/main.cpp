@@ -55,15 +55,31 @@ QString sourceKind(const SourceCategory category) {
     return QStringLiteral("Other");
 }
 
+QString spaFormatName(const spa_audio_format format) {
+    switch (format) {
+    case SPA_AUDIO_FORMAT_S16: return QStringLiteral("S16LE");
+    case SPA_AUDIO_FORMAT_S24: return QStringLiteral("S24LE");
+    case SPA_AUDIO_FORMAT_S24_32: return QStringLiteral("S24_32LE");
+    case SPA_AUDIO_FORMAT_S32: return QStringLiteral("S32LE");
+    case SPA_AUDIO_FORMAT_F32: return QStringLiteral("F32LE");
+    case SPA_AUDIO_FORMAT_F64: return QStringLiteral("F64LE");
+    default: return QStringLiteral("Unknown");
+    }
+}
+
+int spaBitDepth(spa_audio_format format);
+
 SourceItem sourceItem(const SourceDescriptor& descriptor) {
     return {
         .id = descriptor.nodeId,
         .displayName = QString::fromStdString(descriptor.displayName),
         .appName = QString::fromStdString(descriptor.appName),
         .sourceKind = sourceKind(descriptor.category),
-        .channelCount = static_cast<int>(descriptor.channels.value_or(2)),
-        .sampleRate = static_cast<int>(descriptor.sampleRate.value_or(48000)),
-        .bitDepth = 0,
+        .channelCount = static_cast<int>(descriptor.channels.value_or(0)),
+        .sampleRate = static_cast<int>(descriptor.sampleRate.value_or(0)),
+        .bitDepth = descriptor.sourceFormat ? spaBitDepth(descriptor.sourceFormat->format) : 0,
+        .sampleFormat = descriptor.sourceFormat ? spaFormatName(descriptor.sourceFormat->format)
+                                                : QStringLiteral("Unknown"),
         .isActive = false,
         .mediaClass = QString::fromStdString(descriptor.mediaClass),
         .nodeName = QString::fromStdString(descriptor.nodeName),
@@ -124,13 +140,20 @@ int main(int argc, char *argv[]) {
     settingsViewModel.load();
     abracapture::history::RecordingIndex recordingIndex;
     static_cast<void>(recordingIndex.load());
-    recordingIndex.importDirectory(settingsViewModel.outputDirectory());
     RecordingsViewModel recordingsViewModel(&recordingIndex);
+    static_cast<void>(recordingsViewModel.importDirectory(settingsViewModel.outputDirectory()));
     CaptureViewModel captureViewModel(&sourceListModel, &settingsViewModel);
 
     PipeWireContext pipeWireContext;
     SourceCatalog sourceCatalog;
     sourceCatalog.sourceAppeared = [&sourceListModel](const SourceDescriptor& descriptor) {
+        const SourceItem item = sourceItem(descriptor);
+        QMetaObject::invokeMethod(
+            &sourceListModel,
+            [&sourceListModel, item] { sourceListModel.addOrUpdateSource(item); },
+            Qt::QueuedConnection);
+    };
+    sourceCatalog.sourceChanged = [&sourceListModel](const SourceDescriptor& descriptor) {
         const SourceItem item = sourceItem(descriptor);
         QMetaObject::invokeMethod(
             &sourceListModel,
@@ -205,8 +228,12 @@ int main(int argc, char *argv[]) {
     bool recordingSinkOpen = false;
     bool recordingUsesFlac = false;
     bool recordingActive = false;
+    bool recordingPending = false;
     QString recordingSourceName;
     std::uint16_t recordingChannels = 0;
+    int recordingOutputBitDepth = 0;
+    SampleFormat recordingSampleFormat = SampleFormat::Float32;
+    abracapture::recording::CaptureMetadata pendingRecordingMetadata;
     std::vector<std::int32_t> flacConversionBuffer;
 
     // CaptureSession is the engine boundary. The source catalog retains the
@@ -253,7 +280,7 @@ int main(int argc, char *argv[]) {
     monitorSession->setMaxReconnectAttempts(2);
 
     QObject::connect(&sourceListModel, &SourceListModel::sourceSelected,
-                     &application, [&monitorSession, &sourceListModel, &recordingActive,
+                     &application, [&monitorSession, &recordingActive,
                                     &monitorDataSeen](const quint32 sourceId) {
                          if (recordingActive) {
                              return;
@@ -263,24 +290,25 @@ int main(int argc, char *argv[]) {
                              monitorSession->stop();
                              return;
                          }
-                         const QVariantMap source = sourceListModel.getSourceById(sourceId);
-                         const std::uint32_t rate = static_cast<std::uint32_t>(
-                             source.value(QStringLiteral("sampleRate"), 48000).toUInt());
-                         const std::uint32_t channels = static_cast<std::uint32_t>(
-                             source.value(QStringLiteral("channelCount"), 2).toUInt());
-                         fprintf(stderr, "[abracapture] monitor: connecting node=%u rate=%u ch=%u\n",
-                                 sourceId, rate, channels);
-                         static_cast<void>(monitorSession->begin(sourceId, SPA_AUDIO_FORMAT_F32, rate, channels));
+                         static_cast<void>(monitorSession->begin(
+                             sourceId, SPA_AUDIO_FORMAT_UNKNOWN, 0, 0));
+                     });
+    QObject::connect(&sourceListModel, &SourceListModel::selectionChanged,
+                     &application, [&monitorSession, &monitorDataSeen, &sourceListModel] {
+                         if (sourceListModel.selectedSourceId() == 0) {
+                             monitorDataSeen = false;
+                             monitorSession->stop();
+                         }
                      });
 
     QObject::connect(&captureViewModel, &CaptureViewModel::startCaptureRequested,
-                     &application, [&captureSession, &captureViewModel, &sourceListModel,
+                     &application, [&captureSession, &captureViewModel,
                                     &sourceCatalog, &settingsViewModel, &recordingSink,
                                     &outputPathPolicy, &recordingSinkOpen, &recordingUsesFlac,
                                     &recordingActive, &monitorSession, &monitorActive,
-                                    &recordingSourceName, &recordingChannels](
+                                    &recordingPending, &recordingOutputBitDepth,
+                                    &recordingSampleFormat, &pendingRecordingMetadata](
                                        const quint32 sourceId) {
-                         const QVariantMap source = sourceListModel.getSourceById(sourceId);
                          const auto sourceDescriptor = sourceCatalog.sourceById(sourceId);
                          if (!sourceDescriptor) {
                              captureViewModel.reportCaptureError(
@@ -289,19 +317,12 @@ int main(int argc, char *argv[]) {
                          }
                          const bool autoRate = settingsViewModel.captureSampleRate() == 0;
                          const bool autoDepth = settingsViewModel.captureBitDepth() == 0;
-                         const auto monitorRate = monitorSession->negotiatedSampleRate();
-                         const auto monitorFormat = monitorSession->negotiatedFormat();
-                         const auto monitorChannels = monitorSession->negotiatedChannels();
                          const std::uint32_t rate = autoRate
-                                                        ? (monitorRate != 0 ? monitorRate : static_cast<std::uint32_t>(source.value(QStringLiteral("sampleRate"), 48000).toUInt()))
+                                                        ? 0
                                                         : static_cast<std::uint32_t>(settingsViewModel.captureSampleRate());
-                         const std::uint32_t channels = monitorChannels != 0
-                                                            ? monitorChannels
-                                                            : static_cast<std::uint32_t>(source.value(QStringLiteral("channelCount"), 2).toUInt());
-                         const int outputBitDepth = autoDepth ? std::max(16, spaBitDepth(monitorFormat)) : settingsViewModel.captureBitDepth();
-                         const spa_audio_format inputFormat = autoRate && autoDepth && monitorFormat != SPA_AUDIO_FORMAT_UNKNOWN
-                                                                  ? monitorFormat
-                                                                  : SPA_AUDIO_FORMAT_F32;
+                         const std::uint32_t channels = 0;
+                         const int outputBitDepth = autoDepth ? 32 : settingsViewModel.captureBitDepth();
+                         const spa_audio_format inputFormat = SPA_AUDIO_FORMAT_UNKNOWN;
 
                          monitorActive.store(false, std::memory_order_release);
                          monitorSession->stop();
@@ -315,58 +336,45 @@ int main(int argc, char *argv[]) {
                          recordingUsesFlac = masterFormat == QStringLiteral("flac");
                          outputPathPolicy.setDefaultFormat(masterFormat.toStdString());
 
-                         const AudioFormat fileFormat{
-                             .sampleRate = rate,
-                             .channels = static_cast<std::uint16_t>(channels),
-                             .sampleFormat = recordingUsesFlac
-                                                 ? (outputBitDepth == 16 ? SampleFormat::Int16
-                                                                          : (outputBitDepth == 24 ? SampleFormat::Int24 : SampleFormat::Int32))
-                                                 : (outputBitDepth == 16 ? SampleFormat::Int16
-                                                                          : (outputBitDepth == 24 ? SampleFormat::Int24 : SampleFormat::Float32))};
-                         const abracapture::recording::CaptureMetadata metadata{
+                         recordingSink.abort();
+                         recordingSinkOpen = false;
+                         recordingPending = true;
+                         pendingRecordingMetadata = {
                              .source = sourceDescriptor->displayName.empty()
                                            ? sourceDescriptor->appName
                                            : sourceDescriptor->displayName,
-                             .sampleRate = rate,
-                             .channels = static_cast<std::uint16_t>(channels),
                              .format = masterFormat.toStdString(),
                          };
-                         recordingSourceName = QString::fromStdString(metadata.source);
-                         recordingChannels = metadata.channels;
-                         recordingSink.abort();
-                         recordingSinkOpen = recordingSink.open(fileFormat, metadata,
-                                                                  outputPathPolicy);
-                         if (!recordingSinkOpen) {
-                             captureViewModel.reportCaptureError(
-                                 QStringLiteral("Unable to open recording file: %1")
-                                     .arg(QString::fromStdString(recordingSink.lastError())));
-                             recordingActive = false;
-                             return;
-                         }
-
+                         recordingOutputBitDepth = outputBitDepth;
+                         recordingSampleFormat = recordingUsesFlac
+                                                   ? (outputBitDepth == 16 ? SampleFormat::Int16
+                                                                            : (outputBitDepth == 24 ? SampleFormat::Int24 : SampleFormat::Int32))
+                                                   : (outputBitDepth == 16 ? SampleFormat::Int16
+                                                                            : (outputBitDepth == 24 ? SampleFormat::Int24 : SampleFormat::Float32));
                          captureViewModel.updateEngineFormat(
-                             negotiatedFormatDescription(static_cast<int>(rate), static_cast<int>(channels), outputBitDepth), CaptureViewModel::Native);
+                             negotiatedFormatDescription(0, 0, 0), CaptureViewModel::Native);
                          if (!captureSession->begin(sourceId, inputFormat, rate, channels)) {
                              recordingSink.abort();
                              recordingSinkOpen = false;
+                             recordingPending = false;
                              recordingActive = false;
                              captureViewModel.reportCaptureError(
-                                 QStringLiteral("PipeWire could not start capture at %1 Hz, %2 channels.")
-                                     .arg(rate)
-                                     .arg(channels));
+                                 QStringLiteral("PipeWire could not start capture for the selected source."));
                          }
                      });
     QObject::connect(&captureViewModel, &CaptureViewModel::stopCaptureRequested,
                      &application, [&captureSession, &captureViewModel, &recordingSink,
-                     &recordingSinkOpen, &recordingActive, &recordingIndex,
+                     &recordingSinkOpen, &recordingActive, &recordingPending, &recordingIndex,
                                     &recordingsViewModel, &recordingSourceName,
                                     &recordingChannels, &sourceListModel, &monitorSession,
                                     &monitorDataSeen] {
                          captureSession->stop();
+                         bool finalizationSucceeded = true;
                          if (recordingSinkOpen) {
                              const auto result = recordingSink.finalize();
                              recordingSinkOpen = false;
                              if (!result.success) {
+                                 finalizationSucceeded = false;
                                  captureViewModel.reportCaptureError(
                                      QStringLiteral("Recording could not be finalized: %1")
                                          .arg(QString::fromStdString(result.error)));
@@ -393,15 +401,18 @@ int main(int argc, char *argv[]) {
                              }
                          }
                          recordingActive = false;
+                         recordingPending = false;
+                         const bool resumedArmedWaiting = finalizationSucceeded &&
+                             captureViewModel.completeAutomaticRecording();
+                         if (resumedArmedWaiting) {
+                             std::fprintf(stderr,
+                                          "[abracapture] automation: auto-stop -> finalized current file; armed_waiting\n");
+                         }
                          const quint32 selectedId = sourceListModel.selectedSourceId();
                          if (selectedId != 0) {
-                             const QVariantMap src = sourceListModel.getSourceById(selectedId);
-                             const std::uint32_t rate = static_cast<std::uint32_t>(
-                                 src.value(QStringLiteral("sampleRate"), 48000).toUInt());
-                             const std::uint32_t channels = static_cast<std::uint32_t>(
-                                 src.value(QStringLiteral("channelCount"), 2).toUInt());
                              monitorDataSeen = false;
-                             static_cast<void>(monitorSession->begin(selectedId, SPA_AUDIO_FORMAT_F32, rate, channels));
+                             static_cast<void>(monitorSession->begin(
+                                 selectedId, SPA_AUDIO_FORMAT_UNKNOWN, 0, 0));
                          }
                      });
 
@@ -409,8 +420,47 @@ int main(int argc, char *argv[]) {
     visualizationTimer.setInterval(33);
     QObject::connect(&visualizationTimer, &QTimer::timeout,
                      &application, [&captureSession, &monitorSession, &monitorActive,
-                                    &recordingActive, &monitorDataSeen,
-                                    &waveformBridge, &captureViewModel, &sourceListModel] {
+                                    &recordingActive, &recordingPending, &recordingSink,
+                                    &recordingSinkOpen, &recordingSourceName,
+                                    &recordingChannels, &recordingOutputBitDepth,
+                                    &recordingSampleFormat, &pendingRecordingMetadata,
+                                    &outputPathPolicy, &monitorDataSeen, &waveformBridge, &captureViewModel,
+                                    &sourceListModel] {
+                         if (recordingActive && recordingPending && !recordingSinkOpen) {
+                             const auto rate = captureSession->negotiatedSampleRate();
+                             const auto channels = captureSession->negotiatedChannels();
+                             const auto format = captureSession->negotiatedFormat();
+                             if (rate > 0 && channels > 0 && format != SPA_AUDIO_FORMAT_UNKNOWN) {
+                                 auto metadata = pendingRecordingMetadata;
+                                 metadata.sampleRate = rate;
+                                 metadata.channels = static_cast<std::uint16_t>(channels);
+                                 const AudioFormat fileFormat{
+                                     .sampleRate = rate,
+                                     .channels = static_cast<std::uint16_t>(channels),
+                                     .sampleFormat = recordingSampleFormat,
+                                 };
+                                 recordingSinkOpen = recordingSink.open(fileFormat, metadata,
+                                                                        outputPathPolicy);
+                                 recordingPending = false;
+                                 if (!recordingSinkOpen) {
+                                     recordingActive = false;
+                                     captureSession->stop();
+                                     captureViewModel.reportCaptureError(
+                                         QStringLiteral("Unable to open recording file: %1")
+                                             .arg(QString::fromStdString(recordingSink.lastError())));
+                                 } else {
+                                     recordingSourceName = QString::fromStdString(metadata.source);
+                                     recordingChannels = metadata.channels;
+                                     const int depth = recordingOutputBitDepth > 0
+                                                           ? recordingOutputBitDepth
+                                                           : spaBitDepth(format);
+                                     captureViewModel.updateEngineFormat(
+                                         negotiatedFormatDescription(static_cast<int>(rate),
+                                                                   static_cast<int>(channels), depth),
+                                         CaptureViewModel::Native);
+                                 }
+                             }
+                         }
                          const bool monitoring = monitorActive.load(std::memory_order_acquire);
                          auto* activeSession = recordingActive
                                                    ? captureSession.get()
@@ -446,10 +496,6 @@ int main(int argc, char *argv[]) {
                              const auto format = monitorSession->negotiatedFormat();
                              const int depth = spaBitDepth(format);
                              if (rate > 0 && channels > 0 && depth > 0) {
-                                 sourceListModel.updateNegotiatedFormat(
-                                     sourceListModel.selectedSourceId(),
-                                     static_cast<int>(rate), depth,
-                                     static_cast<int>(channels));
                                  captureViewModel.updateEngineFormat(
                                      negotiatedFormatDescription(
                                          static_cast<int>(rate),
@@ -467,7 +513,9 @@ int main(int argc, char *argv[]) {
                              Qt::QueuedConnection);
                          captureViewModel.updateIntegrityMetrics(
                              static_cast<qulonglong>(metrics.overflowCount));
-                         captureSession->drainPendingSamples();
+                         if (recordingSinkOpen) {
+                             captureSession->drainPendingSamples();
+                         }
                          if (monitoring) {
                              monitorSession->drainPendingSamples();
                          }

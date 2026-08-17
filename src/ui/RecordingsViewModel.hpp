@@ -69,6 +69,7 @@ signals:
 
 private:
     void syncEntries();
+    void rebuildModel();
     QString operationStatus() const;
 
     abracapture::history::RecordingIndex* externalIndex_ = nullptr;
@@ -76,5 +77,6 @@ private:
     QList<abracapture::history::RecordingEntry> entries_;
     int selectedIndex_ = -1;
     QString operationStatus_;
+    QString recordingsDirectory_;
     abracapture::exporting::ExportManager exportManager_;
 };

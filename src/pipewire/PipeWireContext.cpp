@@ -1,7 +1,11 @@
 #include "PipeWireContext.hpp"
 
 #include <pipewire/context.h>
+#include <pipewire/node.h>
 #include <pipewire/pipewire.h>
+#include <spa/param/param.h>
+
+#include <cstring>
 
 namespace {
 
@@ -11,6 +15,24 @@ const pw_proxy_events proxyEvents{
         auto& object = *static_cast<PipeWireContext::GlobalObject*>(data);
         object.proxy = nullptr;
         object.type = nullptr;
+    },
+};
+
+const pw_node_events nodeEvents{
+    .version = PW_VERSION_NODE_EVENTS,
+    .param = [](void* data, int, const std::uint32_t id, std::uint32_t,
+                std::uint32_t, const spa_pod* const param) {
+        auto& object = *static_cast<PipeWireContext::GlobalObject*>(data);
+        if (id != SPA_PARAM_Format || param == nullptr || object.owner == nullptr) {
+            return;
+        }
+        try {
+            if (object.owner->nodeFormatChanged) {
+                object.owner->nodeFormatChanged(object.id, param);
+            }
+        } catch (...) {
+            // Exceptions must not cross the PipeWire callback boundary.
+        }
     },
 };
 
@@ -103,6 +125,9 @@ bool PipeWireContext::start() {
 
                     if (!inserted && object.proxy != nullptr) {
                         spa_hook_remove(&object.listener);
+                        if (object.nodeListenerInstalled) {
+                            spa_hook_remove(&object.nodeListener);
+                        }
                         pw_proxy_destroy(object.proxy);
                     }
 
@@ -111,8 +136,21 @@ bool PipeWireContext::start() {
                         .type = pw_proxy_get_type(proxy, &proxyVersion),
                         .version = version,
                         .proxy = proxy,
+                        .owner = &self,
                     };
                     pw_proxy_add_listener(proxy, &object.listener, &proxyEvents, &object);
+
+                    if (std::strcmp(object.type, PW_TYPE_INTERFACE_Node) == 0) {
+                        auto* const node = reinterpret_cast<pw_node*>(proxy);
+                        if (pw_node_add_listener(node, &object.nodeListener, &nodeEvents,
+                                                 &object) >= 0) {
+                            object.nodeListenerInstalled = true;
+                            std::uint32_t formatId = SPA_PARAM_Format;
+                            static_cast<void>(pw_node_subscribe_params(node, &formatId, 1));
+                            static_cast<void>(pw_node_enum_params(node, 0, SPA_PARAM_Format,
+                                                                  0, 1, nullptr));
+                        }
+                    }
 
                     try {
                         if (self.globalAdded) {
@@ -142,6 +180,9 @@ bool PipeWireContext::start() {
                 GlobalObject& object = iterator->second;
                 if (object.proxy != nullptr) {
                     spa_hook_remove(&object.listener);
+                    if (object.nodeListenerInstalled) {
+                        spa_hook_remove(&object.nodeListener);
+                    }
                     pw_proxy_destroy(object.proxy);
                 }
                 self.globalObjects_.erase(iterator);
@@ -205,6 +246,9 @@ void PipeWireContext::stop() {
         static_cast<void>(id);
         if (object.proxy != nullptr) {
             spa_hook_remove(&object.listener);
+            if (object.nodeListenerInstalled) {
+                spa_hook_remove(&object.nodeListener);
+            }
             pw_proxy_destroy(object.proxy);
             object.proxy = nullptr;
         }

@@ -20,8 +20,8 @@ CaptureViewModel::CaptureViewModel(SourceListModel* const sourceListModel,
 
     connect(&autoRecordController_, &AutoRecordController::startRequested,
             this, &CaptureViewModel::startCapture);
-    connect(&autoRecordController_, &AutoRecordController::stopRequested,
-            this, &CaptureViewModel::stopCapture);
+    connect(&autoRecordController_, &AutoRecordController::automaticStopRequested,
+            this, &CaptureViewModel::stopAutomaticRecording);
 
     auto* const notificationService = new NotificationService(this);
 
@@ -47,6 +47,10 @@ CaptureViewModel::CaptureViewModel(SourceListModel* const sourceListModel,
         selectedSourceId_ = sourceListModel_->selectedSourceId();
         connect(sourceListModel_, &SourceListModel::sourceSelected,
                 this, &CaptureViewModel::setSelectedSourceId);
+        connect(sourceListModel_, &SourceListModel::selectionChanged,
+                this, [this] {
+                    setSelectedSourceId(sourceListModel_->selectedSourceId());
+                });
     }
 
     if (settingsViewModel_ != nullptr) {
@@ -81,12 +85,28 @@ CaptureViewModel::CaptureViewModel(SourceListModel* const sourceListModel,
                 this, [this](const int seconds) {
                     autoRecordController_.setPostRollDurationMs(seconds * 1000);
                 });
+        connect(settingsViewModel_, &SettingsViewModel::autoStopSilenceDurationChanged,
+                this, [this](const int seconds) {
+                    autoRecordController_.setSilenceDurationMs(seconds * 1000);
+                });
+        connect(settingsViewModel_, &SettingsViewModel::autoStartEnabledChanged,
+                this, [this](const bool enabled) {
+                    autoRecordController_.setAutoStartEnabled(enabled);
+                });
+        connect(settingsViewModel_, &SettingsViewModel::autoStopEnabledChanged,
+                this, [this](const bool enabled) {
+                    autoRecordController_.setAutoStopEnabled(enabled);
+                });
         autoRecordController_.setStartThreshold(
             static_cast<float>(settingsViewModel_->autoStartThreshold()));
         autoRecordController_.setPreRollDurationMs(
             settingsViewModel_->preRollSeconds() * 1000);
         autoRecordController_.setPostRollDurationMs(
             settingsViewModel_->postRollSeconds() * 1000);
+        autoRecordController_.setSilenceDurationMs(
+            settingsViewModel_->autoStopSilenceDuration() * 1000);
+        autoRecordController_.setAutoStartEnabled(settingsViewModel_->autoStartEnabled());
+        autoRecordController_.setAutoStopEnabled(settingsViewModel_->autoStopEnabled());
     }
 }
 
@@ -181,9 +201,12 @@ void CaptureViewModel::startCapture() {
         return;
     }
 
-    armed_ = false;
-    emit armedChanged();
-    autoRecordController_.reset();
+    const bool automaticStart = autoRecordController_.state() == AutoRecordController::Recording;
+    if (!automaticStart) {
+        armed_ = false;
+        emit armedChanged();
+        autoRecordController_.reset();
+    }
     resetDuration();
     setIntegrityStatus(QStringLiteral("Connecting to source…"));
     setCaptureState(QStringLiteral("connecting"));
@@ -196,8 +219,33 @@ void CaptureViewModel::stopCapture() {
         return;
     }
 
+    automaticStopPending_ = false;
+    autoRecordController_.reset();
+    armed_ = false;
+    emit armedChanged();
     setCaptureState(QStringLiteral("stopping"));
     emit stopCaptureRequested();
+}
+
+void CaptureViewModel::stopAutomaticRecording() {
+    if (captureState_ != QStringLiteral("capturing") &&
+        captureState_ != QStringLiteral("connecting")) {
+        return;
+    }
+    automaticStopPending_ = true;
+    setCaptureState(QStringLiteral("stopping"));
+    emit stopCaptureRequested();
+}
+
+bool CaptureViewModel::completeAutomaticRecording() {
+    if (!automaticStopPending_) {
+        return false;
+    }
+    automaticStopPending_ = false;
+    resetDuration();
+    setCaptureState(QStringLiteral("armed_waiting"));
+    setIntegrityStatus(QStringLiteral("Armed; waiting for signal."));
+    return true;
 }
 
 void CaptureViewModel::armCapture() {
@@ -207,6 +255,7 @@ void CaptureViewModel::armCapture() {
     autoRecordController_.reset();
     armed_ = true;
     emit armedChanged();
+    setCaptureState(QStringLiteral("armed_waiting"));
     setIntegrityStatus(QStringLiteral("Armed; waiting for manual or automatic start."));
 }
 
@@ -219,6 +268,9 @@ void CaptureViewModel::disarmCapture() {
     emit armedChanged();
     if (captureState_ == QStringLiteral("idle")) {
         setIntegrityStatus(QStringLiteral("Ready"));
+    }
+    if (captureState_ == QStringLiteral("armed_waiting")) {
+        setCaptureState(QStringLiteral("idle"));
     }
 }
 
@@ -243,6 +295,12 @@ void CaptureViewModel::handleSessionState(const abracapture::audio::SessionState
     switch (state) {
     case SessionState::Idle:
     case SessionState::Stopped: {
+        // An automatic recording stop tears down only the recording stream;
+        // the monitor is restarted and the automation session remains armed.
+        // Its queued Stopped notification must not overwrite armed_waiting.
+        if (armed_ && captureState_ == QStringLiteral("armed_waiting")) {
+            return;
+        }
         const double finalDuration = durationSeconds_;
         const QString savedPath = outputPath_;
         const bool wasCapturing = (captureStartedAtMs_ != 0);

@@ -23,6 +23,7 @@ public:
     void stop();
 
     std::function<void(const SourceDescriptor&)> sourceAppeared;
+    std::function<void(const SourceDescriptor&)> sourceChanged;
     std::function<void(std::uint32_t nodeId)> sourceDisappeared;
     std::function<void()> catalogReset;
 

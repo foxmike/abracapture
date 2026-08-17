@@ -6,6 +6,7 @@
 #include <unordered_map>
 
 #include <pipewire/core.h>
+#include <pipewire/node.h>
 #include <pipewire/proxy.h>
 #include <pipewire/thread-loop.h>
 #include <spa/utils/hook.h>
@@ -20,6 +21,9 @@ public:
         std::uint32_t version = 0;
         pw_proxy* proxy = nullptr;
         spa_hook listener{};
+        spa_hook nodeListener{};
+        bool nodeListenerInstalled = false;
+        PipeWireContext* owner = nullptr;
     };
 
     PipeWireContext() = default;
@@ -38,6 +42,7 @@ public:
 
     std::function<void(std::uint32_t id, const char* type, const spa_dict* props)> globalAdded;
     std::function<void(std::uint32_t id)> globalRemoved;
+    std::function<void(std::uint32_t id, const spa_pod* format)> nodeFormatChanged;
 
 private:
     pw_thread_loop* threadLoop_ = nullptr;

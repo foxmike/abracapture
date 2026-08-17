@@ -14,6 +14,12 @@ ApplicationWindow {
     height: 800
     color: Theme.AbracaptureTheme.background
 
+    onActiveChanged: {
+        if (active && appRecordingsViewModel) {
+            appRecordingsViewModel.refreshEntries()
+        }
+    }
+
     header: ToolBar {
         implicitHeight: 56
 

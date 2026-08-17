@@ -11,6 +11,9 @@ class AutoRecordController : public QObject {
     Q_PROPERTY(int holdTimeMs READ holdTimeMs WRITE setHoldTimeMs)
     Q_PROPERTY(int preRollDurationMs READ preRollDurationMs WRITE setPreRollDurationMs)
     Q_PROPERTY(int postRollDurationMs READ postRollDurationMs WRITE setPostRollDurationMs)
+    Q_PROPERTY(int silenceDurationMs READ silenceDurationMs WRITE setSilenceDurationMs)
+    Q_PROPERTY(bool autoStartEnabled READ autoStartEnabled WRITE setAutoStartEnabled)
+    Q_PROPERTY(bool autoStopEnabled READ autoStopEnabled WRITE setAutoStopEnabled)
 
 public:
     enum State {
@@ -40,6 +43,12 @@ public:
 
     [[nodiscard]] int postRollDurationMs() const noexcept;
     void setPostRollDurationMs(int durationMs) noexcept;
+    [[nodiscard]] int silenceDurationMs() const noexcept;
+    void setSilenceDurationMs(int durationMs) noexcept;
+    [[nodiscard]] bool autoStartEnabled() const noexcept;
+    void setAutoStartEnabled(bool enabled) noexcept;
+    [[nodiscard]] bool autoStopEnabled() const noexcept;
+    void setAutoStopEnabled(bool enabled) noexcept;
     void reset() noexcept;
 
 public slots:
@@ -49,7 +58,7 @@ public slots:
 signals:
     void stateChanged(AutoRecordController::State state);
     void startRequested();
-    void stopRequested();
+    void automaticStopRequested();
     void preRollRequested(int durationMs);
 
 private:
@@ -59,7 +68,11 @@ private:
     int holdTimeMs_ = 0;
     int preRollDurationMs_ = 0;
     int postRollDurationMs_ = 0;
+    int silenceDurationMs_ = 3000;
+    bool autoStartEnabled_ = false;
+    bool autoStopEnabled_ = false;
     int consecutiveStartPeaks_ = 0;
     QElapsedTimer armedTimer_;
     QElapsedTimer postRollTimer_;
+    QElapsedTimer silenceTimer_;
 };

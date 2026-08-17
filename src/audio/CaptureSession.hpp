@@ -73,7 +73,7 @@ private:
     void reconnectLoop();
     [[nodiscard]] std::optional<SourceDescriptor> resolveSource() const;
     [[nodiscard]] std::unique_ptr<PipeWireCaptureStream> makeStream(
-        std::uint32_t nodeId);
+        const SourceDescriptor& source);
     void flushRingBuffer() noexcept;
 
     pw_thread_loop* const threadLoop_;
@@ -89,6 +89,7 @@ private:
     spa_audio_format requestedFormat_ = SPA_AUDIO_FORMAT_UNKNOWN;
     std::uint32_t requestedRate_ = 0;
     std::uint32_t requestedChannels_ = 0;
+    std::atomic<std::uint32_t> activeChannels_{0};
 
     const StateCallback stateCallback_;
     const ConsumerCallback consumerCallback_;
