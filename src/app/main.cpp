@@ -29,14 +29,13 @@
 #include <QVector>
 
 #include <algorithm>
+#include <atomic>
 #include <cmath>
 #include <cstdint>
+#include <cstdio>
 #include <filesystem>
-#include <condition_variable>
 #include <memory>
-#include <mutex>
 #include <string_view>
-#include <thread>
 #include <utility>
 #include <vector>
 
@@ -177,12 +176,35 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    pw_thread_loop* monitorLoop = pw_thread_loop_new("abracapture-gui-monitor", nullptr);
+    pw_context* monitorContext = monitorLoop != nullptr
+                                      ? pw_context_new(pw_thread_loop_get_loop(monitorLoop), nullptr, 0)
+                                      : nullptr;
+    pw_core* monitorCore = monitorContext != nullptr
+                                ? pw_context_connect(monitorContext, nullptr, 0)
+                                : nullptr;
+    const bool monitorLoopStarted = monitorCore != nullptr &&
+                                     pw_thread_loop_start(monitorLoop) >= 0;
+    if (!monitorLoopStarted) {
+        if (monitorCore != nullptr) {
+            pw_core_disconnect(monitorCore);
+            monitorCore = nullptr;
+        }
+        if (monitorContext != nullptr) {
+            pw_context_destroy(monitorContext);
+            monitorContext = nullptr;
+        }
+        if (monitorLoop != nullptr) {
+            pw_thread_loop_destroy(monitorLoop);
+            monitorLoop = nullptr;
+        }
+    }
+
     abracapture::recording::OutputPathPolicy outputPathPolicy;
     abracapture::recording::RecordingSink recordingSink;
     bool recordingSinkOpen = false;
     bool recordingUsesFlac = false;
     bool recordingActive = false;
-    bool previewActive = false;
     QString recordingSourceName;
     std::uint16_t recordingChannels = 0;
     std::vector<std::int32_t> flacConversionBuffer;
@@ -220,29 +242,42 @@ int main(int argc, char *argv[]) {
             static_cast<void>(recordingSink.pushSamples(flacConversionBuffer.data(), frameCount));
         });
 
-    auto previewSession = std::make_unique<abracapture::audio::CaptureSession>(
-        captureLoop, captureCore, sourceCatalog, 65536);
-    auto startWaveformPreview = [&previewSession, &sourceListModel, &previewActive](const quint32 sourceId) {
-        const QVariantMap source = sourceListModel.getSourceById(sourceId);
-        if (source.isEmpty()) {
-            previewActive = false;
-            return;
-        }
-        previewActive = previewSession->begin(
-            sourceId, SPA_AUDIO_FORMAT_F32,
-            static_cast<std::uint32_t>(source.value(QStringLiteral("sampleRate"), 48000).toUInt()),
-            static_cast<std::uint32_t>(source.value(QStringLiteral("channelCount"), 2).toUInt()));
-    };
+    std::atomic<bool> monitorActive{false};
+    bool monitorDataSeen = false;
+    auto monitorSession = std::make_unique<abracapture::audio::CaptureSession>(
+        monitorLoop, monitorCore, sourceCatalog, 16384,
+        [&monitorActive](const abracapture::audio::SessionState state) {
+            monitorActive.store(state == abracapture::audio::SessionState::Capturing,
+                               std::memory_order_release);
+        });
+    monitorSession->setMaxReconnectAttempts(2);
+
     QObject::connect(&sourceListModel, &SourceListModel::sourceSelected,
-                     &application, [&startWaveformPreview](const quint32 sourceId) {
-                         startWaveformPreview(sourceId);
+                     &application, [&monitorSession, &sourceListModel, &recordingActive,
+                                    &monitorDataSeen](const quint32 sourceId) {
+                         if (recordingActive) {
+                             return;
+                         }
+                         monitorDataSeen = false;
+                         if (sourceId == 0) {
+                             monitorSession->stop();
+                             return;
+                         }
+                         const QVariantMap source = sourceListModel.getSourceById(sourceId);
+                         const std::uint32_t rate = static_cast<std::uint32_t>(
+                             source.value(QStringLiteral("sampleRate"), 48000).toUInt());
+                         const std::uint32_t channels = static_cast<std::uint32_t>(
+                             source.value(QStringLiteral("channelCount"), 2).toUInt());
+                         fprintf(stderr, "[abracapture] monitor: connecting node=%u rate=%u ch=%u\n",
+                                 sourceId, rate, channels);
+                         static_cast<void>(monitorSession->begin(sourceId, SPA_AUDIO_FORMAT_F32, rate, channels));
                      });
 
     QObject::connect(&captureViewModel, &CaptureViewModel::startCaptureRequested,
                      &application, [&captureSession, &captureViewModel, &sourceListModel,
                                     &sourceCatalog, &settingsViewModel, &recordingSink,
                                     &outputPathPolicy, &recordingSinkOpen, &recordingUsesFlac,
-                                    &recordingActive, &previewSession, &previewActive,
+                                    &recordingActive, &monitorSession, &monitorActive,
                                     &recordingSourceName, &recordingChannels](
                                        const quint32 sourceId) {
                          const QVariantMap source = sourceListModel.getSourceById(sourceId);
@@ -254,23 +289,22 @@ int main(int argc, char *argv[]) {
                          }
                          const bool autoRate = settingsViewModel.captureSampleRate() == 0;
                          const bool autoDepth = settingsViewModel.captureBitDepth() == 0;
-                         const auto previewRate = previewSession->negotiatedSampleRate();
-                         const auto previewFormat = previewSession->negotiatedFormat();
+                         const auto monitorRate = monitorSession->negotiatedSampleRate();
+                         const auto monitorFormat = monitorSession->negotiatedFormat();
+                         const auto monitorChannels = monitorSession->negotiatedChannels();
                          const std::uint32_t rate = autoRate
-                                                        ? (previewRate != 0 ? previewRate : static_cast<std::uint32_t>(source.value(QStringLiteral("sampleRate"), 48000).toUInt()))
+                                                        ? (monitorRate != 0 ? monitorRate : static_cast<std::uint32_t>(source.value(QStringLiteral("sampleRate"), 48000).toUInt()))
                                                         : static_cast<std::uint32_t>(settingsViewModel.captureSampleRate());
-                         const std::uint32_t channels = previewSession->negotiatedChannels() != 0
-                                                            ? previewSession->negotiatedChannels()
+                         const std::uint32_t channels = monitorChannels != 0
+                                                            ? monitorChannels
                                                             : static_cast<std::uint32_t>(source.value(QStringLiteral("channelCount"), 2).toUInt());
-                         const int outputBitDepth = autoDepth ? std::max(16, spaBitDepth(previewFormat)) : settingsViewModel.captureBitDepth();
-                         const spa_audio_format inputFormat = autoRate && autoDepth && previewFormat != SPA_AUDIO_FORMAT_UNKNOWN
-                                                                  ? previewFormat
+                         const int outputBitDepth = autoDepth ? std::max(16, spaBitDepth(monitorFormat)) : settingsViewModel.captureBitDepth();
+                         const spa_audio_format inputFormat = autoRate && autoDepth && monitorFormat != SPA_AUDIO_FORMAT_UNKNOWN
+                                                                  ? monitorFormat
                                                                   : SPA_AUDIO_FORMAT_F32;
 
-                         if (previewActive) {
-                             previewSession->stop();
-                             previewActive = false;
-                         }
+                         monitorActive.store(false, std::memory_order_release);
+                         monitorSession->stop();
                          recordingActive = true;
 
                          outputPathPolicy.setBaseDirectory(
@@ -307,7 +341,6 @@ int main(int argc, char *argv[]) {
                                  QStringLiteral("Unable to open recording file: %1")
                                      .arg(QString::fromStdString(recordingSink.lastError())));
                              recordingActive = false;
-                             previewActive = false;
                              return;
                          }
 
@@ -317,7 +350,6 @@ int main(int argc, char *argv[]) {
                              recordingSink.abort();
                              recordingSinkOpen = false;
                              recordingActive = false;
-                             previewActive = false;
                              captureViewModel.reportCaptureError(
                                  QStringLiteral("PipeWire could not start capture at %1 Hz, %2 channels.")
                                      .arg(rate)
@@ -326,10 +358,10 @@ int main(int argc, char *argv[]) {
                      });
     QObject::connect(&captureViewModel, &CaptureViewModel::stopCaptureRequested,
                      &application, [&captureSession, &captureViewModel, &recordingSink,
-                     &recordingSinkOpen, &recordingActive, &sourceListModel,
-                     &previewActive, &startWaveformPreview, &recordingIndex,
+                     &recordingSinkOpen, &recordingActive, &recordingIndex,
                                     &recordingsViewModel, &recordingSourceName,
-                                    &recordingChannels] {
+                                    &recordingChannels, &sourceListModel, &monitorSession,
+                                    &monitorDataSeen] {
                          captureSession->stop();
                          if (recordingSinkOpen) {
                              const auto result = recordingSink.finalize();
@@ -361,35 +393,69 @@ int main(int argc, char *argv[]) {
                              }
                          }
                          recordingActive = false;
-                         startWaveformPreview(sourceListModel.selectedSourceId());
+                         const quint32 selectedId = sourceListModel.selectedSourceId();
+                         if (selectedId != 0) {
+                             const QVariantMap src = sourceListModel.getSourceById(selectedId);
+                             const std::uint32_t rate = static_cast<std::uint32_t>(
+                                 src.value(QStringLiteral("sampleRate"), 48000).toUInt());
+                             const std::uint32_t channels = static_cast<std::uint32_t>(
+                                 src.value(QStringLiteral("channelCount"), 2).toUInt());
+                             monitorDataSeen = false;
+                             static_cast<void>(monitorSession->begin(selectedId, SPA_AUDIO_FORMAT_F32, rate, channels));
+                         }
                      });
 
     QTimer visualizationTimer;
     visualizationTimer.setInterval(33);
     QObject::connect(&visualizationTimer, &QTimer::timeout,
-                     &application, [&captureSession, &previewSession, &previewActive,
-                                    &recordingActive, &waveformBridge, &captureViewModel] {
-                         auto* visualizationSession = previewActive
-                                                          ? previewSession.get()
-                                                          : captureSession.get();
-                         abracapture::audio::CaptureSession::CaptureVisualizationSnapshot snapshot;
-                         if (visualizationSession->visualizationSnapshot(snapshot)) {
-                             float peak = 0.0F;
-                             QVector<float> samples;
-                             samples.reserve(static_cast<qsizetype>(snapshot.sampleCount));
-                             for (std::size_t index = 0; index < snapshot.sampleCount; ++index) {
-                                 peak = std::max(peak, std::abs(snapshot.samples[index]));
-                                 samples.append(snapshot.samples[index]);
-                             }
-                             if (!recordingActive || !previewActive) {
+                     &application, [&captureSession, &monitorSession, &monitorActive,
+                                    &recordingActive, &monitorDataSeen,
+                                    &waveformBridge, &captureViewModel, &sourceListModel] {
+                         const bool monitoring = monitorActive.load(std::memory_order_acquire);
+                         auto* activeSession = recordingActive
+                                                   ? captureSession.get()
+                                                   : (monitoring ? monitorSession.get() : nullptr);
+
+                         if (activeSession != nullptr) {
+                             abracapture::audio::CaptureSession::CaptureVisualizationSnapshot snapshot;
+                             if (activeSession->visualizationSnapshot(snapshot)) {
+                                 if (monitoring && !monitorDataSeen) {
+                                     monitorDataSeen = true;
+                                     fprintf(stderr, "[abracapture] monitor: first audio data received\n");
+                                 }
+                                 float peak = 0.0F;
+                                 QVector<float> samples;
+                                 samples.reserve(static_cast<qsizetype>(snapshot.sampleCount));
+                                 for (std::size_t index = 0; index < snapshot.sampleCount; ++index) {
+                                     peak = std::max(peak, std::abs(snapshot.samples[index]));
+                                     samples.append(snapshot.samples[index]);
+                                 }
                                  captureViewModel.feedAudioLevel(peak);
+                                 QMetaObject::invokeMethod(
+                                     &waveformBridge,
+                                     [&waveformBridge, samples = std::move(samples)]() mutable {
+                                         waveformBridge.submitVisualizationSnapshot(std::move(samples));
+                                     },
+                                     Qt::QueuedConnection);
                              }
-                             QMetaObject::invokeMethod(
-                                 &waveformBridge,
-                                 [&waveformBridge, samples = std::move(samples)]() mutable {
-                                     waveformBridge.submitVisualizationSnapshot(std::move(samples));
-                                 },
-                                 Qt::QueuedConnection);
+                         }
+
+                         if (monitoring && !recordingActive) {
+                             const auto rate = monitorSession->negotiatedSampleRate();
+                             const auto channels = monitorSession->negotiatedChannels();
+                             const auto format = monitorSession->negotiatedFormat();
+                             const int depth = spaBitDepth(format);
+                             if (rate > 0 && channels > 0 && depth > 0) {
+                                 sourceListModel.updateNegotiatedFormat(
+                                     sourceListModel.selectedSourceId(),
+                                     static_cast<int>(rate), depth,
+                                     static_cast<int>(channels));
+                                 captureViewModel.updateEngineFormat(
+                                     negotiatedFormatDescription(
+                                         static_cast<int>(rate),
+                                         static_cast<int>(channels), depth),
+                                     CaptureViewModel::Native);
+                             }
                          }
 
                          const auto metrics = captureSession->metricsSnapshot();
@@ -402,7 +468,9 @@ int main(int argc, char *argv[]) {
                          captureViewModel.updateIntegrityMetrics(
                              static_cast<qulonglong>(metrics.overflowCount));
                          captureSession->drainPendingSamples();
-                         previewSession->drainPendingSamples();
+                         if (monitoring) {
+                             monitorSession->drainPendingSamples();
+                         }
                      });
     visualizationTimer.start();
 
@@ -419,8 +487,9 @@ int main(int argc, char *argv[]) {
     if (engine.rootObjects().isEmpty()) {
         visualizationTimer.stop();
         captureSession->stop();
-        previewSession->stop();
+        monitorSession->stop();
         captureSession.reset();
+        monitorSession.reset();
         if (captureLoopStarted) {
             pw_thread_loop_stop(captureLoop);
         }
@@ -433,6 +502,18 @@ int main(int argc, char *argv[]) {
         if (captureLoop != nullptr) {
             pw_thread_loop_destroy(captureLoop);
         }
+        if (monitorLoopStarted) {
+            pw_thread_loop_stop(monitorLoop);
+        }
+        if (monitorCore != nullptr) {
+            pw_core_disconnect(monitorCore);
+        }
+        if (monitorContext != nullptr) {
+            pw_context_destroy(monitorContext);
+        }
+        if (monitorLoop != nullptr) {
+            pw_thread_loop_destroy(monitorLoop);
+        }
         sourceCatalog.stop();
         pipeWireContext.stop();
         return 1;
@@ -441,12 +522,13 @@ int main(int argc, char *argv[]) {
     const int result = application.exec();
     visualizationTimer.stop();
     captureSession->stop();
-    previewSession->stop();
+    monitorSession->stop();
     if (recordingSinkOpen) {
         static_cast<void>(recordingSink.finalize());
         recordingSinkOpen = false;
     }
     captureSession.reset();
+    monitorSession.reset();
     if (captureLoopStarted) {
         pw_thread_loop_stop(captureLoop);
     }
@@ -458,6 +540,18 @@ int main(int argc, char *argv[]) {
     }
     if (captureLoop != nullptr) {
         pw_thread_loop_destroy(captureLoop);
+    }
+    if (monitorLoopStarted) {
+        pw_thread_loop_stop(monitorLoop);
+    }
+    if (monitorCore != nullptr) {
+        pw_core_disconnect(monitorCore);
+    }
+    if (monitorContext != nullptr) {
+        pw_context_destroy(monitorContext);
+    }
+    if (monitorLoop != nullptr) {
+        pw_thread_loop_destroy(monitorLoop);
     }
     sourceCatalog.stop();
     pipeWireContext.stop();

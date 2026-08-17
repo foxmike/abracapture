@@ -239,8 +239,5 @@ ItemDelegate {
 
     onClicked: {
         root.sourceSelected(root.cardSourceId)
-        if (ListView.view && ListView.view.model && typeof ListView.view.model.selectSourceById === "function") {
-            ListView.view.model.selectSourceById(root.cardSourceId)
-        }
     }
 }

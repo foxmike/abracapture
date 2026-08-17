@@ -392,28 +392,40 @@ void SourceListModel::removeSource(std::uint32_t sourceId) {
 }
 
 void SourceListModel::setActiveSourceId(std::uint32_t activeId) {
-    QMutexLocker locker(&mutex_);
-    for (int i = 0; i < sources_.size(); ++i) {
-        const bool shouldBeActive = (sources_.at(i).id == activeId);
-        if (sources_.at(i).isActive != shouldBeActive) {
-            sources_[i].isActive = shouldBeActive;
-            const QModelIndex idx = index(i);
-            emit dataChanged(idx, idx, {IsActiveRole});
+    QList<int> changedRows;
+    {
+        QMutexLocker locker(&mutex_);
+        for (int i = 0; i < sources_.size(); ++i) {
+            const bool shouldBeActive = (sources_.at(i).id == activeId);
+            if (sources_.at(i).isActive != shouldBeActive) {
+                sources_[i].isActive = shouldBeActive;
+                changedRows.append(i);
+            }
         }
+    }
+    for (const int row : changedRows) {
+        const QModelIndex idx = index(row);
+        emit dataChanged(idx, idx, {IsActiveRole});
     }
 }
 
 void SourceListModel::setSourceActive(std::uint32_t sourceId, bool active) {
-    QMutexLocker locker(&mutex_);
-    for (int i = 0; i < sources_.size(); ++i) {
-        if (sources_.at(i).id == sourceId) {
-            if (sources_.at(i).isActive != active) {
-                sources_[i].isActive = active;
-                const QModelIndex idx = index(i);
-                emit dataChanged(idx, idx, {IsActiveRole});
+    int changedRow = -1;
+    {
+        QMutexLocker locker(&mutex_);
+        for (int i = 0; i < sources_.size(); ++i) {
+            if (sources_.at(i).id == sourceId) {
+                if (sources_.at(i).isActive != active) {
+                    sources_[i].isActive = active;
+                    changedRow = i;
+                }
+                break;
             }
-            break;
         }
+    }
+    if (changedRow >= 0) {
+        const QModelIndex idx = index(changedRow);
+        emit dataChanged(idx, idx, {IsActiveRole});
     }
 }
 
@@ -421,21 +433,24 @@ void SourceListModel::updateNegotiatedFormat(const std::uint32_t sourceId,
                                              const int sampleRate,
                                              const int bitDepth,
                                              const int channels) {
-    QModelIndex changedIndex;
-    for (int i = 0; i < sources_.size(); ++i) {
+    int changedRow = -1;
+    {
         QMutexLocker locker(&mutex_);
-        if (sources_.at(i).id != sourceId) continue;
-        SourceItem& item = sources_[i];
-        const bool changed = item.sampleRate != sampleRate || item.bitDepth != bitDepth ||
-                             (channels > 0 && item.channelCount != channels);
-        if (!changed) return;
-        item.sampleRate = sampleRate;
-        item.bitDepth = bitDepth;
-        if (channels > 0) item.channelCount = channels;
-        changedIndex = index(i);
-        break;
+        for (int i = 0; i < static_cast<int>(sources_.size()); ++i) {
+            if (sources_.at(i).id != sourceId) continue;
+            SourceItem& item = sources_[i];
+            const bool changed = item.sampleRate != sampleRate || item.bitDepth != bitDepth ||
+                                 (channels > 0 && item.channelCount != channels);
+            if (!changed) return;
+            item.sampleRate = sampleRate;
+            item.bitDepth = bitDepth;
+            if (channels > 0) item.channelCount = channels;
+            changedRow = i;
+            break;
+        }
     }
-    if (changedIndex.isValid()) {
+    if (changedRow >= 0) {
+        const QModelIndex changedIndex = index(changedRow);
         emit dataChanged(changedIndex, changedIndex, {SampleRateRole, BitDepthRole, ChannelCountRole});
     }
 }
