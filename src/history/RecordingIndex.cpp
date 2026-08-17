@@ -10,6 +10,8 @@
 #include <QSaveFile>
 #include <QStandardPaths>
 
+#include <sndfile.h>
+
 #include <algorithm>
 
 namespace abracapture::history {
@@ -160,6 +162,64 @@ bool RecordingIndex::save() const {
     }
 
     return saveFile.commit();
+}
+
+bool RecordingIndex::importDirectory(const QString& directoryPath) {
+    QDir directory(directoryPath);
+    if (!directory.exists()) {
+        return false;
+    }
+
+    const QStringList filters{QStringLiteral("*.wav"), QStringLiteral("*.wave"),
+                              QStringLiteral("*.rf64"), QStringLiteral("*.flac")};
+    const QFileInfoList files = directory.entryInfoList(filters, QDir::Files, QDir::Time);
+    bool changed = false;
+    for (const QFileInfo& file : files) {
+        const QString path = file.absoluteFilePath();
+        auto existing = std::find_if(entries_.begin(), entries_.end(), [&path](const RecordingEntry& entry) {
+            return QFileInfo(entry.filePath).absoluteFilePath() == path;
+        });
+        RecordingEntry entry;
+        if (existing != entries_.end()) {
+            entry = *existing;
+        } else {
+            entry.filePath = path;
+            entry.format = file.suffix().toLower();
+            entry.timestamp = file.lastModified();
+        }
+        SF_INFO info{};
+        if (SNDFILE* audio = sf_open(path.toLocal8Bit().constData(), SFM_READ, &info)) {
+            entry.sampleRate = static_cast<std::uint32_t>(info.samplerate);
+            entry.channels = static_cast<std::uint16_t>(info.channels);
+            entry.duration = info.samplerate > 0
+                                 ? static_cast<double>(info.frames) / static_cast<double>(info.samplerate)
+                                 : 0.0;
+            switch (info.format & SF_FORMAT_SUBMASK) {
+            case SF_FORMAT_PCM_16: entry.bitDepth = 16; break;
+            case SF_FORMAT_PCM_24: entry.bitDepth = 24; break;
+            case SF_FORMAT_PCM_32:
+            case SF_FORMAT_FLOAT: entry.bitDepth = 32; break;
+            default: break;
+            }
+            sf_close(audio);
+        }
+        if (existing != entries_.end()) {
+            if (existing->sampleRate != entry.sampleRate || existing->bitDepth != entry.bitDepth ||
+                existing->channels != entry.channels || !qFuzzyCompare(existing->duration + 1.0, entry.duration + 1.0)) {
+                *existing = entry;
+                changed = true;
+            }
+        } else {
+            entries_.append(entry);
+            changed = true;
+        }
+    }
+
+    if (!changed) {
+        return true;
+    }
+    sortEntries();
+    return save();
 }
 
 bool RecordingIndex::append(const RecordingEntry& entry) {

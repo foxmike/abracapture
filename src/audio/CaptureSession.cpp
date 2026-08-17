@@ -71,8 +71,7 @@ bool CaptureSession::begin(const std::uint32_t sourceId,
     }
 
     const auto source = sourceCatalog_.sourceById(sourceId);
-    if (!source || threadLoop_ == nullptr || core_ == nullptr ||
-        format == SPA_AUDIO_FORMAT_UNKNOWN || rate == 0 || channels == 0) {
+    if (!source || threadLoop_ == nullptr || core_ == nullptr || channels == 0) {
         transitionTo(SessionState::Error);
         return false;
     }

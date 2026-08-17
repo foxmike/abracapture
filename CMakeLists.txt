@@ -32,6 +32,8 @@ add_executable(abracapture
     src/core/AudioFormat.hpp
     src/export/ExportManager.cpp
     src/export/ExportManager.hpp
+    src/history/RecordingIndex.cpp
+    src/history/RecordingIndex.hpp
     src/pipewire/PipeWireContext.cpp
     src/pipewire/PipeWireContext.hpp
     src/pipewire/PropertyNormalizer.cpp
@@ -54,6 +56,8 @@ add_executable(abracapture
     src/ui/CaptureViewModel.hpp
     src/ui/NotificationService.cpp
     src/ui/NotificationService.hpp
+    src/ui/RecordingsViewModel.cpp
+    src/ui/RecordingsViewModel.hpp
     src/ui/SettingsViewModel.cpp
     src/ui/SettingsViewModel.hpp
     src/ui/SourceListModel.cpp
@@ -74,6 +78,8 @@ qt_add_qml_module(abracapture
         qml/pages/RecordingsPage.qml
         qml/pages/AboutPage.qml
         qml/theme/AbracaptureTheme.qml
+    RESOURCES
+        qml/theme/qmldir
 )
 
 target_include_directories(abracapture PRIVATE src)

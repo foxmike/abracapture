@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Dialogs
+import "../theme" as Theme
 
 Item {
     id: root
@@ -59,7 +60,7 @@ Item {
 
     Rectangle {
         anchors.fill: parent
-        color: "#0b1120"
+        color: Theme.AbracaptureTheme.background
     }
 
     ColumnLayout {
@@ -370,6 +371,18 @@ Item {
 
                                     // Reveal Button
                                     Button {
+                                        id: playBtn
+                                        implicitWidth: 26
+                                        implicitHeight: 26
+                                        hoverEnabled: true
+                                        ToolTip.visible: hovered
+                                        ToolTip.text: "Play recording"
+                                        contentItem: Text { text: "▶"; color: Theme.AbracaptureTheme.primary; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+                                        background: Rectangle { color: playBtn.hovered ? Theme.AbracaptureTheme.surface : "transparent"; radius: 4; border.color: Theme.AbracaptureTheme.primary }
+                                        onClicked: if (root.vm) root.vm.playEntry(index)
+                                    }
+
+                                    Button {
                                         id: revealBtn
                                         implicitWidth: 26
                                         implicitHeight: 26
@@ -550,7 +563,7 @@ Item {
                                 color: "#f8fafc"
                                 font.pixelSize: 18
                                 font.weight: Font.Bold
-                                wrapMode: Text.WrapBreakWord
+                                wrapMode: Text.WordWrap
                             }
                         }
 
@@ -748,7 +761,7 @@ Item {
                                     color: "#e2e8f0"
                                     font.pixelSize: 12
                                     font.family: "monospace"
-                                    wrapMode: Text.WrapBreakWord
+                                    wrapMode: Text.WordWrap
                                 }
                             }
                         }
@@ -761,7 +774,7 @@ Item {
                             color: "#0f172a"
                             border.color: "#1e293b"
                             border.width: 1
-                            visible: parent.parent.parent.parent.currentEntry && parent.parent.parent.parent.currentEntry.sidecarPath && parent.parent.parent.parent.currentEntry.sidecarPath.length > 0
+                            visible: !!(parent.parent.parent.parent.currentEntry && parent.parent.parent.parent.currentEntry.sidecarPath && parent.parent.parent.parent.currentEntry.sidecarPath.length > 0)
 
                             ColumnLayout {
                                 id: sidecarLayout
@@ -782,7 +795,7 @@ Item {
                                     color: "#94a3b8"
                                     font.pixelSize: 11
                                     font.family: "monospace"
-                                    wrapMode: Text.WrapBreakWord
+                                    wrapMode: Text.WordWrap
                                 }
                             }
                         }
@@ -790,7 +803,35 @@ Item {
                         // Actions Section
                         RowLayout {
                             Layout.fillWidth: true
+                            spacing: 10
+                            ComboBox {
+                                id: conversionFormat
+                                Layout.fillWidth: true
+                                model: ["wav", "flac", "mp3", "ogg"]
+                            }
+                            Button {
+                                text: "Convert"
+                                onClicked: if (root.vm && root.selectedIndex >= 0) root.vm.convertEntry(root.selectedIndex, conversionFormat.currentText)
+                            }
+                            Text {
+                                text: root.vm ? root.vm.operationStatus : ""
+                                color: Theme.AbracaptureTheme.textSecondary
+                                elide: Text.ElideRight
+                                Layout.fillWidth: true
+                            }
+                        }
+
+                        RowLayout {
+                            Layout.fillWidth: true
                             spacing: 12
+
+                            Button {
+                                id: detailPlayBtn
+                                Layout.fillWidth: true
+                                implicitHeight: 38
+                                text: "Play"
+                                onClicked: if (root.vm && root.selectedIndex >= 0) root.vm.playEntry(root.selectedIndex)
+                            }
 
                             Button {
                                 id: detailRevealBtn

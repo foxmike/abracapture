@@ -11,6 +11,8 @@ class SettingsViewModel : public QObject {
     Q_PROPERTY(QString namingPattern READ namingPattern WRITE setNamingPattern NOTIFY namingPatternChanged)
     Q_PROPERTY(QString fileNamingPattern READ namingPattern WRITE setNamingPattern NOTIFY namingPatternChanged)
     Q_PROPERTY(QString masterFormat READ masterFormat WRITE setMasterFormat NOTIFY masterFormatChanged)
+    Q_PROPERTY(int captureSampleRate READ captureSampleRate WRITE setCaptureSampleRate NOTIFY captureSampleRateChanged)
+    Q_PROPERTY(int captureBitDepth READ captureBitDepth WRITE setCaptureBitDepth NOTIFY captureBitDepthChanged)
     Q_PROPERTY(bool exportEnabled READ exportEnabled WRITE setExportEnabled NOTIFY exportEnabledChanged)
     Q_PROPERTY(QString exportFormat READ exportFormat WRITE setExportFormat NOTIFY exportFormatChanged)
     Q_PROPERTY(bool autoStartEnabled READ autoStartEnabled WRITE setAutoStartEnabled NOTIFY autoStartEnabledChanged)
@@ -23,6 +25,8 @@ class SettingsViewModel : public QObject {
     Q_PROPERTY(QString errorMessage READ errorMessage NOTIFY errorMessageChanged)
     Q_PROPERTY(QStringList availableMasterFormats READ availableMasterFormats CONSTANT)
     Q_PROPERTY(QStringList availableExportFormats READ availableExportFormats CONSTANT)
+    Q_PROPERTY(QStringList availableSampleRates READ availableSampleRates CONSTANT)
+    Q_PROPERTY(QStringList availableBitDepths READ availableBitDepths CONSTANT)
 
 public:
     enum class MasterFormatOption {
@@ -42,6 +46,10 @@ public:
 
     [[nodiscard]] QString masterFormat() const;
     void setMasterFormat(const QString& masterFormat);
+    [[nodiscard]] int captureSampleRate() const noexcept;
+    void setCaptureSampleRate(int sampleRate);
+    [[nodiscard]] int captureBitDepth() const noexcept;
+    void setCaptureBitDepth(int bitDepth);
 
     [[nodiscard]] bool exportEnabled() const noexcept;
     void setExportEnabled(bool exportEnabled);
@@ -72,6 +80,8 @@ public:
 
     [[nodiscard]] QStringList availableMasterFormats() const;
     [[nodiscard]] QStringList availableExportFormats() const;
+    [[nodiscard]] QStringList availableSampleRates() const;
+    [[nodiscard]] QStringList availableBitDepths() const;
 
     Q_INVOKABLE void load();
     Q_INVOKABLE void save();
@@ -83,6 +93,8 @@ signals:
     void namingPatternChanged(const QString& namingPattern);
     void fileNamingPatternChanged(const QString& fileNamingPattern);
     void masterFormatChanged(const QString& masterFormat);
+    void captureSampleRateChanged(int sampleRate);
+    void captureBitDepthChanged(int bitDepth);
     void exportEnabledChanged(bool exportEnabled);
     void exportFormatChanged(const QString& exportFormat);
     void autoStartEnabledChanged(bool autoStartEnabled);
@@ -103,6 +115,8 @@ private:
     QString outputDirectory_;
     QString namingPattern_;
     QString masterFormat_ = QStringLiteral("wav");
+    int captureSampleRate_ = 0; // Auto (source)
+    int captureBitDepth_ = 0; // Auto (source)
     bool exportEnabled_ = false;
     QString exportFormat_ = QStringLiteral("mp3");
     bool autoStartEnabled_ = false;

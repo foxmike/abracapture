@@ -94,7 +94,9 @@ ApplicationWindow {
             settingsViewModel: appSettingsViewModel
         }
 
-        Pages.RecordingsPage { }
+        Pages.RecordingsPage {
+            recordingsViewModel: appRecordingsViewModel
+        }
 
         Pages.SettingsPage {
             settingsViewModel: appSettingsViewModel

@@ -4,17 +4,29 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QUrl>
+#include <QFileInfo>
 
 RecordingsViewModel::RecordingsViewModel(abracapture::history::RecordingIndex* index,
                                          QObject* parent)
     : QAbstractListModel(parent)
     , externalIndex_(index) {
     if (externalIndex_) {
-        externalIndex_->load();
+        static_cast<void>(externalIndex_->load());
     } else {
-        ownedIndex_.load();
+        static_cast<void>(ownedIndex_.load());
     }
     syncEntries();
+    connect(&exportManager_, &abracapture::exporting::ExportManager::exportCompleted, this,
+            [this](const QString& path) {
+                operationStatus_ = QStringLiteral("Created %1").arg(QFileInfo(path).fileName());
+                emit operationStatusChanged();
+                importDirectory(QFileInfo(path).absolutePath());
+            });
+    connect(&exportManager_, &abracapture::exporting::ExportManager::exportFailed, this,
+            [this](const QString&, const QString& error) {
+                operationStatus_ = error;
+                emit operationStatusChanged();
+            });
 }
 
 RecordingsViewModel::RecordingsViewModel(QObject* parent)
@@ -125,6 +137,37 @@ bool RecordingsViewModel::revealInFileManager(const int index) {
     return QDesktopServices::openUrl(QUrl::fromLocalFile(parentDir.absolutePath()));
 }
 
+bool RecordingsViewModel::playEntry(const int index) {
+    if (index < 0 || index >= entries_.size()) return false;
+    const QString path = entries_.at(index).filePath;
+    if (!QFileInfo::exists(path)) return false;
+    return QDesktopServices::openUrl(QUrl::fromLocalFile(path));
+}
+
+bool RecordingsViewModel::convertEntry(const int index, const QString& format) {
+    if (index < 0 || index >= entries_.size()) return false;
+    const QString normalized = format.trimmed().toLower();
+    if (normalized != QStringLiteral("wav") && normalized != QStringLiteral("flac") &&
+        normalized != QStringLiteral("mp3") && normalized != QStringLiteral("ogg")) return false;
+    const auto& entry = entries_.at(index);
+    QFileInfo source(entry.filePath);
+    if (!source.exists() || !source.isFile()) return false;
+    QString output = source.absolutePath() + QDir::separator() + source.completeBaseName() +
+                     QStringLiteral("_converted.") + normalized;
+    abracapture::exporting::ExportSpec spec;
+    spec.format = normalized;
+    spec.outputPath = output;
+    spec.sampleRate = entry.sampleRate;
+    spec.bitDepth = entry.bitDepth == 0 ? 32 : entry.bitDepth;
+    abracapture::recording::CaptureIntegrity integrity;
+    exportManager_.startExports(entry.filePath.toStdString(), integrity, {spec});
+    operationStatus_ = QStringLiteral("Converting to %1…").arg(normalized.toUpper());
+    emit operationStatusChanged();
+    return true;
+}
+
+QString RecordingsViewModel::operationStatus() const { return operationStatus_; }
+
 bool RecordingsViewModel::removeEntry(const int index) {
     if (index < 0 || index >= entries_.size()) {
         return false;
@@ -140,7 +183,7 @@ bool RecordingsViewModel::removeEntry(const int index) {
 void RecordingsViewModel::refreshEntries() {
     beginResetModel();
     auto* idx = externalIndex_ ? externalIndex_ : &ownedIndex_;
-    idx->load();
+    static_cast<void>(idx->load());
     syncEntries();
     if (selectedIndex_ >= entries_.size()) {
         selectedIndex_ = entries_.isEmpty() ? -1 : 0;
@@ -148,6 +191,13 @@ void RecordingsViewModel::refreshEntries() {
     }
     endResetModel();
     emit countChanged();
+}
+
+bool RecordingsViewModel::importDirectory(const QString& directoryPath) {
+    auto* idx = externalIndex_ ? externalIndex_ : &ownedIndex_;
+    const bool success = idx->importDirectory(directoryPath);
+    refreshEntries();
+    return success;
 }
 
 QVariantMap RecordingsViewModel::get(const int index) const {

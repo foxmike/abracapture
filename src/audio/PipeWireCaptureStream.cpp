@@ -148,9 +148,8 @@ PipeWireCaptureStream::~PipeWireCaptureStream() {
 
 bool PipeWireCaptureStream::start() {
     if (threadLoop_ == nullptr || core_ == nullptr || ringBuffer_ == nullptr ||
-        desiredFormat_ == SPA_AUDIO_FORMAT_UNKNOWN || desiredSampleRate_ == 0 ||
         desiredChannels_ == 0 || desiredChannels_ > SPA_AUDIO_MAX_CHANNELS ||
-        bytesPerSample(desiredFormat_) == 0) {
+        (desiredFormat_ != SPA_AUDIO_FORMAT_UNKNOWN && bytesPerSample(desiredFormat_) == 0)) {
         setStatus(StreamStatus::Error);
         return false;
     }
@@ -280,8 +279,8 @@ std::uint32_t PipeWireCaptureStream::negotiatedChannels() const noexcept {
 }
 
 bool PipeWireCaptureStream::isNativeCapture() const noexcept {
-    return negotiatedFormat() == desiredFormat_ &&
-           negotiatedSampleRate() == desiredSampleRate_ &&
+    return (desiredFormat_ == SPA_AUDIO_FORMAT_UNKNOWN || negotiatedFormat() == desiredFormat_) &&
+           (desiredSampleRate_ == 0 || negotiatedSampleRate() == desiredSampleRate_) &&
            negotiatedChannels() == desiredChannels_;
 }
 

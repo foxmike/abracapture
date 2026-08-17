@@ -18,6 +18,7 @@ struct SourceItem {
     QString sourceKind; // e.g. "Application", "Monitor", "Hardware", "Other"
     int channelCount = 2;
     int sampleRate = 48000;
+    int bitDepth = 0;
     bool isActive = false;
     QString mediaClass;
     QString nodeName;
@@ -29,6 +30,7 @@ struct SourceItem {
                sourceKind == other.sourceKind &&
                channelCount == other.channelCount &&
                sampleRate == other.sampleRate &&
+               bitDepth == other.bitDepth &&
                isActive == other.isActive &&
                mediaClass == other.mediaClass &&
                nodeName == other.nodeName;
@@ -50,6 +52,7 @@ public:
         SourceKindRole,
         ChannelCountRole,
         SampleRateRole,
+        BitDepthRole,
         IsActiveRole,
         NodeIdRole,
         AppNameRole,
@@ -86,6 +89,7 @@ public slots:
     void removeSource(std::uint32_t sourceId);
     void setActiveSourceId(std::uint32_t activeId);
     void setSourceActive(std::uint32_t sourceId, bool active);
+    void updateNegotiatedFormat(std::uint32_t sourceId, int sampleRate, int bitDepth, int channels);
     void clear();
 
 signals:

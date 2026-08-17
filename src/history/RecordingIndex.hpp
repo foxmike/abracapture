@@ -52,6 +52,7 @@ public:
 
     [[nodiscard]] bool load();
     [[nodiscard]] bool save() const;
+    bool importDirectory(const QString& directoryPath);
 
     bool append(const RecordingEntry& entry);
     bool remove(qsizetype index);

@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import "../components" as Components
+import "../theme" as Theme
 
 Item {
     id: root
@@ -44,7 +45,7 @@ Item {
 
     Rectangle {
         anchors.fill: parent
-        color: "#0b1120"
+        color: Theme.AbracaptureTheme.background
     }
 
     GridLayout {

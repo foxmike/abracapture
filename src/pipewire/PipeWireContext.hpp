@@ -33,6 +33,8 @@ public:
     bool start();
     void stop();
     [[nodiscard]] bool isRunning() const noexcept;
+    [[nodiscard]] pw_thread_loop* threadLoop() const noexcept { return threadLoop_; }
+    [[nodiscard]] pw_core* core() const noexcept { return core_; }
 
     std::function<void(std::uint32_t id, const char* type, const spa_dict* props)> globalAdded;
     std::function<void(std::uint32_t id)> globalRemoved;

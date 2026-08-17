@@ -1,6 +1,7 @@
 #pragma once
 
 #include "history/RecordingIndex.hpp"
+#include "export/ExportManager.hpp"
 
 #include <QAbstractListModel>
 #include <QByteArray>
@@ -19,6 +20,7 @@ class RecordingsViewModel : public QAbstractListModel {
     Q_PROPERTY(bool isEmpty READ isEmpty NOTIFY countChanged)
     Q_PROPERTY(int selectedIndex READ selectedIndex WRITE setSelectedIndex NOTIFY selectedIndexChanged)
     Q_PROPERTY(QVariantMap selectedEntry READ selectedEntry NOTIFY selectedIndexChanged)
+    Q_PROPERTY(QString operationStatus READ operationStatus NOTIFY operationStatusChanged)
 
 public:
     enum RecordingRoles {
@@ -53,19 +55,26 @@ public:
     void setRecordingIndex(abracapture::history::RecordingIndex* index);
 
     Q_INVOKABLE bool revealInFileManager(int index);
+    Q_INVOKABLE bool playEntry(int index);
+    Q_INVOKABLE bool convertEntry(int index, const QString& format);
     Q_INVOKABLE bool removeEntry(int index);
     Q_INVOKABLE void refreshEntries();
+    Q_INVOKABLE bool importDirectory(const QString& directoryPath);
     Q_INVOKABLE QVariantMap get(int index) const;
 
 signals:
     void countChanged();
     void selectedIndexChanged();
+    void operationStatusChanged();
 
 private:
     void syncEntries();
+    QString operationStatus() const;
 
     abracapture::history::RecordingIndex* externalIndex_ = nullptr;
     abracapture::history::RecordingIndex ownedIndex_;
     QList<abracapture::history::RecordingEntry> entries_;
     int selectedIndex_ = -1;
+    QString operationStatus_;
+    abracapture::exporting::ExportManager exportManager_;
 };

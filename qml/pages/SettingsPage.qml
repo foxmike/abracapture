@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import "../theme" as Theme
 
 Item {
     id: root
@@ -10,6 +11,8 @@ Item {
     readonly property var vm: root.settingsViewModel
 
     property bool showSaveNotification: false
+
+    Rectangle { anchors.fill: parent; color: Theme.AbracaptureTheme.background; z: -1 }
 
     Timer {
         id: saveNotificationTimer
@@ -48,13 +51,13 @@ Item {
                     text: "Settings"
                     font.pixelSize: 24
                     font.weight: Font.Bold
-                    color: "#f8fafc"
+                    color: Theme.AbracaptureTheme.text
                 }
 
                 Text {
                     text: "Configure audio capture destinations, file naming, master formats, and automated recording thresholds."
                     font.pixelSize: 13
-                    color: "#94a3b8"
+                    color: Theme.AbracaptureTheme.textSecondary
                     wrapMode: Text.WordWrap
                     Layout.fillWidth: true
                 }
@@ -363,6 +366,53 @@ Item {
                                 color: "#94a3b8"
                                 Layout.fillWidth: true
                             }
+                        }
+                    }
+                }
+            }
+
+            Rectangle {
+                Layout.fillWidth: true
+                implicitHeight: audioFormatLayout.implicitHeight + 32
+                radius: 12
+                color: Theme.AbracaptureTheme.surface
+                border.color: Theme.AbracaptureTheme.textSecondary
+                border.width: 1
+
+                ColumnLayout {
+                    id: audioFormatLayout
+                    anchors.fill: parent
+                    anchors.margins: 16
+                    spacing: 10
+
+                    Text {
+                        text: "Capture Resolution"
+                        font.pixelSize: 16
+                        font.weight: Font.Bold
+                        color: Theme.AbracaptureTheme.text
+                    }
+                    Text {
+                        text: "Auto (source) preserves the format PipeWire negotiates. Manual values intentionally resample or quantize the capture."
+                        font.pixelSize: 12
+                        color: Theme.AbracaptureTheme.textSecondary
+                        wrapMode: Text.WordWrap
+                        Layout.fillWidth: true
+                    }
+                    RowLayout {
+                        spacing: 16
+                        Text { text: "Sample rate"; color: Theme.AbracaptureTheme.textSecondary; font.pixelSize: 13 }
+                        ComboBox {
+                            id: sampleRateCombo
+                            model: root.vm ? root.vm.availableSampleRates : ["Auto (source)", "48000", "96000", "128000", "192000"]
+                            currentIndex: root.vm && root.vm.captureSampleRate > 0 ? model.indexOf(String(root.vm.captureSampleRate)) : 0
+                            onActivated: if (root.vm) root.vm.captureSampleRate = index === 0 ? 0 : Number(currentText)
+                        }
+                        Text { text: "Bit depth"; color: Theme.AbracaptureTheme.textSecondary; font.pixelSize: 13 }
+                        ComboBox {
+                            id: bitDepthCombo
+                            model: root.vm ? root.vm.availableBitDepths : ["Auto (source)", "16", "24", "32"]
+                            currentIndex: root.vm && root.vm.captureBitDepth > 0 ? model.indexOf(String(root.vm.captureBitDepth)) : 0
+                            onActivated: if (root.vm) root.vm.captureBitDepth = index === 0 ? 0 : Number(currentText)
                         }
                     }
                 }

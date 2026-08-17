@@ -10,6 +10,7 @@ ItemDelegate {
     property string cardSourceKind: model.sourceKind !== undefined ? model.sourceKind : ""
     property int cardChannelCount: model.channelCount !== undefined ? model.channelCount : 2
     property int cardSampleRate: model.sampleRate !== undefined ? model.sampleRate : 48000
+    property int cardBitDepth: model.bitDepth !== undefined ? model.bitDepth : 0
     property bool cardIsActive: model.isActive !== undefined ? model.isActive : false
     property bool cardIsSelected: model.isSelected !== undefined ? model.isSelected : (ListView.isCurrentItem || false)
 
@@ -37,6 +38,12 @@ ItemDelegate {
             return channels + " ch"
         }
         return "2 ch"
+    }
+
+    function formatBitrate() {
+        if (root.cardBitDepth <= 0) return "bitrate unavailable"
+        var mbps = root.cardSampleRate * root.cardChannelCount * root.cardBitDepth / 1000000.0
+        return mbps.toFixed(3) + " Mbps"
     }
 
     function kindLabel(kind) {
@@ -210,6 +217,19 @@ ItemDelegate {
 
                 Text {
                     text: root.formatSampleRate(root.cardSampleRate)
+                    font.pixelSize: 12
+                    color: "#94a3b8"
+                }
+
+                Rectangle {
+                    width: 3
+                    height: 3
+                    radius: 1.5
+                    color: "#475569"
+                }
+
+                Text {
+                    text: root.formatBitrate()
                     font.pixelSize: 12
                     color: "#94a3b8"
                 }

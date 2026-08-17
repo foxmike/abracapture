@@ -47,6 +47,26 @@ QString SettingsViewModel::masterFormat() const {
     return masterFormat_;
 }
 
+int SettingsViewModel::captureSampleRate() const noexcept { return captureSampleRate_; }
+
+void SettingsViewModel::setCaptureSampleRate(const int sampleRate) {
+    if (sampleRate != 0 && sampleRate != 48000 && sampleRate != 96000 && sampleRate != 128000 && sampleRate != 192000) {
+        return;
+    }
+    if (captureSampleRate_ == sampleRate) return;
+    captureSampleRate_ = sampleRate;
+    emit captureSampleRateChanged(captureSampleRate_);
+}
+
+int SettingsViewModel::captureBitDepth() const noexcept { return captureBitDepth_; }
+
+void SettingsViewModel::setCaptureBitDepth(const int bitDepth) {
+    if (bitDepth != 0 && bitDepth != 16 && bitDepth != 24 && bitDepth != 32) return;
+    if (captureBitDepth_ == bitDepth) return;
+    captureBitDepth_ = bitDepth;
+    emit captureBitDepthChanged(captureBitDepth_);
+}
+
 void SettingsViewModel::setMasterFormat(const QString& masterFormat) {
     const QString normalized = masterFormat.trimmed().toLower();
     if (normalized != QStringLiteral("wav") && normalized != QStringLiteral("flac")) {
@@ -188,6 +208,14 @@ QStringList SettingsViewModel::availableExportFormats() const {
     return {QStringLiteral("mp3"), QStringLiteral("flac"), QStringLiteral("ogg"), QStringLiteral("wav")};
 }
 
+QStringList SettingsViewModel::availableSampleRates() const {
+    return {QStringLiteral("Auto (source)"), QStringLiteral("48000"), QStringLiteral("96000"), QStringLiteral("128000"), QStringLiteral("192000")};
+}
+
+QStringList SettingsViewModel::availableBitDepths() const {
+    return {QStringLiteral("Auto (source)"), QStringLiteral("16"), QStringLiteral("24"), QStringLiteral("32")};
+}
+
 void SettingsViewModel::setErrorMessage(const QString& message) {
     if (errorMessage_ == message) {
         return;
@@ -213,6 +241,8 @@ void SettingsViewModel::load() {
     const QString outDir = appSettings.outputDirectory();
     const QString pattern = appSettings.fileNamingPattern();
     const QString mFormat = appSettings.masterFormat();
+    const int sampleRate = settings.value(QStringLiteral("captureSampleRate"), 0).toInt();
+    const int bitDepth = settings.value(QStringLiteral("captureBitDepth"), 0).toInt();
     const bool autoStart = appSettings.autoStartEnabled();
     const bool autoStop = appSettings.autoStopEnabled();
     const int preRoll = appSettings.preRollSeconds();
@@ -243,6 +273,8 @@ void SettingsViewModel::load() {
         masterFormat_ = mFormat;
         emit masterFormatChanged(masterFormat_);
     }
+    setCaptureSampleRate(sampleRate == 48000 || sampleRate == 96000 || sampleRate == 128000 || sampleRate == 192000 ? sampleRate : 0);
+    setCaptureBitDepth(bitDepth == 16 || bitDepth == 24 || bitDepth == 32 ? bitDepth : 0);
     if (autoStartEnabled_ != autoStart) {
         autoStartEnabled_ = autoStart;
         emit autoStartEnabledChanged(autoStartEnabled_);
@@ -297,6 +329,8 @@ void SettingsViewModel::save() {
     QSettings settings(QStringLiteral("Abracapture"), QStringLiteral("Abracapture"));
     settings.setValue(QStringLiteral("exportEnabled"), exportEnabled_);
     settings.setValue(QStringLiteral("exportFormat"), exportFormat_);
+    settings.setValue(QStringLiteral("captureSampleRate"), captureSampleRate_);
+    settings.setValue(QStringLiteral("captureBitDepth"), captureBitDepth_);
     settings.setValue(QStringLiteral("autoStartThreshold"), autoStartThreshold_);
     settings.setValue(QStringLiteral("autoStopSilenceDuration"), autoStopSilenceDuration_);
     settings.sync();
@@ -308,6 +342,8 @@ void SettingsViewModel::resetToDefaults() {
     setOutputDirectory(AppSettings::defaultOutputDirectory());
     setNamingPattern(AppSettings::defaultFileNamingPattern());
     setMasterFormat(AppSettings::defaultMasterFormat());
+    setCaptureSampleRate(0);
+    setCaptureBitDepth(0);
     setAutoStartEnabled(AppSettings::defaultAutoStartEnabled());
     setAutoStopEnabled(AppSettings::defaultAutoStopEnabled());
     setPreRollSeconds(AppSettings::defaultPreRollSeconds());
@@ -398,6 +434,15 @@ bool SettingsViewModel::validate() {
             emit errorOccurred(err);
             return false;
         }
+    }
+
+    if (captureSampleRate_ != 0 && captureSampleRate_ != 48000 && captureSampleRate_ != 96000 && captureSampleRate_ != 128000 && captureSampleRate_ != 192000) {
+        const QString err = QStringLiteral("Capture sample rate is not supported.");
+        setErrorMessage(err); setIsValid(false); emit errorOccurred(err); return false;
+    }
+    if (captureBitDepth_ != 0 && captureBitDepth_ != 16 && captureBitDepth_ != 24 && captureBitDepth_ != 32) {
+        const QString err = QStringLiteral("Capture bit depth must be 16, 24, or 32 bits.");
+        setErrorMessage(err); setIsValid(false); emit errorOccurred(err); return false;
     }
 
     setErrorMessage(QString());

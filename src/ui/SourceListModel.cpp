@@ -46,6 +46,8 @@ QVariant SourceListModel::data(const QModelIndex& index, int role) const {
         return item.channelCount;
     case SampleRateRole:
         return item.sampleRate;
+    case BitDepthRole:
+        return item.bitDepth;
     case IsActiveRole:
         return item.isActive;
     case AppNameRole:
@@ -69,6 +71,7 @@ QHash<int, QByteArray> SourceListModel::roleNames() const {
     roles[SourceKindRole] = "sourceKind";
     roles[ChannelCountRole] = "channelCount";
     roles[SampleRateRole] = "sampleRate";
+    roles[BitDepthRole] = "bitDepth";
     roles[IsActiveRole] = "isActive";
     roles[NodeIdRole] = "nodeId";
     roles[AppNameRole] = "appName";
@@ -201,6 +204,7 @@ QVariantMap SourceListModel::get(int index) const {
     map[QStringLiteral("sourceKind")] = item.sourceKind;
     map[QStringLiteral("channelCount")] = item.channelCount;
     map[QStringLiteral("sampleRate")] = item.sampleRate;
+    map[QStringLiteral("bitDepth")] = item.bitDepth;
     map[QStringLiteral("isActive")] = item.isActive;
     map[QStringLiteral("mediaClass")] = item.mediaClass;
     map[QStringLiteral("nodeName")] = item.nodeName;
@@ -222,6 +226,7 @@ QVariantMap SourceListModel::getSourceById(std::uint32_t sourceId) const {
             map[QStringLiteral("sourceKind")] = item.sourceKind;
             map[QStringLiteral("channelCount")] = item.channelCount;
             map[QStringLiteral("sampleRate")] = item.sampleRate;
+            map[QStringLiteral("bitDepth")] = item.bitDepth;
             map[QStringLiteral("isActive")] = item.isActive;
             map[QStringLiteral("mediaClass")] = item.mediaClass;
             map[QStringLiteral("nodeName")] = item.nodeName;
@@ -307,6 +312,7 @@ void SourceListModel::updateSourcesFromVariants(const QVariantList& sources) {
         item.sourceKind = map.value(QStringLiteral("sourceKind")).toString();
         item.channelCount = map.value(QStringLiteral("channelCount"), 2).toInt();
         item.sampleRate = map.value(QStringLiteral("sampleRate"), 48000).toInt();
+        item.bitDepth = map.value(QStringLiteral("bitDepth"), 0).toInt();
         item.isActive = map.value(QStringLiteral("isActive"), false).toBool();
         item.mediaClass = map.value(QStringLiteral("mediaClass")).toString();
         item.nodeName = map.value(QStringLiteral("nodeName")).toString();
@@ -408,6 +414,29 @@ void SourceListModel::setSourceActive(std::uint32_t sourceId, bool active) {
             }
             break;
         }
+    }
+}
+
+void SourceListModel::updateNegotiatedFormat(const std::uint32_t sourceId,
+                                             const int sampleRate,
+                                             const int bitDepth,
+                                             const int channels) {
+    QModelIndex changedIndex;
+    for (int i = 0; i < sources_.size(); ++i) {
+        QMutexLocker locker(&mutex_);
+        if (sources_.at(i).id != sourceId) continue;
+        SourceItem& item = sources_[i];
+        const bool changed = item.sampleRate != sampleRate || item.bitDepth != bitDepth ||
+                             (channels > 0 && item.channelCount != channels);
+        if (!changed) return;
+        item.sampleRate = sampleRate;
+        item.bitDepth = bitDepth;
+        if (channels > 0) item.channelCount = channels;
+        changedIndex = index(i);
+        break;
+    }
+    if (changedIndex.isValid()) {
+        emit dataChanged(changedIndex, changedIndex, {SampleRateRole, BitDepthRole, ChannelCountRole});
     }
 }
 
