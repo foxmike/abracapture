@@ -7,6 +7,11 @@ ComboBox {
     id: control
 
     property string displayLabel: ""
+    property var popupLabels: []
+
+    function optionLabel(index) {
+        return popupLabels && popupLabels.length > index ? popupLabels[index] : control.textAt(index)
+    }
 
     contentItem: Text {
         leftPadding: 12
@@ -27,8 +32,12 @@ ComboBox {
 
     background: Rectangle {
         radius: 5
-        color: control.enabled ? Theme.AbracaptureTheme.controlBackground : Theme.AbracaptureTheme.surface
-        border.color: control.activeFocus ? Theme.AbracaptureTheme.primary : Theme.AbracaptureTheme.border
+        color: control.enabled
+                   ? (control.hovered ? Theme.AbracaptureTheme.controlSurfaceHover
+                                      : Theme.AbracaptureTheme.controlSurface)
+                   : Theme.AbracaptureTheme.controlSurfaceDisabled
+        border.color: control.popup.visible || control.activeFocus
+                         ? Theme.AbracaptureTheme.primary : Theme.AbracaptureTheme.border
         border.width: control.activeFocus ? 2 : 1
     }
 
@@ -39,15 +48,15 @@ ComboBox {
         contentItem: Text {
             leftPadding: 10
             rightPadding: 10
-            text: control.textAt(index)
+            text: control.optionLabel(index)
             color: highlighted ? Theme.AbracaptureTheme.background : Theme.AbracaptureTheme.text
             verticalAlignment: Text.AlignVCenter
             elide: Text.ElideRight
         }
         background: Rectangle {
             color: highlighted ? Theme.AbracaptureTheme.primary
-                                : (hovered ? Theme.AbracaptureTheme.controlBackgroundHover
-                                            : Theme.AbracaptureTheme.controlBackground)
+                                : (hovered ? Theme.AbracaptureTheme.controlSurfaceHover
+                                            : Theme.AbracaptureTheme.controlSurface)
         }
     }
 
@@ -66,7 +75,7 @@ ComboBox {
         }
 
         background: Rectangle {
-            color: Theme.AbracaptureTheme.controlBackground
+            color: Theme.AbracaptureTheme.controlSurface
             border.color: Theme.AbracaptureTheme.border
             radius: 5
         }

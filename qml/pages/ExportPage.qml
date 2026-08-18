@@ -288,8 +288,10 @@ Item {
                         Text { text: "Profile"; color: Theme.AbracaptureTheme.text; font.pixelSize: 13 }
                         Components.ThemedComboBox {
                             id: manualProfileModeCombo
+                            implicitWidth: 220
                             model: ["automatic", "manual"]
                             readonly property var labels: ["Automatic Profile", "Custom Manual Profile"]
+                            popupLabels: labels
                             currentIndex: root.manualExportViewModel ? (root.manualExportViewModel.profileMode === "manual" ? 1 : 0) : 0
                             onActivated: function(index) { if (root.manualExportViewModel) root.manualExportViewModel.profileMode = model[index] }
                             contentItem: Text { leftPadding: 12; text: manualProfileModeCombo.labels[manualProfileModeCombo.currentIndex]; color: Theme.AbracaptureTheme.text; verticalAlignment: Text.AlignVCenter }
@@ -304,8 +306,10 @@ Item {
                             Text { text: "Preset"; color: Theme.AbracaptureTheme.text; font.pixelSize: 13 }
                             Components.ThemedComboBox {
                                 id: manualPresetCombo
+                                implicitWidth: 220
                                 model: root.manualExportViewModel ? root.manualExportViewModel.presetOptions : []
                                 readonly property var labels: ["MP3 320", "MP3 256", "FLAC 16-bit", "FLAC 24-bit", "WAV 24-bit", "Preserve Source Lossless", "Custom"]
+                                popupLabels: labels
                                 currentIndex: root.manualExportViewModel ? Math.max(0, model.indexOf(root.manualExportViewModel.manualPreset)) : 0
                                 onActivated: function(index) { if (root.manualExportViewModel) root.manualExportViewModel.manualPreset = model[index] }
                                 contentItem: Text { leftPadding: 12; text: manualPresetCombo.labels[manualPresetCombo.currentIndex]; color: Theme.AbracaptureTheme.text; verticalAlignment: Text.AlignVCenter }
@@ -316,6 +320,7 @@ Item {
                             Text { text: "Format"; color: Theme.AbracaptureTheme.text; font.pixelSize: 13 }
                             Components.ThemedComboBox {
                                 id: manualFormatCombo
+                                implicitWidth: 105
                                 model: root.manualExportViewModel ? root.manualExportViewModel.formatOptions : []
                                 currentIndex: root.manualExportViewModel ? Math.max(0, model.indexOf(root.manualExportViewModel.manualFormat)) : 0
                                 onActivated: function(index) { if (root.manualExportViewModel) root.manualExportViewModel.manualFormat = model[index] }
@@ -324,7 +329,9 @@ Item {
                             Text { text: "Sample Rate"; color: Theme.AbracaptureTheme.text; font.pixelSize: 13 }
                             Components.ThemedComboBox {
                                 id: manualRateCombo
+                                implicitWidth: 155
                                 model: root.manualExportViewModel ? root.manualExportViewModel.sampleRateOptions : []
+                                popupLabels: ["Preserve Source", "44.1 kHz", "48 kHz", "88.2 kHz", "96 kHz", "176.4 kHz", "192 kHz"]
                                 currentIndex: root.manualExportViewModel ? Math.max(0, model.indexOf(root.manualExportViewModel.manualSampleRate === 0 ? "preserve" : String(root.manualExportViewModel.manualSampleRate))) : 0
                                 onActivated: function(index) { if (root.manualExportViewModel) root.manualExportViewModel.manualSampleRate = model[index] === "preserve" ? 0 : Number(model[index]) }
                                 contentItem: Text { leftPadding: 12; text: root.rateLabel(manualRateCombo.currentText); color: Theme.AbracaptureTheme.text; verticalAlignment: Text.AlignVCenter }
@@ -336,7 +343,9 @@ Item {
                             Text { text: "Bitrate"; color: Theme.AbracaptureTheme.text; font.pixelSize: 13 }
                             Components.ThemedComboBox {
                                 id: manualBitrateCombo
+                                implicitWidth: 115
                                 model: root.manualExportViewModel ? root.manualExportViewModel.mp3BitrateOptions : []
+                                popupLabels: ["128 kbps", "192 kbps", "256 kbps", "320 kbps"]
                                 currentIndex: root.manualExportViewModel ? Math.max(0, model.indexOf(String(root.manualExportViewModel.manualMp3Bitrate))) : 3
                                 onActivated: function(index) { if (root.manualExportViewModel) root.manualExportViewModel.manualMp3Bitrate = Number(model[index]) }
                                 contentItem: Text { leftPadding: 12; text: manualBitrateCombo.currentText + " kbps"; color: Theme.AbracaptureTheme.text; verticalAlignment: Text.AlignVCenter }
@@ -347,7 +356,9 @@ Item {
                             Text { text: "Bit Depth"; color: Theme.AbracaptureTheme.text; font.pixelSize: 13 }
                             Components.ThemedComboBox {
                                 id: manualFlacDepthCombo
+                                implicitWidth: 110
                                 model: root.manualExportViewModel ? root.manualExportViewModel.flacBitDepthOptions : []
+                                popupLabels: ["16-bit", "24-bit", "32-bit"]
                                 currentIndex: root.manualExportViewModel ? Math.max(0, model.indexOf(String(root.manualExportViewModel.manualFlacBitDepth))) : 0
                                 onActivated: function(index) { if (root.manualExportViewModel) root.manualExportViewModel.manualFlacBitDepth = Number(model[index]) }
                                 contentItem: Text { leftPadding: 12; text: manualFlacDepthCombo.currentText + "-bit"; color: Theme.AbracaptureTheme.text; verticalAlignment: Text.AlignVCenter }
@@ -355,7 +366,9 @@ Item {
                             Text { text: "Compression"; color: Theme.AbracaptureTheme.text; font.pixelSize: 13 }
                             Components.ThemedComboBox {
                                 id: manualFlacCompressionCombo
+                                implicitWidth: 120
                                 model: root.manualExportViewModel ? root.manualExportViewModel.flacCompressionOptions : []
+                                popupLabels: ["Level 0", "Level 1", "Level 2", "Level 3", "Level 4", "Level 5", "Level 6", "Level 7", "Level 8", "Level 9", "Level 10", "Level 11", "Level 12"]
                                 currentIndex: root.manualExportViewModel ? Math.max(0, model.indexOf(String(root.manualExportViewModel.manualFlacCompressionLevel))) : 5
                                 onActivated: function(index) { if (root.manualExportViewModel) root.manualExportViewModel.manualFlacCompressionLevel = Number(model[index]) }
                             }
@@ -365,7 +378,9 @@ Item {
                             Text { text: "Sample Format"; color: Theme.AbracaptureTheme.text; font.pixelSize: 13 }
                             Components.ThemedComboBox {
                                 id: manualWavFormatCombo
+                                implicitWidth: 155
                                 model: root.manualExportViewModel ? root.manualExportViewModel.wavSampleFormatOptions : []
+                                popupLabels: ["16-bit PCM", "24-bit PCM", "32-bit PCM", "32-bit Float"]
                                 currentIndex: root.manualExportViewModel ? Math.max(0, model.indexOf(root.manualExportViewModel.manualWavSampleFormat)) : 0
                                 onActivated: function(index) { if (root.manualExportViewModel) root.manualExportViewModel.manualWavSampleFormat = model[index] }
                                 contentItem: Text { leftPadding: 12; text: root.sampleFormatLabel(manualWavFormatCombo.currentText); color: Theme.AbracaptureTheme.text; verticalAlignment: Text.AlignVCenter }
@@ -378,8 +393,10 @@ Item {
                         Text { text: "Destination"; color: Theme.AbracaptureTheme.text; font.pixelSize: 13 }
                         Components.ThemedComboBox {
                             id: manualDestinationCombo
+                            implicitWidth: 205
                             model: ["same", "exports", "custom"]
                             readonly property var labels: ["Same directory as source", "Exports subfolder", "Custom directory"]
+                            popupLabels: labels
                             currentIndex: root.manualExportViewModel ? Math.max(0, model.indexOf(root.manualExportViewModel.destinationPolicy)) : 0
                             onActivated: function(index) { if (root.manualExportViewModel) root.manualExportViewModel.destinationPolicy = model[index] }
                             contentItem: Text { leftPadding: 12; text: manualDestinationCombo.labels[manualDestinationCombo.currentIndex]; color: Theme.AbracaptureTheme.text; verticalAlignment: Text.AlignVCenter }
@@ -400,8 +417,10 @@ Item {
                         Text { text: "Existing outputs"; color: Theme.AbracaptureTheme.text; font.pixelSize: 13 }
                         Components.ThemedComboBox {
                             id: manualCollisionCombo
+                            implicitWidth: 180
                             model: ["skip", "unique", "replace"]
                             readonly property var labels: ["Skip Existing", "Create Unique Name", "Replace Existing"]
+                            popupLabels: labels
                             currentIndex: Math.max(0, model.indexOf(root.manualExportViewModel ? root.manualExportViewModel.collisionPolicy : "skip"))
                             onActivated: function(index) { if (root.manualExportViewModel) root.manualExportViewModel.collisionPolicy = model[index] }
                             contentItem: Text { leftPadding: 12; text: manualCollisionCombo.labels[manualCollisionCombo.currentIndex]; color: Theme.AbracaptureTheme.text; verticalAlignment: Text.AlignVCenter }
@@ -560,7 +579,7 @@ Item {
                             Text { text: "Format"; font.pixelSize: 13; color: Theme.AbracaptureTheme.text }
                             Components.ThemedComboBox {
                                 id: formatCombo
-                                implicitWidth: 170
+                                implicitWidth: 115
                                 model: root.vm ? root.vm.automaticExportFormats : []
                                 currentIndex: root.vm ? Math.max(0, model.indexOf(root.vm.exportFormat)) : 0
                                 onActivated: function(index) { if (root.vm) root.vm.exportFormat = model[index] }
@@ -581,8 +600,9 @@ Item {
                             Text { text: "Sample Rate"; font.pixelSize: 13; color: Theme.AbracaptureTheme.text }
                             Components.ThemedComboBox {
                                 id: rateCombo
-                                implicitWidth: 170
+                                implicitWidth: 155
                                 model: root.vm ? root.vm.automaticExportSampleRateOptions : []
+                                popupLabels: ["Preserve Source", "44.1 kHz", "48 kHz", "88.2 kHz", "96 kHz", "176.4 kHz", "192 kHz"]
                                 currentIndex: {
                                     if (!root.vm) return 0
                                     var selected = root.vm.automaticExportSampleRate === 0 ? "preserve" : String(root.vm.automaticExportSampleRate)
@@ -603,8 +623,8 @@ Item {
                                     }
                                     background: Rectangle {
                                         color: highlighted ? Theme.AbracaptureTheme.primary
-                                                            : (hovered ? Theme.AbracaptureTheme.controlBackgroundHover
-                                                                        : Theme.AbracaptureTheme.controlBackground)
+                                                            : (hovered ? Theme.AbracaptureTheme.controlSurfaceHover
+                                                                        : Theme.AbracaptureTheme.controlSurface)
                                     }
                                 }
                                 contentItem: Text {
@@ -625,8 +645,9 @@ Item {
                             Text { text: "Bitrate"; font.pixelSize: 13; color: Theme.AbracaptureTheme.text }
                             Components.ThemedComboBox {
                                 id: bitrateCombo
-                                implicitWidth: 170
+                                implicitWidth: 115
                                 model: root.vm ? root.vm.automaticExportMp3BitrateOptions : []
+                                popupLabels: ["128 kbps", "192 kbps", "256 kbps", "320 kbps"]
                                 currentIndex: root.vm ? Math.max(0, model.indexOf(String(root.vm.automaticExportMp3Bitrate))) : 3
                                 onActivated: function(index) { if (root.vm) root.vm.automaticExportMp3Bitrate = Number(model[index]) }
                                 contentItem: Text {
@@ -647,8 +668,9 @@ Item {
                             Text { text: "Bit Depth"; font.pixelSize: 13; color: Theme.AbracaptureTheme.text }
                             Components.ThemedComboBox {
                                 id: flacDepthCombo
-                                implicitWidth: 170
+                                implicitWidth: 110
                                 model: root.vm ? root.vm.automaticExportFlacBitDepthOptions : []
+                                popupLabels: ["16-bit", "24-bit", "32-bit"]
                                 currentIndex: root.vm ? Math.max(0, model.indexOf(String(root.vm.automaticExportFlacBitDepth))) : 0
                                 onActivated: function(index) { if (root.vm) root.vm.automaticExportFlacBitDepth = Number(model[index]) }
                                 contentItem: Text {
@@ -662,8 +684,9 @@ Item {
                             Text { text: "Compression"; font.pixelSize: 13; color: Theme.AbracaptureTheme.text }
                             Components.ThemedComboBox {
                                 id: flacCompressionCombo
-                                implicitWidth: 100
+                                implicitWidth: 120
                                 model: root.vm ? root.vm.automaticExportFlacCompressionOptions : []
+                                popupLabels: ["Level 0", "Level 1", "Level 2", "Level 3", "Level 4", "Level 5", "Level 6", "Level 7", "Level 8", "Level 9", "Level 10", "Level 11", "Level 12"]
                                 currentIndex: root.vm ? Math.max(0, model.indexOf(String(root.vm.automaticExportFlacCompressionLevel))) : 5
                                 onActivated: function(index) { if (root.vm) root.vm.automaticExportFlacCompressionLevel = Number(model[index]) }
                                 contentItem: Text {
@@ -682,8 +705,9 @@ Item {
                             Text { text: "Sample Format"; font.pixelSize: 13; color: Theme.AbracaptureTheme.text }
                             Components.ThemedComboBox {
                                 id: wavFormatCombo
-                                implicitWidth: 190
+                                implicitWidth: 155
                                 model: root.vm ? root.vm.automaticExportWavSampleFormatOptions : []
+                                popupLabels: ["16-bit PCM", "24-bit PCM", "32-bit PCM", "32-bit Float"]
                                 currentIndex: root.vm ? Math.max(0, model.indexOf(root.vm.automaticExportWavSampleFormat)) : 0
                                 onActivated: function(index) { if (root.vm) root.vm.automaticExportWavSampleFormat = model[index] }
                                 contentItem: Text {
@@ -702,9 +726,10 @@ Item {
                             Text { text: "Preset"; font.pixelSize: 13; color: Theme.AbracaptureTheme.text }
                             Components.ThemedComboBox {
                                 id: presetCombo
-                                implicitWidth: 190
+                                implicitWidth: 220
                                 model: ["mp3_320", "mp3_256", "flac_16", "flac_24", "wav_24", "preserve_lossless", "custom"]
                                 readonly property var labels: ["MP3 320", "MP3 256", "FLAC 16-bit", "FLAC 24-bit", "WAV 24-bit", "Preserve Source Lossless", "Custom"]
+                                popupLabels: labels
                                 currentIndex: Math.max(0, model.indexOf(root.vm ? root.vm.automaticExportPreset : "custom"))
                                 onActivated: function(index) { if (root.vm) root.vm.automaticExportPreset = model[index] }
                                 contentItem: Text {
@@ -741,9 +766,10 @@ Item {
                             Text { text: "Destination"; font.pixelSize: 13; color: Theme.AbracaptureTheme.text }
                             Components.ThemedComboBox {
                                 id: destinationCombo
-                                implicitWidth: 190
+                                implicitWidth: 205
                                 model: ["same", "exports", "custom"]
                                 readonly property var labels: ["Same folder as master", "Exports subfolder", "Custom folder"]
+                                popupLabels: labels
                                 currentIndex: root.vm ? Math.max(0, model.indexOf(root.vm.automaticExportDestinationPolicy)) : 0
                                 onActivated: function(index) { if (root.vm) root.vm.automaticExportDestinationPolicy = model[index] }
                                 contentItem: Text {

@@ -34,6 +34,15 @@ QtObject {
     readonly property color controlBackgroundHover: highContrast
                                                           ? (darkMode ? "#303030" : "#f1f5f9")
                                                           : (darkMode ? "#1e293b" : "#f1f5f9")
+    // Surface used by themed input/select controls. It is intentionally
+    // distinct from the surrounding elevated panel in dark mode.
+    readonly property color controlSurface: highContrast
+                                                    ? (darkMode ? "#303030" : "#ffffff")
+                                                    : (darkMode ? "#243247" : "#ffffff")
+    readonly property color controlSurfaceHover: highContrast
+                                                         ? (darkMode ? "#404040" : "#e2e8f0")
+                                                         : (darkMode ? "#334155" : "#e2e8f0")
+    readonly property color controlSurfaceDisabled: darkMode ? "#172033" : "#f1f5f9"
     readonly property color border: highContrast
                                         ? (darkMode ? "#ffffff" : "#0f172a")
                                         : (darkMode ? "#334155" : "#cbd5e1")
