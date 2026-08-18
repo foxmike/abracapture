@@ -44,8 +44,6 @@ public:
     [[nodiscard]] std::filesystem::path resolveOutputPath(const CaptureMetadata& metadata) const;
     [[nodiscard]] bool validate() const;
 
-    // Metadata is external input. This produces one safe filename/path component
-    // while preserving ordinary UTF-8 text and punctuation.
     [[nodiscard]] static std::string sanitizePathComponent(std::string_view component);
 
 private:

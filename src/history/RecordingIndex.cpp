@@ -21,6 +21,21 @@ QJsonObject DerivedExport::toJson() const {
     QJsonObject obj;
     obj[QStringLiteral("jobId")] = static_cast<qint64>(jobId);
     obj[QStringLiteral("format")] = format;
+    if (!container.isEmpty()) {
+        obj[QStringLiteral("container")] = container;
+    }
+    if (!codec.isEmpty()) {
+        obj[QStringLiteral("codec")] = codec;
+    }
+    if (sampleRate != 0) {
+        obj[QStringLiteral("sampleRate")] = static_cast<qint64>(sampleRate);
+    }
+    if (bitDepth != 0) {
+        obj[QStringLiteral("bitDepth")] = static_cast<qint64>(bitDepth);
+    }
+    if (bitrate != 0) {
+        obj[QStringLiteral("bitrate")] = static_cast<qint64>(bitrate);
+    }
     obj[QStringLiteral("outputPath")] = outputPath;
     obj[QStringLiteral("state")] = state;
     obj[QStringLiteral("error")] = error;
@@ -31,6 +46,11 @@ DerivedExport DerivedExport::fromJson(const QJsonObject& json) {
     DerivedExport exportRecord;
     exportRecord.jobId = static_cast<std::uint64_t>(json.value(QStringLiteral("jobId")).toInteger(0));
     exportRecord.format = json.value(QStringLiteral("format")).toString();
+    exportRecord.container = json.value(QStringLiteral("container")).toString();
+    exportRecord.codec = json.value(QStringLiteral("codec")).toString();
+    exportRecord.sampleRate = static_cast<std::uint32_t>(json.value(QStringLiteral("sampleRate")).toInteger(0));
+    exportRecord.bitDepth = static_cast<std::uint32_t>(json.value(QStringLiteral("bitDepth")).toInteger(0));
+    exportRecord.bitrate = static_cast<std::uint32_t>(json.value(QStringLiteral("bitrate")).toInteger(0));
     exportRecord.outputPath = json.value(QStringLiteral("outputPath")).toString();
     exportRecord.state = json.value(QStringLiteral("state")).toString();
     exportRecord.error = json.value(QStringLiteral("error")).toString();

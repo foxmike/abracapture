@@ -4,13 +4,16 @@ namespace abracapture::exporting {
 
 namespace {
 
-QString wavCodec(const WavSampleFormat sampleFormat) {
+QString pcmCodecName(const AudioSampleFormat sampleFormat) {
     switch (sampleFormat) {
-    case WavSampleFormat::Unsigned8: return QStringLiteral("pcm_u8");
-    case WavSampleFormat::Signed16: return QStringLiteral("pcm_s16le");
-    case WavSampleFormat::Signed24: return QStringLiteral("pcm_s24le");
-    case WavSampleFormat::Signed32: return QStringLiteral("pcm_s32le");
-    case WavSampleFormat::Float32: return QStringLiteral("pcm_f32le");
+    case AudioSampleFormat::UnsignedInt8: return QStringLiteral("pcm_u8");
+    case AudioSampleFormat::SignedInt16: return QStringLiteral("pcm_s16le");
+    case AudioSampleFormat::SignedInt24: return QStringLiteral("pcm_s24le");
+    case AudioSampleFormat::SignedInt32: return QStringLiteral("pcm_s32le");
+    case AudioSampleFormat::Float32: return QStringLiteral("pcm_f32le");
+    case AudioSampleFormat::Unknown:
+    case AudioSampleFormat::Float64:
+        return QStringLiteral("pcm_s16le");
     }
     return QStringLiteral("pcm_s16le");
 }
@@ -72,11 +75,15 @@ bool FfmpegArgumentBuilder::build(const ExportRequest& request,
     if (!request.profile.validate(error)) {
         return false;
     }
-    if (request.profile.format == ExportFormat::Mp3 &&
-        request.profile.sampleRate.policy == SampleRatePolicy::PreserveSource &&
-        request.sourceSampleRate != 0 && !supportsMp3PreserveSourceRate(request.sourceSampleRate)) {
+
+    const auto& target = request.profile.target;
+
+    if (target.codec == AudioCodec::Mp3 &&
+        target.sampleRate.policy == SampleRatePolicy::PreserveSource &&
+        request.sourceFormat.sampleRate != 0 &&
+        !supportsMp3PreserveSourceRate(request.sourceFormat.sampleRate)) {
         *error = QStringLiteral("MP3 cannot preserve a %1 Hz source rate; choose 44.1 or 48 kHz")
-                     .arg(request.sourceSampleRate);
+                     .arg(request.sourceFormat.sampleRate);
         return false;
     }
 
@@ -85,17 +92,17 @@ bool FfmpegArgumentBuilder::build(const ExportRequest& request,
                   QString::fromStdString(request.sourcePath.string())};
     bool sampleRateHandledByFilter = false;
 
-    switch (request.profile.format) {
-    case ExportFormat::Mp3: {
-        const auto& options = std::get<Mp3Options>(request.profile.options);
+    switch (target.codec) {
+    case AudioCodec::Mp3: {
+        const auto& options = std::get<Mp3Options>(target.codecOptions);
         *arguments << QStringLiteral("-c:a") << QStringLiteral("libmp3lame")
                    << QStringLiteral("-b:a") << QStringLiteral("%1k").arg(options.bitrateKbps);
         break;
     }
-    case ExportFormat::Flac: {
-        const auto& options = std::get<FlacOptions>(request.profile.options);
+    case AudioCodec::Flac: {
+        const auto& options = std::get<FlacOptions>(target.codecOptions);
         sampleRateHandledByFilter = appendPcmDitherArguments(
-            *arguments, request.profile.sampleRate,
+            *arguments, target.sampleRate,
             options.bitDepth == 16 ? QStringLiteral("s16") : QStringLiteral("s32"),
             static_cast<int>(options.bitDepth));
         *arguments << QStringLiteral("-c:a") << QStringLiteral("flac")
@@ -104,30 +111,32 @@ bool FfmpegArgumentBuilder::build(const ExportRequest& request,
         appendFlacBitDepthArguments(*arguments, options.bitDepth);
         break;
     }
-    case ExportFormat::Wav: {
-        const auto& options = std::get<WavOptions>(request.profile.options);
+    case AudioCodec::Pcm: {
+        const auto& options = std::get<PcmOptions>(target.codecOptions);
         switch (options.sampleFormat) {
-        case WavSampleFormat::Unsigned8:
+        case AudioSampleFormat::UnsignedInt8:
             sampleRateHandledByFilter = appendPcmDitherArguments(
-                *arguments, request.profile.sampleRate, QStringLiteral("u8"), 8);
+                *arguments, target.sampleRate, QStringLiteral("u8"), 8);
             break;
-        case WavSampleFormat::Signed16:
+        case AudioSampleFormat::SignedInt16:
             sampleRateHandledByFilter = appendPcmDitherArguments(
-                *arguments, request.profile.sampleRate, QStringLiteral("s16"), 16);
+                *arguments, target.sampleRate, QStringLiteral("s16"), 16);
             break;
-        case WavSampleFormat::Signed24:
+        case AudioSampleFormat::SignedInt24:
             sampleRateHandledByFilter = appendPcmDitherArguments(
-                *arguments, request.profile.sampleRate, QStringLiteral("s32"), 24);
+                *arguments, target.sampleRate, QStringLiteral("s32"), 24);
             break;
-        case WavSampleFormat::Signed32:
-        case WavSampleFormat::Float32:
+        case AudioSampleFormat::SignedInt32:
+        case AudioSampleFormat::Float32:
+        case AudioSampleFormat::Float64:
+        case AudioSampleFormat::Unknown:
             break;
         }
-        *arguments << QStringLiteral("-c:a") << wavCodec(options.sampleFormat);
+        *arguments << QStringLiteral("-c:a") << pcmCodecName(options.sampleFormat);
         break;
     }
-    case ExportFormat::OggVorbis: {
-        const auto& options = std::get<OggVorbisOptions>(request.profile.options);
+    case AudioCodec::Vorbis: {
+        const auto& options = std::get<VorbisOptions>(target.codecOptions);
         *arguments << QStringLiteral("-c:a") << QStringLiteral("libvorbis")
                    << QStringLiteral("-q:a") << QString::number(options.quality)
                    << QStringLiteral("-f") << QStringLiteral("ogg");
@@ -135,10 +144,10 @@ bool FfmpegArgumentBuilder::build(const ExportRequest& request,
     }
     }
 
-    if (request.profile.sampleRate.policy == SampleRatePolicy::Explicit &&
+    if (target.sampleRate.policy == SampleRatePolicy::Explicit &&
         !sampleRateHandledByFilter) {
         *arguments << QStringLiteral("-ar")
-                   << QString::number(request.profile.sampleRate.sampleRate);
+                   << QString::number(target.sampleRate.sampleRate);
     }
 
     *arguments << QString::fromStdString(request.destinationPath.string());

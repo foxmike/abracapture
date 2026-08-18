@@ -1,6 +1,7 @@
 #include "ManualExportPlanner.hpp"
 
-#include "../recording/OutputPathPolicy.hpp"
+#include "AudioFormatCatalog.hpp"
+#include "PathSanitizer.hpp"
 
 #include <QDir>
 #include <QFileInfo>
@@ -31,20 +32,17 @@ bool isPlaceholder(const QString& value) {
 }
 
 QString sampleRateSummary(const ExportProfile& profile) {
-    if (profile.sampleRate.policy == SampleRatePolicy::PreserveSource) {
+    if (profile.target.sampleRate.policy == SampleRatePolicy::PreserveSource) {
         return QStringLiteral("Preserve source rate");
     }
-    const double kilohertz = static_cast<double>(profile.sampleRate.sampleRate) / 1000.0;
+    const double kilohertz = static_cast<double>(profile.target.sampleRate.sampleRate) / 1000.0;
     return QStringLiteral("%1 kHz").arg(kilohertz, 0, 'f',
-                                          profile.sampleRate.sampleRate % 1000 == 0 ? 0 : 1);
+                                          profile.target.sampleRate.sampleRate % 1000 == 0 ? 0 : 1);
 }
 
 } // namespace
 
 QStringList ManualExportPlanner::supportedInputExtensions() {
-    // Keep this deliberately master-oriented. It prevents delivery files from
-    // becoming implicit directory-export inputs while still allowing manual
-    // single-file export of either native master format.
     return {QStringLiteral("wav"), QStringLiteral("flac")};
 }
 
@@ -71,8 +69,6 @@ QList<ManualExportSource> ManualExportPlanner::enumerateDirectory(
             excluded.append(normalizedPath(excludedDirectory));
         }
     }
-    // All generated exports using the standard destination convention live
-    // here, so never treat them as new directory-export inputs.
     excluded.append(normalizedPath(directory / "Exports"));
 
     const auto isExcluded = [&excluded](const std::filesystem::path& candidatePath) {
@@ -163,7 +159,7 @@ bool ManualExportPlanner::planRequest(const ManualExportSource& source,
     QString baseName = sourceInfo.completeBaseName();
     if (destination.useStoredMetadataNames && !isPlaceholder(source.trackTitle)) {
         baseName = QString::fromStdString(
-            recording::OutputPathPolicy::sanitizePathComponent(source.trackTitle.toStdString()));
+            sanitizePathComponent(source.trackTitle.toStdString()));
     }
     if (baseName.isEmpty()) {
         *error = QStringLiteral("Unable to determine an export filename");
@@ -171,8 +167,7 @@ bool ManualExportPlanner::planRequest(const ManualExportSource& source,
     }
     if (destination.useStoredMetadataNames && destination.organizeAlbumDirectory &&
         !isPlaceholder(source.albumTitle)) {
-        destinationDirectory /= recording::OutputPathPolicy::sanitizePathComponent(
-            source.albumTitle.toStdString());
+        destinationDirectory /= sanitizePathComponent(source.albumTitle.toStdString());
     }
 
     if (createDestinationDirectories &&
@@ -185,29 +180,33 @@ bool ManualExportPlanner::planRequest(const ManualExportSource& source,
     request->sourcePath = source.path;
     request->destinationPath = destinationDirectory /
                                (baseName.toStdString() + "." +
-                                exportFileExtension(profile.format).toStdString());
+                                profile.target.fileExtension().toStdString());
     request->profile = profile;
     request->profile.collisionPolicy = destination.collisionPolicy;
     request->captureSessionId = source.captureSessionId;
-    request->sourceSampleRate = source.sampleRate;
+    request->sourceFormat = source.sourceFormat;
     return true;
 }
 
 QString ManualExportPlanner::profileSummary(const ExportProfile& profile) {
-    QString summary = exportFormatName(profile.format).toUpper() + QStringLiteral(" • ") +
+    const auto& target = profile.target;
+    QString summary = audioContainerName(target.container).toUpper() + QStringLiteral(" • ") +
                       sampleRateSummary(profile);
-    if (const auto* options = std::get_if<Mp3Options>(&profile.options)) {
+    if (const auto* options = std::get_if<Mp3Options>(&target.codecOptions)) {
         summary += QStringLiteral(" • %1 kbps").arg(options->bitrateKbps);
-    } else if (const auto* options = std::get_if<FlacOptions>(&profile.options)) {
+    } else if (const auto* options = std::get_if<FlacOptions>(&target.codecOptions)) {
         summary += QStringLiteral(" • %1-bit • compression %2")
                        .arg(options->bitDepth).arg(options->compressionLevel);
-    } else if (const auto* options = std::get_if<WavOptions>(&profile.options)) {
+    } else if (const auto* options = std::get_if<PcmOptions>(&target.codecOptions)) {
         switch (options->sampleFormat) {
-        case WavSampleFormat::Signed16: summary += QStringLiteral(" • 16-bit PCM"); break;
-        case WavSampleFormat::Signed24: summary += QStringLiteral(" • 24-bit PCM"); break;
-        case WavSampleFormat::Signed32: summary += QStringLiteral(" • 32-bit PCM"); break;
-        case WavSampleFormat::Float32: summary += QStringLiteral(" • 32-bit Float"); break;
-        case WavSampleFormat::Unsigned8: summary += QStringLiteral(" • 8-bit PCM"); break;
+        case AudioSampleFormat::SignedInt16: summary += QStringLiteral(" • 16-bit PCM"); break;
+        case AudioSampleFormat::SignedInt24: summary += QStringLiteral(" • 24-bit PCM"); break;
+        case AudioSampleFormat::SignedInt32: summary += QStringLiteral(" • 32-bit PCM"); break;
+        case AudioSampleFormat::Float32: summary += QStringLiteral(" • 32-bit Float"); break;
+        case AudioSampleFormat::UnsignedInt8: summary += QStringLiteral(" • 8-bit PCM"); break;
+        case AudioSampleFormat::Float64:
+        case AudioSampleFormat::Unknown:
+            break;
         }
     }
     return summary;

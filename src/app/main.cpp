@@ -138,12 +138,12 @@ QString exportJobStateName(const abracapture::exporting::ExportJobState state) {
 
 QString automaticExportProfileSummary(
     const abracapture::exporting::AutomaticExportProfile& automaticProfile) {
-    const auto& profile = automaticProfile.profile;
-    QString summary = abracapture::exporting::exportFormatName(profile.format);
-    summary += profile.sampleRate.policy == abracapture::exporting::SampleRatePolicy::Explicit
-                   ? QStringLiteral(" rate=%1").arg(profile.sampleRate.sampleRate)
+    const auto& target = automaticProfile.profile.target;
+    QString summary = abracapture::exporting::audioContainerName(target.container);
+    summary += target.sampleRate.policy == abracapture::exporting::SampleRatePolicy::Explicit
+                   ? QStringLiteral(" rate=%1").arg(target.sampleRate.sampleRate)
                    : QStringLiteral(" rate=preserve_source");
-    if (const auto* const options = std::get_if<abracapture::exporting::Mp3Options>(&profile.options)) {
+    if (const auto* const options = std::get_if<abracapture::exporting::Mp3Options>(&target.codecOptions)) {
         summary += QStringLiteral(" bitrate=%1kbps").arg(options->bitrateKbps);
     }
     summary += QStringLiteral(" keepMaster=%1").arg(automaticProfile.keepMaster ? QStringLiteral("true")
@@ -182,7 +182,7 @@ std::filesystem::path automaticExportDestinationPath(
     std::filesystem::create_directories(destinationDirectory, error);
     std::filesystem::path exportPath = destinationDirectory / masterPath.filename();
     exportPath.replace_extension(
-        "." + abracapture::exporting::exportFileExtension(profile.profile.format).toStdString());
+        "." + profile.profile.target.fileExtension().toStdString());
     return exportPath;
 }
 
@@ -270,7 +270,7 @@ int main(int argc, char *argv[]) {
                              if (job.has_value()) {
                                  updateDerivedExport(
                                      jobId, it.value(),
-                                     abracapture::exporting::exportFormatName(job->request.profile.format),
+                                     abracapture::exporting::audioContainerName(job->request.profile.target.container),
                                      QStringLiteral("running"),
                                      QString::fromStdString(job->request.destinationPath.string()), {});
                              }
@@ -310,7 +310,7 @@ int main(int argc, char *argv[]) {
                          const QString masterPath = it.value();
                          const auto job = exportManager.job(jobId);
                          const QString format = job.has_value()
-                                                    ? abracapture::exporting::exportFormatName(job->request.profile.format)
+                                                    ? abracapture::exporting::audioContainerName(job->request.profile.target.container)
                                                     : QStringLiteral("unknown");
                          const QString outputPath = job.has_value()
                                                         ? QString::fromStdString(job->request.destinationPath.string())
@@ -649,7 +649,7 @@ int main(int argc, char *argv[]) {
                                      request.sourcePath = result.finalPath;
                                      request.profile = automaticProfile.profile;
                                      request.captureSessionId = entry.captureSessionId;
-                                     request.sourceSampleRate = result.sampleRate;
+                                     request.sourceFormat.sampleRate = result.sampleRate;
                                      request.destinationPath = automaticExportDestinationPath(
                                          result.finalPath, automaticProfile);
 
@@ -658,8 +658,11 @@ int main(int argc, char *argv[]) {
                                      const auto queuedJob = exportManager.job(jobId);
                                      abracapture::history::DerivedExport derivedExport;
                                      derivedExport.jobId = jobId;
-                                     derivedExport.format = abracapture::exporting::exportFormatName(
-                                         automaticProfile.profile.format);
+                                     derivedExport.format = abracapture::exporting::audioContainerName(
+                                         automaticProfile.profile.target.container);
+                                     derivedExport.container = derivedExport.format;
+                                     derivedExport.codec = abracapture::exporting::audioCodecName(
+                                         automaticProfile.profile.target.codec);
                                      derivedExport.outputPath = queuedJob.has_value()
                                                                     ? QString::fromStdString(
                                                                           queuedJob->request.destinationPath.string())

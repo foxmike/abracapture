@@ -1,6 +1,7 @@
 #include "ManualExportViewModel.hpp"
 
 #include "SettingsViewModel.hpp"
+#include "export/AudioFormatCatalog.hpp"
 #include "export/ExportOutputPlanner.hpp"
 #include "history/RecordingIndex.hpp"
 
@@ -12,36 +13,19 @@
 
 namespace {
 
-using abracapture::exporting::ExportFormat;
+using abracapture::exporting::AudioCodec;
+using abracapture::exporting::AudioContainer;
+using abracapture::exporting::AudioSampleFormat;
+using abracapture::exporting::CodecOptions;
 using abracapture::exporting::ExportJobId;
 using abracapture::exporting::ExportJobState;
 using abracapture::exporting::ExportProfile;
 using abracapture::exporting::FlacOptions;
 using abracapture::exporting::ManualExportDestinationPolicy;
 using abracapture::exporting::Mp3Options;
+using abracapture::exporting::PcmOptions;
 using abracapture::exporting::SampleRatePolicy;
-using abracapture::exporting::WavOptions;
-using abracapture::exporting::WavSampleFormat;
-
-QString wavSampleFormatName(const WavSampleFormat format) {
-    switch (format) {
-    case WavSampleFormat::Signed16: return QStringLiteral("s16");
-    case WavSampleFormat::Signed24: return QStringLiteral("s24");
-    case WavSampleFormat::Signed32: return QStringLiteral("s32");
-    case WavSampleFormat::Float32: return QStringLiteral("f32");
-    case WavSampleFormat::Unsigned8: return QStringLiteral("u8");
-    }
-    return QStringLiteral("s16");
-}
-
-std::optional<WavSampleFormat> wavSampleFormatFromName(const QString& name) {
-    const QString normalized = name.trimmed().toLower();
-    if (normalized == QStringLiteral("s16")) return WavSampleFormat::Signed16;
-    if (normalized == QStringLiteral("s24")) return WavSampleFormat::Signed24;
-    if (normalized == QStringLiteral("s32")) return WavSampleFormat::Signed32;
-    if (normalized == QStringLiteral("f32")) return WavSampleFormat::Float32;
-    return std::nullopt;
-}
+using abracapture::exporting::VorbisOptions;
 
 QString destinationPolicyName(const ManualExportDestinationPolicy policy) {
     switch (policy) {
@@ -102,7 +86,7 @@ ManualExportViewModel::ManualExportViewModel(
     , exportManager_(exportManager)
     , recordingIndex_(recordingIndex)
     , settingsViewModel_(settingsViewModel)
-    , manualProfile_(abracapture::exporting::defaultExportProfile(ExportFormat::Mp3)) {
+    , manualProfile_(abracapture::exporting::defaultExportProfile(AudioContainer::Mp3, AudioCodec::Mp3)) {
     rebuildCaptureSessions();
     if (exportManager_ == nullptr) {
         updateStatus(QStringLiteral("Export manager is unavailable"));
@@ -178,28 +162,33 @@ void ManualExportViewModel::setProfileMode(const QString& mode) {
 }
 
 QString ManualExportViewModel::manualFormat() const {
-    return abracapture::exporting::exportFormatName(manualProfile_.format);
+    return abracapture::exporting::audioContainerName(manualProfile_.target.container);
 }
 
 void ManualExportViewModel::setManualFormat(const QString& format) {
     const auto parsed = abracapture::exporting::exportFormatFromString(format);
-    if (!parsed.has_value() || *parsed == manualProfile_.format) return;
-    manualProfile_ = abracapture::exporting::defaultExportProfile(*parsed);
+    if (!parsed.has_value()) return;
+    const auto newContainer = abracapture::exporting::containerForLegacyFormat(*parsed);
+    const auto newCodec = abracapture::exporting::codecForLegacyFormat(*parsed);
+    if (manualProfile_.target.container == newContainer &&
+        manualProfile_.target.codec == newCodec) return;
+    manualProfile_ = abracapture::exporting::defaultExportProfile(newContainer, newCodec);
     emit profileChanged();
     emit bulkPreviewChanged();
 }
 
 int ManualExportViewModel::manualSampleRate() const noexcept {
-    return manualProfile_.sampleRate.policy == SampleRatePolicy::Explicit
-               ? static_cast<int>(manualProfile_.sampleRate.sampleRate) : 0;
+    return manualProfile_.target.sampleRate.policy == SampleRatePolicy::Explicit
+               ? static_cast<int>(manualProfile_.target.sampleRate.sampleRate) : 0;
 }
 
 void ManualExportViewModel::setManualSampleRate(const int rate) {
     if (rate == 0) {
-        manualProfile_.sampleRate = {SampleRatePolicy::PreserveSource, 0};
+        manualProfile_.target.sampleRate = {SampleRatePolicy::PreserveSource, 0};
     } else if (abracapture::exporting::supportsExplicitSampleRate(
-                   manualProfile_.format, static_cast<std::uint32_t>(rate))) {
-        manualProfile_.sampleRate = {SampleRatePolicy::Explicit, static_cast<std::uint32_t>(rate)};
+                   manualProfile_.target.container, manualProfile_.target.codec,
+                   static_cast<std::uint32_t>(rate))) {
+        manualProfile_.target.sampleRate = {SampleRatePolicy::Explicit, static_cast<std::uint32_t>(rate)};
     } else {
         return;
     }
@@ -208,73 +197,80 @@ void ManualExportViewModel::setManualSampleRate(const int rate) {
 }
 
 int ManualExportViewModel::manualMp3Bitrate() const noexcept {
-    if (const auto* options = std::get_if<Mp3Options>(&manualProfile_.options)) return options->bitrateKbps;
+    if (const auto* options = std::get_if<Mp3Options>(&manualProfile_.target.codecOptions))
+        return options->bitrateKbps;
     return 320;
 }
 
 void ManualExportViewModel::setManualMp3Bitrate(const int bitrate) {
-    if (manualProfile_.format != ExportFormat::Mp3 ||
+    if (manualProfile_.target.codec != AudioCodec::Mp3 ||
         (bitrate != 128 && bitrate != 192 && bitrate != 256 && bitrate != 320)) return;
-    manualProfile_.options = Mp3Options{static_cast<std::uint32_t>(bitrate),
-                                         abracapture::exporting::Mp3BitrateMode::Constant};
+    manualProfile_.target.codecOptions = Mp3Options{static_cast<std::uint32_t>(bitrate),
+                                                     abracapture::exporting::Mp3BitrateMode::Constant};
     emit profileChanged();
     emit bulkPreviewChanged();
 }
 
 int ManualExportViewModel::manualFlacBitDepth() const noexcept {
-    if (const auto* options = std::get_if<FlacOptions>(&manualProfile_.options)) return options->bitDepth;
+    if (const auto* options = std::get_if<FlacOptions>(&manualProfile_.target.codecOptions))
+        return options->bitDepth;
     return 16;
 }
 
 void ManualExportViewModel::setManualFlacBitDepth(const int bitDepth) {
-    if (manualProfile_.format != ExportFormat::Flac ||
+    if (manualProfile_.target.codec != AudioCodec::Flac ||
         (bitDepth != 16 && bitDepth != 24 && bitDepth != 32)) return;
-    const auto* options = std::get_if<FlacOptions>(&manualProfile_.options);
-    manualProfile_.options = FlacOptions{static_cast<std::uint32_t>(bitDepth),
-                                          options != nullptr ? options->compressionLevel : 5};
+    const auto* options = std::get_if<FlacOptions>(&manualProfile_.target.codecOptions);
+    manualProfile_.target.codecOptions = FlacOptions{static_cast<std::uint32_t>(bitDepth),
+                                                      options != nullptr ? options->compressionLevel : 5};
     emit profileChanged();
     emit bulkPreviewChanged();
 }
 
 int ManualExportViewModel::manualFlacCompressionLevel() const noexcept {
-    if (const auto* options = std::get_if<FlacOptions>(&manualProfile_.options)) return options->compressionLevel;
+    if (const auto* options = std::get_if<FlacOptions>(&manualProfile_.target.codecOptions))
+        return options->compressionLevel;
     return 5;
 }
 
 void ManualExportViewModel::setManualFlacCompressionLevel(const int level) {
-    if (manualProfile_.format != ExportFormat::Flac || level < 0 || level > 12) return;
-    const auto* options = std::get_if<FlacOptions>(&manualProfile_.options);
-    manualProfile_.options = FlacOptions{options != nullptr ? options->bitDepth : 16, level};
+    if (manualProfile_.target.codec != AudioCodec::Flac || level < 0 || level > 12) return;
+    const auto* options = std::get_if<FlacOptions>(&manualProfile_.target.codecOptions);
+    manualProfile_.target.codecOptions = FlacOptions{options != nullptr ? options->bitDepth : 16, level};
     emit profileChanged();
     emit bulkPreviewChanged();
 }
 
 QString ManualExportViewModel::manualWavSampleFormat() const {
-    if (const auto* options = std::get_if<WavOptions>(&manualProfile_.options)) {
-        return wavSampleFormatName(options->sampleFormat);
+    if (const auto* options = std::get_if<PcmOptions>(&manualProfile_.target.codecOptions)) {
+        return abracapture::exporting::audioSampleFormatName(options->sampleFormat);
     }
     return QStringLiteral("s16");
 }
 
 QString ManualExportViewModel::manualPreset() const {
-    const auto& profile = manualProfile_;
-    if (profile.sampleRate.policy != SampleRatePolicy::PreserveSource) return QStringLiteral("custom");
-    if (profile.format == ExportFormat::Mp3) {
-        const auto* options = std::get_if<Mp3Options>(&profile.options);
-        if (options != nullptr && options->bitrateMode == abracapture::exporting::Mp3BitrateMode::Constant) {
-            if (options->bitrateKbps == 320) return QStringLiteral("mp3_320");
-            if (options->bitrateKbps == 256) return QStringLiteral("mp3_256");
+    const auto& target = manualProfile_.target;
+    if (target.sampleRate.policy != SampleRatePolicy::PreserveSource) return QStringLiteral("custom");
+    for (const auto& preset : abracapture::exporting::AudioFormatCatalog::presets()) {
+        if (preset.container != target.container || preset.codec != target.codec) continue;
+        if (target.codec == AudioCodec::Mp3) {
+            const auto* options = std::get_if<Mp3Options>(&target.codecOptions);
+            if (options != nullptr && options->bitrateKbps == preset.bitrate &&
+                options->bitrateMode == abracapture::exporting::Mp3BitrateMode::Constant) {
+                return preset.id;
+            }
+        } else if (target.codec == AudioCodec::Flac) {
+            const auto* options = std::get_if<FlacOptions>(&target.codecOptions);
+            if (options != nullptr && options->bitDepth == preset.bitDepth &&
+                options->compressionLevel == preset.compressionLevel) {
+                return preset.id;
+            }
+        } else if (target.codec == AudioCodec::Pcm) {
+            const auto* options = std::get_if<PcmOptions>(&target.codecOptions);
+            if (options != nullptr && options->sampleFormat == preset.sampleFormat) {
+                return preset.id;
+            }
         }
-    } else if (profile.format == ExportFormat::Flac) {
-        const auto* options = std::get_if<FlacOptions>(&profile.options);
-        if (options != nullptr && options->compressionLevel == 5) {
-            if (options->bitDepth == 16) return QStringLiteral("flac_16");
-            if (options->bitDepth == 24) return QStringLiteral("flac_24");
-        }
-    } else if (profile.format == ExportFormat::Wav) {
-        const auto* options = std::get_if<WavOptions>(&profile.options);
-        if (options != nullptr && options->sampleFormat == WavSampleFormat::Signed24) return QStringLiteral("wav_24");
-        if (options != nullptr && options->sampleFormat == WavSampleFormat::Float32) return QStringLiteral("preserve_lossless");
     }
     return QStringLiteral("custom");
 }
@@ -282,60 +278,72 @@ QString ManualExportViewModel::manualPreset() const {
 void ManualExportViewModel::setManualPreset(const QString& preset) {
     const QString normalized = preset.trimmed().toLower();
     if (normalized == QStringLiteral("custom")) return;
-    if (normalized == QStringLiteral("mp3_320") || normalized == QStringLiteral("mp3_256")) {
-        manualProfile_ = abracapture::exporting::defaultExportProfile(ExportFormat::Mp3);
-        std::get<Mp3Options>(manualProfile_.options).bitrateKbps = normalized == QStringLiteral("mp3_256") ? 256 : 320;
-    } else if (normalized == QStringLiteral("flac_16") || normalized == QStringLiteral("flac_24")) {
-        manualProfile_ = abracapture::exporting::defaultExportProfile(ExportFormat::Flac);
-        std::get<FlacOptions>(manualProfile_.options).bitDepth = normalized == QStringLiteral("flac_24") ? 24 : 16;
-    } else if (normalized == QStringLiteral("wav_24") || normalized == QStringLiteral("preserve_lossless")) {
-        manualProfile_ = abracapture::exporting::defaultExportProfile(ExportFormat::Wav);
-        std::get<WavOptions>(manualProfile_.options).sampleFormat = normalized == QStringLiteral("wav_24")
-            ? WavSampleFormat::Signed24 : WavSampleFormat::Float32;
-    } else return;
+    const auto descriptor = abracapture::exporting::AudioFormatCatalog::preset(normalized);
+    if (!descriptor.has_value()) return;
+    manualProfile_ = abracapture::exporting::defaultExportProfile(descriptor->container, descriptor->codec);
+    if (descriptor->bitrate > 0) {
+        manualProfile_.target.codecOptions = Mp3Options{
+            descriptor->bitrate, abracapture::exporting::Mp3BitrateMode::Constant};
+    } else if (descriptor->bitDepth > 0) {
+        manualProfile_.target.codecOptions = FlacOptions{
+            descriptor->bitDepth, descriptor->compressionLevel >= 0 ? descriptor->compressionLevel : 5};
+    } else if (descriptor->sampleFormat != AudioSampleFormat::Unknown) {
+        manualProfile_.target.codecOptions = PcmOptions{descriptor->sampleFormat};
+    }
     emit profileChanged();
     emit bulkPreviewChanged();
 }
 
 QStringList ManualExportViewModel::presetOptions() const {
-    return {QStringLiteral("mp3_320"), QStringLiteral("mp3_256"), QStringLiteral("flac_16"),
-            QStringLiteral("flac_24"), QStringLiteral("wav_24"),
-            QStringLiteral("preserve_lossless"), QStringLiteral("custom")};
+    QStringList options;
+    for (const auto& preset : abracapture::exporting::AudioFormatCatalog::presets()) {
+        options.append(preset.id);
+    }
+    options.append(QStringLiteral("custom"));
+    return options;
 }
 
 void ManualExportViewModel::setManualWavSampleFormat(const QString& format) {
-    if (manualProfile_.format != ExportFormat::Wav) return;
-    const auto parsed = wavSampleFormatFromName(format);
+    if (manualProfile_.target.codec != AudioCodec::Pcm) return;
+    const auto parsed = abracapture::exporting::audioSampleFormatFromString(format);
     if (!parsed.has_value()) return;
-    manualProfile_.options = WavOptions{*parsed};
+    manualProfile_.target.codecOptions = PcmOptions{*parsed};
     emit profileChanged();
     emit bulkPreviewChanged();
 }
 
 QStringList ManualExportViewModel::formatOptions() const {
-    return {QStringLiteral("mp3"), QStringLiteral("flac"), QStringLiteral("wav")};
+    QStringList formats;
+    for (const auto& descriptor : abracapture::exporting::AudioFormatCatalog::targets()) {
+        formats.append(abracapture::exporting::audioContainerName(descriptor.container));
+    }
+    return formats;
 }
+
 QStringList ManualExportViewModel::mp3BitrateOptions() const {
-    return {QStringLiteral("128"), QStringLiteral("192"), QStringLiteral("256"), QStringLiteral("320")};
+    return abracapture::exporting::AudioFormatCatalog::bitrateOptions(
+        AudioContainer::Mp3, AudioCodec::Mp3);
 }
+
 QStringList ManualExportViewModel::flacBitDepthOptions() const {
-    return {QStringLiteral("16"), QStringLiteral("24"), QStringLiteral("32")};
+    return abracapture::exporting::AudioFormatCatalog::bitDepthOptions(
+        AudioContainer::Flac, AudioCodec::Flac);
 }
+
 QStringList ManualExportViewModel::flacCompressionOptions() const {
-    QStringList options; for (int i = 0; i <= 12; ++i) options.append(QString::number(i)); return options;
+    return abracapture::exporting::AudioFormatCatalog::compressionLevelOptions(
+        AudioContainer::Flac, AudioCodec::Flac);
 }
+
 QStringList ManualExportViewModel::wavSampleFormatOptions() const {
-    return {QStringLiteral("s16"), QStringLiteral("s24"), QStringLiteral("s32"), QStringLiteral("f32")};
+    return abracapture::exporting::AudioFormatCatalog::sampleFormatOptions(
+        AudioContainer::Wav, AudioCodec::Pcm);
 }
 
 QStringList ManualExportViewModel::sampleRateOptions() const {
     const ExportProfile profile = activeProfile();
-    if (profile.format == ExportFormat::Mp3) {
-        return {QStringLiteral("preserve"), QStringLiteral("44100"), QStringLiteral("48000")};
-    }
-    return {QStringLiteral("preserve"), QStringLiteral("44100"), QStringLiteral("48000"),
-            QStringLiteral("88200"), QStringLiteral("96000"), QStringLiteral("176400"),
-            QStringLiteral("192000")};
+    return abracapture::exporting::AudioFormatCatalog::sampleRateOptions(
+        profile.target.container, profile.target.codec);
 }
 
 QString ManualExportViewModel::profileSummary() const {
@@ -635,7 +643,7 @@ abracapture::exporting::ManualExportSource ManualExportViewModel::sourceFromVari
     const QVariantMap& entry) const {
     abracapture::exporting::ManualExportSource source;
     source.path = entry.value(QStringLiteral("filePath")).toString().toStdString();
-    source.sampleRate = entry.value(QStringLiteral("sampleRate")).toUInt();
+    source.sourceFormat.sampleRate = entry.value(QStringLiteral("sampleRate")).toUInt();
     source.captureSessionId = entry.value(QStringLiteral("captureSessionId")).toString();
     source.trackTitle = entry.value(QStringLiteral("trackTitle")).toString();
     source.albumTitle = entry.value(QStringLiteral("albumTitle")).toString();
@@ -645,7 +653,7 @@ abracapture::exporting::ManualExportSource ManualExportViewModel::sourceFromVari
 QVariantMap ManualExportViewModel::sourceDetails(
     const abracapture::exporting::ManualExportSource& source) const {
     const QFileInfo info(QString::fromStdString(source.path.string()));
-    int sampleRate = static_cast<int>(source.sampleRate);
+    int sampleRate = static_cast<int>(source.sourceFormat.sampleRate);
     int channels = 0;
     int bitDepth = 0;
     QString sampleFormat;
@@ -740,10 +748,17 @@ void ManualExportViewModel::updateDerivedExport(const ExportJobId jobId, const Q
         }
         if (!found) {
             const auto request = manualRequests_.value(jobId);
-            entry.derivedExports.append({jobId,
-                abracapture::exporting::exportFormatName(request.profile.format),
-                outputPath.isEmpty() ? QString::fromStdString(request.destinationPath.string()) : outputPath,
-                state, error});
+            abracapture::history::DerivedExport derived;
+            derived.jobId = jobId;
+            derived.format = abracapture::exporting::audioContainerName(request.profile.target.container);
+            derived.container = abracapture::exporting::audioContainerName(request.profile.target.container);
+            derived.codec = abracapture::exporting::audioCodecName(request.profile.target.codec);
+            derived.outputPath = outputPath.isEmpty()
+                                     ? QString::fromStdString(request.destinationPath.string())
+                                     : outputPath;
+            derived.state = state;
+            derived.error = error;
+            entry.derivedExports.append(derived);
         }
         recordingIndex_->update(entry);
         emit recordingHistoryChanged();

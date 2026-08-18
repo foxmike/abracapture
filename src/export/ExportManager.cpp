@@ -36,8 +36,6 @@ QString userFacingProcessError(const QString& diagnostics, const int exitCode) {
     if (detail.isEmpty()) {
         return QStringLiteral("ffmpeg conversion failed (exit code %1)").arg(exitCode);
     }
-    // Keep normal UI/status text actionable and compact. The bounded stderr is
-    // still captured for diagnostics and can be added to a details view later.
     const QString firstLine = detail.split(QRegularExpression(QStringLiteral("[\\r\\n]+")), Qt::SkipEmptyParts)
                                   .constFirst().trimmed();
     return QStringLiteral("ffmpeg conversion failed: %1").arg(firstLine.left(240));
@@ -230,22 +228,6 @@ QVariantList ExportManager::recentJobSummaries(const int maximum) const {
     return result;
 }
 
-bool ExportManager::verifyMaster(const std::filesystem::path& masterFilePath,
-                                 const recording::CaptureIntegrity& integrity) const {
-    const QFileInfo masterInfo(QString::fromStdString(masterFilePath.string()));
-    if (!masterInfo.exists() || !masterInfo.isFile() || masterInfo.size() == 0) {
-        return false;
-    }
-
-    if (integrity.filePath.empty()) {
-        return true;
-    }
-
-    const QFileInfo integrityInfo(QString::fromStdString(integrity.filePath.string()));
-    return QDir::cleanPath(masterInfo.absoluteFilePath()) ==
-           QDir::cleanPath(integrityInfo.absoluteFilePath());
-}
-
 ExportJobId ExportManager::enqueueInternal(const ExportRequest& request) {
     ExportJob job;
     job.id = nextJobId_++;
@@ -333,7 +315,7 @@ void ExportManager::startNextExport() {
         standardError_.clear();
         runningJobId_ = jobId;
         emit jobStarted(jobId);
-        emit exportStarted(exportFormatName(jobIt->request.profile.format));
+        emit exportStarted(audioContainerName(jobIt->request.profile.target.container));
         emit queueChanged();
         process_.start(QStringLiteral("ffmpeg"), arguments);
         return;
@@ -419,7 +401,7 @@ void ExportManager::failJob(const ExportJobId jobId, const QString& error) {
     jobIt->error = error;
     releaseDestination(*jobIt);
     emit jobFailed(jobId, error);
-    emit exportFailed(exportFormatName(jobIt->request.profile.format), error);
+    emit exportFailed(audioContainerName(jobIt->request.profile.target.container), error);
     emit queueChanged();
 }
 

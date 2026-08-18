@@ -609,11 +609,6 @@ int CliApp::runRecord(const QStringList& recordArgs) {
         const QStringList formatList = exportFormatsRaw.split(QLatin1Char(','), Qt::SkipEmptyParts);
         if (!formatList.isEmpty()) {
             abracapture::exporting::ExportManager exportManager;
-            if (!exportManager.verifyMaster(finalizeResult.finalPath, integrity)) {
-                std::cerr << "Export error: Master verification failed before export\n";
-                return 4;
-            }
-
             QList<abracapture::exporting::ExportRequest> exportRequests;
             for (const QString& fmt : formatList) {
                 const auto exportFormat = abracapture::exporting::exportFormatFromString(fmt);
@@ -622,13 +617,15 @@ int CliApp::runRecord(const QStringList& recordArgs) {
                               << fmt.trimmed().toStdString() << "\n";
                     return 4;
                 }
+                const auto container = abracapture::exporting::containerForLegacyFormat(*exportFormat);
+                const auto codec = abracapture::exporting::codecForLegacyFormat(*exportFormat);
                 abracapture::exporting::ExportRequest request;
                 request.sourcePath = finalizeResult.finalPath;
-                request.profile = abracapture::exporting::defaultExportProfile(*exportFormat);
-                request.sourceSampleRate = finalizeResult.sampleRate;
+                request.profile = abracapture::exporting::defaultExportProfile(container, codec);
+                request.sourceFormat.sampleRate = finalizeResult.sampleRate;
                 std::filesystem::path exportPath = finalizeResult.finalPath;
                 exportPath.replace_extension(
-                    "." + abracapture::exporting::exportFileExtension(*exportFormat).toStdString());
+                    "." + request.profile.target.fileExtension().toStdString());
                 request.destinationPath = std::move(exportPath);
                 exportRequests.append(std::move(request));
             }

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "AudioDomainTypes.hpp"
+
 #include <QDateTime>
 #include <QString>
 #include <QtGlobal>
@@ -11,6 +13,10 @@
 
 namespace abracapture::exporting {
 
+// ---------------------------------------------------------------------------
+// Legacy ExportFormat — retained for migration and string interop
+// ---------------------------------------------------------------------------
+
 enum class ExportFormat {
     Mp3,
     Flac,
@@ -21,7 +27,14 @@ enum class ExportFormat {
 [[nodiscard]] std::optional<ExportFormat> exportFormatFromString(const QString& format);
 [[nodiscard]] QString exportFormatName(ExportFormat format);
 [[nodiscard]] QString exportFileExtension(ExportFormat format);
-[[nodiscard]] bool supportsExplicitSampleRate(ExportFormat format, std::uint32_t sampleRate);
+
+[[nodiscard]] AudioContainer containerForLegacyFormat(ExportFormat format);
+[[nodiscard]] AudioCodec codecForLegacyFormat(ExportFormat format);
+[[nodiscard]] std::optional<ExportFormat> legacyFormatFor(AudioContainer container, AudioCodec codec);
+
+// ---------------------------------------------------------------------------
+// Sample-rate policy
+// ---------------------------------------------------------------------------
 
 enum class SampleRatePolicy {
     PreserveSource,
@@ -33,11 +46,19 @@ struct SampleRateOption {
     std::uint32_t sampleRate = 0;
 };
 
+// ---------------------------------------------------------------------------
+// Collision policy
+// ---------------------------------------------------------------------------
+
 enum class CollisionPolicy {
     GenerateUniqueName,
     FailIfExists,
     ReplaceExisting,
 };
+
+// ---------------------------------------------------------------------------
+// Codec-specific options
+// ---------------------------------------------------------------------------
 
 enum class Mp3BitrateMode {
     Constant,
@@ -54,34 +75,52 @@ struct FlacOptions {
     int compressionLevel = 5;
 };
 
-enum class WavSampleFormat {
-    Unsigned8,
-    Signed16,
-    Signed24,
-    Signed32,
-    Float32,
+struct PcmOptions {
+    AudioSampleFormat sampleFormat = AudioSampleFormat::SignedInt16;
 };
 
-struct WavOptions {
-    WavSampleFormat sampleFormat = WavSampleFormat::Signed16;
-};
-
-struct OggVorbisOptions {
+struct VorbisOptions {
     int quality = 5;
 };
 
-using FormatSpecificOptions = std::variant<Mp3Options, FlacOptions, WavOptions, OggVorbisOptions>;
+using CodecOptions = std::variant<Mp3Options, FlacOptions, PcmOptions, VorbisOptions>;
+
+// ---------------------------------------------------------------------------
+// AudioEncodingTarget — container + codec + codec-specific options
+// ---------------------------------------------------------------------------
+
+struct AudioEncodingTarget {
+    AudioContainer container = AudioContainer::Mp3;
+    AudioCodec codec = AudioCodec::Mp3;
+    SampleRateOption sampleRate;
+    CodecOptions codecOptions = Mp3Options{};
+
+    [[nodiscard]] bool validate(QString* error = nullptr) const;
+    [[nodiscard]] QString fileExtension() const;
+    [[nodiscard]] bool isLossless() const noexcept;
+};
+
+[[nodiscard]] AudioEncodingTarget defaultEncodingTarget(AudioContainer container, AudioCodec codec);
+[[nodiscard]] bool supportsExplicitSampleRate(AudioContainer container, AudioCodec codec,
+                                              std::uint32_t sampleRate);
+
+// ---------------------------------------------------------------------------
+// ExportProfile — encoding target + collision policy
+// ---------------------------------------------------------------------------
 
 struct ExportProfile {
-    ExportFormat format = ExportFormat::Mp3;
-    SampleRateOption sampleRate;
-    FormatSpecificOptions options = Mp3Options{};
+    AudioEncodingTarget target;
     CollisionPolicy collisionPolicy = CollisionPolicy::GenerateUniqueName;
 
     [[nodiscard]] bool validate(QString* error = nullptr) const;
 };
 
 [[nodiscard]] ExportProfile defaultExportProfile(ExportFormat format);
+[[nodiscard]] ExportProfile defaultExportProfile(AudioContainer container, AudioCodec codec);
+
+// ---------------------------------------------------------------------------
+// Automatic post-capture policy (Abracapture-specific)
+// ---------------------------------------------------------------------------
 
 enum class AutomaticExportDestinationPolicy {
     SameFolder,
@@ -98,12 +137,16 @@ struct AutomaticExportProfile {
     QString customDestinationDirectory;
 };
 
+// ---------------------------------------------------------------------------
+// Export request / job
+// ---------------------------------------------------------------------------
+
 struct ExportRequest {
     std::filesystem::path sourcePath;
     std::filesystem::path destinationPath;
     ExportProfile profile;
     QString captureSessionId;
-    std::uint32_t sourceSampleRate = 0;
+    AudioStreamFormat sourceFormat;
 };
 
 using ExportJobId = quint64;
@@ -128,5 +171,18 @@ struct ExportJob {
     QString error;
     bool destinationReserved = false;
 };
+
+// ---------------------------------------------------------------------------
+// Legacy migration helpers
+// ---------------------------------------------------------------------------
+
+struct LegacyExportProfile {
+    ExportFormat format = ExportFormat::Mp3;
+    SampleRateOption sampleRate;
+    std::variant<Mp3Options, FlacOptions, PcmOptions, VorbisOptions> options = Mp3Options{};
+    CollisionPolicy collisionPolicy = CollisionPolicy::GenerateUniqueName;
+};
+
+[[nodiscard]] ExportProfile migrateProfile(const LegacyExportProfile& legacy);
 
 } // namespace abracapture::exporting

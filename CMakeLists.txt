@@ -30,16 +30,24 @@ add_executable(abracapture
     src/config/AppSettings.hpp
     src/core/AudioFormat.cpp
     src/core/AudioFormat.hpp
+    src/export/AudioDomainTypes.cpp
+    src/export/AudioDomainTypes.hpp
+    src/export/AudioFormatCatalog.cpp
+    src/export/AudioFormatCatalog.hpp
     src/export/ExportOutputPlanner.cpp
     src/export/ExportOutputPlanner.hpp
     src/export/ExportManager.cpp
     src/export/ExportManager.hpp
+    src/export/FfmpegCapabilities.cpp
+    src/export/FfmpegCapabilities.hpp
     src/export/ManualExportPlanner.cpp
     src/export/ManualExportPlanner.hpp
     src/export/ExportTypes.cpp
     src/export/ExportTypes.hpp
     src/export/FfmpegArgumentBuilder.cpp
     src/export/FfmpegArgumentBuilder.hpp
+    src/export/PathSanitizer.cpp
+    src/export/PathSanitizer.hpp
     src/history/RecordingIndex.cpp
     src/history/RecordingIndex.hpp
     src/pipewire/PipeWireContext.cpp
@@ -112,16 +120,24 @@ include(CTest)
 if(BUILD_TESTING)
     add_executable(test_export
         tests/export/test_export.cpp
+        src/export/AudioDomainTypes.cpp
+        src/export/AudioDomainTypes.hpp
+        src/export/AudioFormatCatalog.cpp
+        src/export/AudioFormatCatalog.hpp
         src/export/ExportOutputPlanner.cpp
         src/export/ExportOutputPlanner.hpp
         src/export/ExportManager.cpp
         src/export/ExportManager.hpp
+        src/export/FfmpegCapabilities.cpp
+        src/export/FfmpegCapabilities.hpp
         src/export/ManualExportPlanner.cpp
         src/export/ManualExportPlanner.hpp
         src/export/ExportTypes.cpp
         src/export/ExportTypes.hpp
         src/export/FfmpegArgumentBuilder.cpp
         src/export/FfmpegArgumentBuilder.hpp
+        src/export/PathSanitizer.cpp
+        src/export/PathSanitizer.hpp
         src/recording/OutputPathPolicy.cpp
         src/recording/OutputPathPolicy.hpp
         src/config/AppSettings.cpp

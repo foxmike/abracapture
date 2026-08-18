@@ -178,8 +178,8 @@ private:
     QString outputDirectory_;
     QString namingPattern_;
     QString masterFormat_ = QStringLiteral("wav");
-    int captureSampleRate_ = 0; // Auto (source)
-    int captureBitDepth_ = 0; // Auto (source)
+    int captureSampleRate_ = 0;
+    int captureBitDepth_ = 0;
     abracapture::exporting::AutomaticExportProfile automaticExportProfile_;
     bool autoStartEnabled_ = false;
     double autoStartThreshold_ = -30.0;

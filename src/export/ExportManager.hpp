@@ -1,7 +1,6 @@
 #pragma once
 
 #include "ExportTypes.hpp"
-#include "../recording/CaptureIntegrity.hpp"
 
 #include <QHash>
 #include <QList>
@@ -18,8 +17,6 @@
 
 namespace abracapture::exporting {
 
-// Shared asynchronous export queue. Each job is encoded through the external
-// ffmpeg executable, one at a time, without blocking capture or the UI thread.
 class ExportManager : public QObject {
     Q_OBJECT
     Q_PROPERTY(bool busy READ isBusy NOTIFY queueChanged)
@@ -39,9 +36,6 @@ public:
     Q_INVOKABLE QVariantMap currentJobSummary() const;
     Q_INVOKABLE QVariantList recentJobSummaries(int maximum = 5) const;
 
-    [[nodiscard]] bool verifyMaster(const std::filesystem::path& masterFilePath,
-                                    const recording::CaptureIntegrity& integrity) const;
-
 signals:
     void jobQueued(ExportJobId jobId);
     void jobStarted(ExportJobId jobId);
@@ -50,7 +44,6 @@ signals:
     void jobCancelled(ExportJobId jobId);
     void queueChanged();
 
-    // Compatibility signals retained for existing UI and CLI consumers.
     void exportStarted(QString format);
     void exportCompleted(QString path);
     void exportFailed(QString format, QString error);

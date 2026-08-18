@@ -13,6 +13,11 @@ namespace abracapture::history {
 struct DerivedExport {
     std::uint64_t jobId = 0;
     QString format;
+    QString container;
+    QString codec;
+    std::uint32_t sampleRate = 0;
+    std::uint32_t bitDepth = 0;
+    std::uint32_t bitrate = 0;
     QString outputPath;
     QString state;
     QString error;
@@ -22,6 +27,9 @@ struct DerivedExport {
 
     bool operator==(const DerivedExport& other) const noexcept {
         return jobId == other.jobId && format == other.format &&
+               container == other.container && codec == other.codec &&
+               sampleRate == other.sampleRate && bitDepth == other.bitDepth &&
+               bitrate == other.bitrate &&
                outputPath == other.outputPath && state == other.state &&
                error == other.error;
     }

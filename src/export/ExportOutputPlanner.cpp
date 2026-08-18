@@ -50,7 +50,7 @@ bool ExportOutputPlanner::plan(const ExportRequest& request,
         return false;
     }
 
-    const QString expectedExtension = exportFileExtension(request.profile.format);
+    const QString expectedExtension = request.profile.target.fileExtension();
     const QString extension = lowerExtension(destination);
     if (extension.isEmpty()) {
         destination.replace_extension(std::string(".") + expectedExtension.toStdString());

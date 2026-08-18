@@ -18,7 +18,7 @@ enum class ManualExportDestinationPolicy {
 
 struct ManualExportSource {
     std::filesystem::path path;
-    std::uint32_t sampleRate = 0;
+    AudioStreamFormat sourceFormat;
     QString captureSessionId;
     QString trackTitle;
     QString albumTitle;
@@ -32,8 +32,6 @@ struct ManualExportDestination {
     bool organizeAlbumDirectory = false;
 };
 
-// Pure planning and bounded enumeration helpers for manual export. The caller
-// chooses whether recursion is allowed; this class never enables it implicitly.
 class ManualExportPlanner {
 public:
     [[nodiscard]] static QStringList supportedInputExtensions();

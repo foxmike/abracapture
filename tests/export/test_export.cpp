@@ -1,8 +1,12 @@
+#include "export/AudioDomainTypes.hpp"
+#include "export/AudioFormatCatalog.hpp"
 #include "export/ExportOutputPlanner.hpp"
 #include "export/ExportManager.hpp"
+#include "export/FfmpegCapabilities.hpp"
 #include "export/ManualExportPlanner.hpp"
 #include "export/FfmpegArgumentBuilder.hpp"
 #include "export/ExportTypes.hpp"
+#include "export/PathSanitizer.hpp"
 #include "history/RecordingIndex.hpp"
 #include "recording/OutputPathPolicy.hpp"
 #include "ui/ManualExportViewModel.hpp"
@@ -74,9 +78,199 @@ bool writeSilenceWav(const std::filesystem::path& path) {
     return stream.status() == QDataStream::Ok;
 }
 
+// ---- Part 1–3: AudioDomainTypes ----
+
+void testAudioContainerRoundTrip() {
+    for (const auto container : {abracapture::exporting::AudioContainer::Wav,
+                                  abracapture::exporting::AudioContainer::Flac,
+                                  abracapture::exporting::AudioContainer::Ogg,
+                                  abracapture::exporting::AudioContainer::Mp3}) {
+        const auto name = abracapture::exporting::audioContainerName(container);
+        const auto parsed = abracapture::exporting::audioContainerFromString(name);
+        expect(parsed.has_value() && *parsed == container,
+               "AudioContainer round-trips through name/fromString");
+    }
+    expect(!abracapture::exporting::audioContainerFromString(QStringLiteral("aac")).has_value(),
+           "Unknown container string returns nullopt");
+}
+
+void testAudioCodecRoundTrip() {
+    for (const auto codec : {abracapture::exporting::AudioCodec::Pcm,
+                              abracapture::exporting::AudioCodec::Flac,
+                              abracapture::exporting::AudioCodec::Mp3,
+                              abracapture::exporting::AudioCodec::Vorbis}) {
+        const auto name = abracapture::exporting::audioCodecName(codec);
+        const auto parsed = abracapture::exporting::audioCodecFromString(name);
+        expect(parsed.has_value() && *parsed == codec,
+               "AudioCodec round-trips through name/fromString");
+    }
+    expect(abracapture::exporting::isLosslessCodec(abracapture::exporting::AudioCodec::Pcm),
+           "PCM is lossless");
+    expect(abracapture::exporting::isLosslessCodec(abracapture::exporting::AudioCodec::Flac),
+           "FLAC is lossless");
+    expect(!abracapture::exporting::isLosslessCodec(abracapture::exporting::AudioCodec::Mp3),
+           "MP3 is lossy");
+}
+
+void testAudioSampleFormatRoundTrip() {
+    for (const auto fmt : {abracapture::exporting::AudioSampleFormat::SignedInt16,
+                            abracapture::exporting::AudioSampleFormat::SignedInt24,
+                            abracapture::exporting::AudioSampleFormat::SignedInt32,
+                            abracapture::exporting::AudioSampleFormat::Float32}) {
+        const auto name = abracapture::exporting::audioSampleFormatName(fmt);
+        const auto parsed = abracapture::exporting::audioSampleFormatFromString(name);
+        expect(parsed.has_value() && *parsed == fmt,
+               "AudioSampleFormat round-trips through name/fromString");
+    }
+    expect(abracapture::exporting::audioSampleFormatBits(
+               abracapture::exporting::AudioSampleFormat::SignedInt24) == 24,
+           "24-bit sample format reports 24 bits");
+}
+
+void testAudioChannelLayout() {
+    const auto mono = abracapture::exporting::AudioChannelLayout::mono();
+    expect(mono.channelCount() == 1 && mono.hasExplicitPositions(),
+           "Mono layout has 1 channel with explicit position");
+    const auto stereo = abracapture::exporting::AudioChannelLayout::stereo();
+    expect(stereo.channelCount() == 2 && stereo.hasExplicitPositions(),
+           "Stereo layout has 2 channels with explicit positions");
+    const auto unknown = abracapture::exporting::AudioChannelLayout::unknown(6);
+    expect(unknown.channelCount() == 6 && !unknown.hasExplicitPositions(),
+           "Unknown(6) has 6 channels without inferred positions");
+}
+
+void testAudioStreamFormat() {
+    abracapture::exporting::AudioStreamFormat fmt;
+    fmt.sampleRate = 48000;
+    fmt.sampleFormat = abracapture::exporting::AudioSampleFormat::Float32;
+    fmt.channelLayout = abracapture::exporting::AudioChannelLayout::stereo();
+    expect(fmt.sampleRate == 48000 && fmt.channelLayout.channelCount() == 2,
+           "AudioStreamFormat holds rate, format, and layout");
+    abracapture::exporting::AudioStreamFormat same = fmt;
+    expect(same == fmt, "AudioStreamFormat equality works");
+}
+
+// ---- Part 2: AudioEncodingTarget ----
+
+void testAudioEncodingTargetValidation() {
+    auto target = abracapture::exporting::defaultEncodingTarget(
+        abracapture::exporting::AudioContainer::Mp3, abracapture::exporting::AudioCodec::Mp3);
+    QString error;
+    expect(target.validate(&error), "Default MP3 target is valid");
+    expect(target.fileExtension() == QStringLiteral("mp3"), "MP3 target extension is mp3");
+    expect(!target.isLossless(), "MP3 target is not lossless");
+
+    auto flacTarget = abracapture::exporting::defaultEncodingTarget(
+        abracapture::exporting::AudioContainer::Flac, abracapture::exporting::AudioCodec::Flac);
+    expect(flacTarget.validate(&error), "Default FLAC target is valid");
+    expect(flacTarget.isLossless(), "FLAC target is lossless");
+
+    auto mismatch = target;
+    mismatch.codecOptions = abracapture::exporting::FlacOptions{};
+    expect(!mismatch.validate(&error), "Mismatched codec options fail validation");
+}
+
+// ---- Part 4: AudioFormatCatalog ----
+
+void testAudioFormatCatalog() {
+    const auto& targets = abracapture::exporting::AudioFormatCatalog::targets();
+    expect(targets.size() >= 4, "Catalog has at least 4 targets (MP3, FLAC, WAV, Ogg Vorbis)");
+    expect(abracapture::exporting::AudioFormatCatalog::isValidPairing(
+               abracapture::exporting::AudioContainer::Mp3, abracapture::exporting::AudioCodec::Mp3),
+           "MP3/MP3 is a valid pairing");
+    expect(!abracapture::exporting::AudioFormatCatalog::isValidPairing(
+               abracapture::exporting::AudioContainer::Mp3, abracapture::exporting::AudioCodec::Flac),
+           "MP3/FLAC is not a valid pairing");
+
+    const auto mp3Bitrates = abracapture::exporting::AudioFormatCatalog::bitrateOptions(
+        abracapture::exporting::AudioContainer::Mp3, abracapture::exporting::AudioCodec::Mp3);
+    expect(mp3Bitrates.contains(QStringLiteral("320")), "MP3 bitrate options include 320");
+
+    const auto flacDepths = abracapture::exporting::AudioFormatCatalog::bitDepthOptions(
+        abracapture::exporting::AudioContainer::Flac, abracapture::exporting::AudioCodec::Flac);
+    expect(flacDepths.contains(QStringLiteral("24")), "FLAC bit depth options include 24");
+
+    const auto wavFormats = abracapture::exporting::AudioFormatCatalog::sampleFormatOptions(
+        abracapture::exporting::AudioContainer::Wav, abracapture::exporting::AudioCodec::Pcm);
+    expect(!wavFormats.isEmpty(), "WAV sample format options are non-empty");
+
+    const auto& presets = abracapture::exporting::AudioFormatCatalog::presets();
+    expect(presets.size() >= 6, "Catalog has at least 6 presets");
+    const auto mp3320 = abracapture::exporting::AudioFormatCatalog::preset(QStringLiteral("mp3_320"));
+    expect(mp3320.has_value() && mp3320->bitrate == 320, "mp3_320 preset has 320 bitrate");
+}
+
+// ---- Part 5: FfmpegCapabilities ----
+
+void testFfmpegCapabilities() {
+    abracapture::exporting::FfmpegCapabilities capabilities;
+    static_cast<void>(capabilities.probe());
+    if (!capabilities.isProbed()) {
+        std::cerr << "  (skipping FfmpegCapabilities tests — ffmpeg not found)\n";
+        return;
+    }
+    expect(!capabilities.ffmpegPath().isEmpty(), "FfmpegCapabilities finds ffmpeg path");
+    expect(!capabilities.version().isEmpty(), "FfmpegCapabilities reads version");
+    expect(capabilities.isEncoderAvailable(QStringLiteral("libmp3lame")),
+           "libmp3lame encoder is available");
+    const auto mp3Encoder = capabilities.encoderForCodec(abracapture::exporting::AudioCodec::Mp3);
+    expect(mp3Encoder == QStringLiteral("libmp3lame"), "MP3 codec maps to libmp3lame");
+    const auto flacMuxer = capabilities.muxerForContainer(abracapture::exporting::AudioContainer::Flac);
+    expect(!flacMuxer.isEmpty(), "FLAC container maps to a muxer");
+}
+
+// ---- Part 6: PathSanitizer ----
+
+void testPathSanitizer() {
+    const auto clean = abracapture::exporting::sanitizePathComponent("Hello World");
+    expect(clean == "Hello World", "Clean string passes through unchanged");
+    const auto traversal = abracapture::exporting::sanitizePathComponent("../../../etc/passwd");
+    expect(traversal.find('/') == std::string::npos && traversal.find('\\') == std::string::npos,
+           "Traversal paths have separators removed");
+    const auto control = abracapture::exporting::sanitizePathComponent("track\x01\x02\x03name");
+    expect(control.find('\x01') == std::string::npos, "Control characters are replaced");
+    const auto dotdot = abracapture::exporting::sanitizePathComponent("..");
+    expect(dotdot != "..", "Bare .. is neutralized");
+    const auto reserved = abracapture::exporting::sanitizePathComponent("a:b*c?d<e>f|g");
+    expect(reserved.find(':') == std::string::npos && reserved.find('*') == std::string::npos,
+           "Reserved characters are replaced");
+
+    std::string longName(200, 'a');
+    const auto truncated = abracapture::exporting::sanitizePathComponent(longName);
+    expect(truncated.size() <= 120, "Long names are truncated to 120 bytes");
+}
+
+// ---- Part 7: Legacy migration ----
+
+void testLegacyFormatConversion() {
+    expect(abracapture::exporting::containerForLegacyFormat(abracapture::exporting::ExportFormat::Mp3) ==
+               abracapture::exporting::AudioContainer::Mp3,
+           "ExportFormat::Mp3 maps to AudioContainer::Mp3");
+    expect(abracapture::exporting::codecForLegacyFormat(abracapture::exporting::ExportFormat::OggVorbis) ==
+               abracapture::exporting::AudioCodec::Vorbis,
+           "ExportFormat::OggVorbis maps to AudioCodec::Vorbis");
+    const auto roundTrip = abracapture::exporting::legacyFormatFor(
+        abracapture::exporting::AudioContainer::Flac, abracapture::exporting::AudioCodec::Flac);
+    expect(roundTrip.has_value() && *roundTrip == abracapture::exporting::ExportFormat::Flac,
+           "Container/codec round-trips to legacy format");
+
+    abracapture::exporting::LegacyExportProfile legacy;
+    legacy.format = abracapture::exporting::ExportFormat::Mp3;
+    legacy.options = abracapture::exporting::Mp3Options{256, abracapture::exporting::Mp3BitrateMode::Constant};
+    const auto migrated = abracapture::exporting::migrateProfile(legacy);
+    expect(migrated.target.container == abracapture::exporting::AudioContainer::Mp3 &&
+               migrated.target.codec == abracapture::exporting::AudioCodec::Mp3,
+           "Migrated profile has correct container/codec");
+    const auto* mp3Opts = std::get_if<abracapture::exporting::Mp3Options>(&migrated.target.codecOptions);
+    expect(mp3Opts != nullptr && mp3Opts->bitrateKbps == 256,
+           "Migrated profile preserves codec options");
+}
+
+// ---- Existing ffmpeg argument builder tests (updated for new types) ----
+
 void testMp3Cbr320PreservesSourceRate() {
     const auto profile = abracapture::exporting::defaultExportProfile(
-        abracapture::exporting::ExportFormat::Mp3);
+        abracapture::exporting::AudioContainer::Mp3, abracapture::exporting::AudioCodec::Mp3);
     QStringList arguments;
     expect(build(requestFor(profile), &arguments), "MP3 320 request builds");
     expect(arguments == QStringList{
@@ -91,8 +285,8 @@ void testMp3Cbr320PreservesSourceRate() {
 
 void testMp3ExplicitSampleRate() {
     auto profile = abracapture::exporting::defaultExportProfile(
-        abracapture::exporting::ExportFormat::Mp3);
-    profile.sampleRate = {abracapture::exporting::SampleRatePolicy::Explicit, 44100};
+        abracapture::exporting::AudioContainer::Mp3, abracapture::exporting::AudioCodec::Mp3);
+    profile.target.sampleRate = {abracapture::exporting::SampleRatePolicy::Explicit, 44100};
     QStringList arguments;
     expect(build(requestFor(profile), &arguments), "MP3 explicit-rate request builds");
     const qsizetype rateIndex = arguments.indexOf(QStringLiteral("-ar"));
@@ -102,9 +296,9 @@ void testMp3ExplicitSampleRate() {
 
 void testMp3RejectsUnsupportedPreserveSourceRate() {
     const auto profile = abracapture::exporting::defaultExportProfile(
-        abracapture::exporting::ExportFormat::Mp3);
+        abracapture::exporting::AudioContainer::Mp3, abracapture::exporting::AudioCodec::Mp3);
     auto request = requestFor(profile);
-    request.sourceSampleRate = 96000;
+    request.sourceFormat.sampleRate = 96000;
     QStringList arguments;
     QString error;
     expect(!abracapture::exporting::FfmpegArgumentBuilder::build(request, &arguments, &error),
@@ -115,8 +309,8 @@ void testMp3RejectsUnsupportedPreserveSourceRate() {
 
 void testFlacOptions() {
     auto profile = abracapture::exporting::defaultExportProfile(
-        abracapture::exporting::ExportFormat::Flac);
-    profile.options = abracapture::exporting::FlacOptions{24, 8};
+        abracapture::exporting::AudioContainer::Flac, abracapture::exporting::AudioCodec::Flac);
+    profile.target.codecOptions = abracapture::exporting::FlacOptions{24, 8};
     QStringList arguments;
     expect(build(requestFor(profile, "/exports/track.flac"), &arguments), "FLAC request builds");
     expect(!arguments.contains(QStringLiteral("-ar")), "FLAC preserve-source omits resampling");
@@ -134,9 +328,9 @@ void testFlacOptions() {
 
 void testFlac16ExplicitRateUsesDitheredResample() {
     auto profile = abracapture::exporting::defaultExportProfile(
-        abracapture::exporting::ExportFormat::Flac);
-    profile.options = abracapture::exporting::FlacOptions{16, 5};
-    profile.sampleRate = {abracapture::exporting::SampleRatePolicy::Explicit, 96000};
+        abracapture::exporting::AudioContainer::Flac, abracapture::exporting::AudioCodec::Flac);
+    profile.target.codecOptions = abracapture::exporting::FlacOptions{16, 5};
+    profile.target.sampleRate = {abracapture::exporting::SampleRatePolicy::Explicit, 96000};
     QStringList arguments;
     expect(build(requestFor(profile, "/exports/track.flac"), &arguments),
            "FLAC 16-bit explicit-rate request builds");
@@ -147,8 +341,8 @@ void testFlac16ExplicitRateUsesDitheredResample() {
     expect(!arguments.contains(QStringLiteral("-ar")),
            "Dithered FLAC resampling does not add a competing -ar option");
 
-    profile.sampleRate = {abracapture::exporting::SampleRatePolicy::PreserveSource, 0};
-    profile.options = abracapture::exporting::FlacOptions{32, 5};
+    profile.target.sampleRate = {abracapture::exporting::SampleRatePolicy::PreserveSource, 0};
+    profile.target.codecOptions = abracapture::exporting::FlacOptions{32, 5};
     expect(build(requestFor(profile, "/exports/track-32.flac"), &arguments),
            "FLAC 32-bit request builds through ffmpeg's supported s32 encoder path");
     expect(arguments.contains(QStringLiteral("-bits_per_raw_sample")) &&
@@ -160,9 +354,9 @@ void testFlac16ExplicitRateUsesDitheredResample() {
 
 void testWavSampleFormat() {
     auto profile = abracapture::exporting::defaultExportProfile(
-        abracapture::exporting::ExportFormat::Wav);
-    profile.options = abracapture::exporting::WavOptions{
-        abracapture::exporting::WavSampleFormat::Signed24};
+        abracapture::exporting::AudioContainer::Wav, abracapture::exporting::AudioCodec::Pcm);
+    profile.target.codecOptions = abracapture::exporting::PcmOptions{
+        abracapture::exporting::AudioSampleFormat::SignedInt24};
     QStringList arguments;
     expect(build(requestFor(profile, "/exports/track.wav"), &arguments), "WAV request builds");
     expect(arguments.contains(QStringLiteral("pcm_s24le")), "WAV signed 24-bit uses pcm_s24le");
@@ -171,8 +365,8 @@ void testWavSampleFormat() {
                    QStringLiteral("output_sample_bits=24:dither_method=triangular")),
            "WAV signed 24-bit conversion uses explicit triangular dither");
 
-    profile.options = abracapture::exporting::WavOptions{
-        abracapture::exporting::WavSampleFormat::Signed16};
+    profile.target.codecOptions = abracapture::exporting::PcmOptions{
+        abracapture::exporting::AudioSampleFormat::SignedInt16};
     expect(build(requestFor(profile, "/exports/track-16.wav"), &arguments),
            "WAV signed 16-bit request builds");
     expect(arguments.contains(QStringLiteral("pcm_s16le")), "WAV signed 16-bit uses pcm_s16le");
@@ -181,15 +375,15 @@ void testWavSampleFormat() {
                    QStringLiteral("output_sample_bits=16:dither_method=triangular")),
            "WAV signed 16-bit conversion uses explicit triangular dither");
 
-    profile.options = abracapture::exporting::WavOptions{
-        abracapture::exporting::WavSampleFormat::Signed32};
+    profile.target.codecOptions = abracapture::exporting::PcmOptions{
+        abracapture::exporting::AudioSampleFormat::SignedInt32};
     expect(build(requestFor(profile, "/exports/track-32.wav"), &arguments),
            "WAV signed 32-bit request builds");
     expect(arguments.contains(QStringLiteral("pcm_s32le")), "WAV signed 32-bit uses pcm_s32le");
     expect(!arguments.contains(QStringLiteral("-af")), "WAV signed 32-bit does not reduce precision");
 
-    profile.options = abracapture::exporting::WavOptions{
-        abracapture::exporting::WavSampleFormat::Float32};
+    profile.target.codecOptions = abracapture::exporting::PcmOptions{
+        abracapture::exporting::AudioSampleFormat::Float32};
     expect(build(requestFor(profile, "/exports/track-float.wav"), &arguments),
            "WAV float request builds");
     expect(arguments.contains(QStringLiteral("pcm_f32le")), "WAV float uses pcm_f32le");
@@ -254,8 +448,8 @@ void testMetadataNaming() {
 
 void testInvalidProfileIsRejected() {
     auto profile = abracapture::exporting::defaultExportProfile(
-        abracapture::exporting::ExportFormat::Mp3);
-    profile.options = abracapture::exporting::FlacOptions{};
+        abracapture::exporting::AudioContainer::Mp3, abracapture::exporting::AudioCodec::Mp3);
+    profile.target.codecOptions = abracapture::exporting::FlacOptions{};
     QString error;
     expect(!profile.validate(&error), "Mismatched format options are rejected");
     expect(!error.isEmpty(), "Invalid profile supplies a diagnostic");
@@ -280,7 +474,7 @@ void testOutputPlanningAvoidsCollisions() {
     occupied.close();
 
     const auto profile = abracapture::exporting::defaultExportProfile(
-        abracapture::exporting::ExportFormat::Mp3);
+        abracapture::exporting::AudioContainer::Mp3, abracapture::exporting::AudioCodec::Mp3);
     abracapture::exporting::ExportRequest planned;
     QString error;
     expect(abracapture::exporting::ExportOutputPlanner::plan(
@@ -333,10 +527,11 @@ void testManualProfileModesAndBulkPreflight() {
                manual.profileSummary().contains(QStringLiteral("FLAC")) &&
                manual.profileSummary().contains(QStringLiteral("16-bit")),
            "Custom manual FLAC profile is independent and visible");
-    const auto* automaticMp3 = std::get_if<abracapture::exporting::Mp3Options>(&automaticBefore.options);
+    const auto* automaticMp3 = std::get_if<abracapture::exporting::Mp3Options>(
+        &automaticBefore.target.codecOptions);
     const auto automaticAfter = settings.automaticExportProfile().profile;
     const auto* unchangedAutomaticMp3 = std::get_if<abracapture::exporting::Mp3Options>(
-        &automaticAfter.options);
+        &automaticAfter.target.codecOptions);
     expect(automaticMp3 != nullptr && unchangedAutomaticMp3 != nullptr &&
                automaticMp3->bitrateKbps == unchangedAutomaticMp3->bitrateKbps,
            "Changing the manual profile does not alter automatic export settings");
@@ -381,7 +576,7 @@ void testQueueAcceptsMultiplePendingJobs() {
     source.close();
 
     const auto profile = abracapture::exporting::defaultExportProfile(
-        abracapture::exporting::ExportFormat::Mp3);
+        abracapture::exporting::AudioContainer::Mp3, abracapture::exporting::AudioCodec::Mp3);
     auto first = requestFor(profile, root / "first.mp3");
     auto second = requestFor(profile, root / "first.mp3");
     first.sourcePath = sourcePath;
@@ -447,10 +642,10 @@ void testManualDirectoryEnumerationAndOutputPlanning() {
            "Manual directory inputs use the centralized master-format list");
 
     auto profile = abracapture::exporting::defaultExportProfile(
-        abracapture::exporting::ExportFormat::Mp3);
+        abracapture::exporting::AudioContainer::Mp3, abracapture::exporting::AudioCodec::Mp3);
     abracapture::exporting::ManualExportSource source;
     source.path = rootMaster;
-    source.sampleRate = 44100;
+    source.sourceFormat.sampleRate = 44100;
     source.trackTitle = QStringLiteral("Battery");
     source.albumTitle = QStringLiteral("Master of Puppets");
     abracapture::exporting::ManualExportDestination destination;
@@ -485,7 +680,7 @@ void testQueuedJobCanBeCancelled() {
     source.write("master", 6);
     source.close();
     const auto profile = abracapture::exporting::defaultExportProfile(
-        abracapture::exporting::ExportFormat::Mp3);
+        abracapture::exporting::AudioContainer::Mp3, abracapture::exporting::AudioCodec::Mp3);
     auto request = requestFor(profile, root / "cancel.mp3");
     request.sourcePath = sourcePath;
     abracapture::exporting::ExportManager manager;
@@ -602,7 +797,8 @@ void testManagerGeneratesMp3320() {
     }
 
     auto request = requestFor(
-        abracapture::exporting::defaultExportProfile(abracapture::exporting::ExportFormat::Mp3),
+        abracapture::exporting::defaultExportProfile(
+            abracapture::exporting::AudioContainer::Mp3, abracapture::exporting::AudioCodec::Mp3),
         destinationPath);
     request.sourcePath = sourcePath;
 
@@ -659,10 +855,49 @@ void testManagerGeneratesMp3320() {
            "Generated export reports the requested 320 kbps bitrate");
 }
 
+// ---- DerivedExport serialization ----
+
+void testDerivedExportSerialization() {
+    abracapture::history::DerivedExport original;
+    original.jobId = 42;
+    original.format = QStringLiteral("mp3");
+    original.container = QStringLiteral("mp3");
+    original.codec = QStringLiteral("mp3");
+    original.sampleRate = 44100;
+    original.bitDepth = 0;
+    original.bitrate = 320;
+    original.outputPath = QStringLiteral("/exports/track.mp3");
+    original.state = QStringLiteral("completed");
+    original.error = QString();
+    const auto json = original.toJson();
+    const auto restored = abracapture::history::DerivedExport::fromJson(json);
+    expect(restored == original, "DerivedExport round-trips through JSON with new fields");
+
+    QJsonObject oldFormat;
+    oldFormat[QStringLiteral("jobId")] = 7;
+    oldFormat[QStringLiteral("format")] = QStringLiteral("flac");
+    oldFormat[QStringLiteral("outputPath")] = QStringLiteral("/exports/old.flac");
+    oldFormat[QStringLiteral("state")] = QStringLiteral("completed");
+    oldFormat[QStringLiteral("error")] = QString();
+    const auto legacy = abracapture::history::DerivedExport::fromJson(oldFormat);
+    expect(legacy.container.isEmpty() && legacy.codec.isEmpty() && legacy.sampleRate == 0,
+           "Old DerivedExport JSON without container/codec fields deserializes gracefully");
+}
+
 } // namespace
 
 int main(int argc, char* argv[]) {
     QCoreApplication application(argc, argv);
+    testAudioContainerRoundTrip();
+    testAudioCodecRoundTrip();
+    testAudioSampleFormatRoundTrip();
+    testAudioChannelLayout();
+    testAudioStreamFormat();
+    testAudioEncodingTargetValidation();
+    testAudioFormatCatalog();
+    testFfmpegCapabilities();
+    testPathSanitizer();
+    testLegacyFormatConversion();
     testMp3Cbr320PreservesSourceRate();
     testMp3ExplicitSampleRate();
     testMp3RejectsUnsupportedPreserveSourceRate();
@@ -679,5 +914,6 @@ int main(int argc, char* argv[]) {
     testManualFileWorkflowCompletes();
     testMetadataNaming();
     testManagerGeneratesMp3320();
+    testDerivedExportSerialization();
     return failures == 0 ? 0 : 1;
 }
