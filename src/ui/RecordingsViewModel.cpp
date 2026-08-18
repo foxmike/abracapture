@@ -4,7 +4,6 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QUrl>
-#include <QFileInfo>
 
 RecordingsViewModel::RecordingsViewModel(abracapture::history::RecordingIndex* index,
                                          QObject* parent)
@@ -16,17 +15,6 @@ RecordingsViewModel::RecordingsViewModel(abracapture::history::RecordingIndex* i
         static_cast<void>(ownedIndex_.load());
     }
     syncEntries();
-    connect(&exportManager_, &abracapture::exporting::ExportManager::exportCompleted, this,
-            [this](const QString& path) {
-                operationStatus_ = QStringLiteral("Created %1").arg(QFileInfo(path).fileName());
-                emit operationStatusChanged();
-                importDirectory(QFileInfo(path).absolutePath());
-            });
-    connect(&exportManager_, &abracapture::exporting::ExportManager::exportFailed, this,
-            [this](const QString&, const QString& error) {
-                operationStatus_ = error;
-                emit operationStatusChanged();
-            });
 }
 
 RecordingsViewModel::RecordingsViewModel(QObject* parent)
@@ -70,6 +58,29 @@ QVariant RecordingsViewModel::data(const QModelIndex& index, int role) const {
         return entry.isNative;
     case SidecarPathRole:
         return entry.sidecarPath;
+    case CaptureSessionIdRole:
+        return entry.captureSessionId;
+    case DerivedExportsRole: {
+        QVariantList exports;
+        for (const auto& exportRecord : entry.derivedExports) {
+            exports.append(QVariantMap{
+                {QStringLiteral("jobId"), static_cast<qulonglong>(exportRecord.jobId)},
+                {QStringLiteral("format"), exportRecord.format},
+                {QStringLiteral("outputPath"), exportRecord.outputPath},
+                {QStringLiteral("state"), exportRecord.state},
+                {QStringLiteral("error"), exportRecord.error},
+            });
+        }
+        return exports;
+    }
+    case TrackTitleRole:
+        return entry.trackTitle;
+    case AlbumTitleRole:
+        return entry.albumTitle;
+    case ApplicationNameRole:
+        return entry.applicationName;
+    case MediaNameRole:
+        return entry.mediaName;
     default:
         return {};
     }
@@ -86,7 +97,13 @@ QHash<int, QByteArray> RecordingsViewModel::roleNames() const {
         {DurationRole, "duration"},
         {TimestampRole, "timestamp"},
         {IsNativeRole, "isNative"},
-        {SidecarPathRole, "sidecarPath"}
+        {SidecarPathRole, "sidecarPath"},
+        {CaptureSessionIdRole, "captureSessionId"},
+        {DerivedExportsRole, "derivedExports"},
+        {TrackTitleRole, "trackTitle"},
+        {AlbumTitleRole, "albumTitle"},
+        {ApplicationNameRole, "applicationName"},
+        {MediaNameRole, "mediaName"}
     };
 }
 
@@ -144,26 +161,35 @@ bool RecordingsViewModel::playEntry(const int index) {
     return QDesktopServices::openUrl(QUrl::fromLocalFile(path));
 }
 
-bool RecordingsViewModel::convertEntry(const int index, const QString& format) {
-    if (index < 0 || index >= entries_.size()) return false;
-    const QString normalized = format.trimmed().toLower();
-    if (normalized != QStringLiteral("wav") && normalized != QStringLiteral("flac") &&
-        normalized != QStringLiteral("mp3") && normalized != QStringLiteral("ogg")) return false;
-    const auto& entry = entries_.at(index);
-    QFileInfo source(entry.filePath);
-    if (!source.exists() || !source.isFile()) return false;
-    QString output = source.absolutePath() + QDir::separator() + source.completeBaseName() +
-                     QStringLiteral("_converted.") + normalized;
-    abracapture::exporting::ExportSpec spec;
-    spec.format = normalized;
-    spec.outputPath = output;
-    spec.sampleRate = entry.sampleRate;
-    spec.bitDepth = entry.bitDepth == 0 ? 32 : entry.bitDepth;
-    abracapture::recording::CaptureIntegrity integrity;
-    exportManager_.startExports(entry.filePath.toStdString(), integrity, {spec});
-    operationStatus_ = QStringLiteral("Converting to %1…").arg(normalized.toUpper());
-    emit operationStatusChanged();
-    return true;
+int RecordingsViewModel::exportSelectionCount() const noexcept {
+    return exportSelectedPaths_.size();
+}
+
+bool RecordingsViewModel::isSelectedForExport(const int index) const {
+    return index >= 0 && index < entries_.size() &&
+           exportSelectedPaths_.contains(entries_.at(index).filePath);
+}
+
+void RecordingsViewModel::toggleExportSelection(const int index) {
+    if (index < 0 || index >= entries_.size()) return;
+    const QString path = entries_.at(index).filePath;
+    if (exportSelectedPaths_.contains(path)) exportSelectedPaths_.remove(path);
+    else exportSelectedPaths_.insert(path);
+    emit exportSelectionChanged();
+}
+
+void RecordingsViewModel::clearExportSelection() {
+    if (exportSelectedPaths_.isEmpty()) return;
+    exportSelectedPaths_.clear();
+    emit exportSelectionChanged();
+}
+
+QVariantList RecordingsViewModel::exportSelectedEntries() const {
+    QVariantList selected;
+    for (int index = 0; index < entries_.size(); ++index) {
+        if (exportSelectedPaths_.contains(entries_.at(index).filePath)) selected.append(get(index));
+    }
+    return selected;
 }
 
 QString RecordingsViewModel::operationStatus() const { return operationStatus_; }
@@ -191,6 +217,13 @@ void RecordingsViewModel::refreshEntries() {
 void RecordingsViewModel::rebuildModel() {
     beginResetModel();
     syncEntries();
+    QSet<QString> knownPaths;
+    for (const auto& entry : entries_) knownPaths.insert(entry.filePath);
+    const QSet<QString> retained = exportSelectedPaths_ & knownPaths;
+    if (retained != exportSelectedPaths_) {
+        exportSelectedPaths_ = retained;
+        emit exportSelectionChanged();
+    }
     if (selectedIndex_ >= entries_.size()) {
         selectedIndex_ = entries_.isEmpty() ? -1 : 0;
         emit selectedIndexChanged();
@@ -213,6 +246,16 @@ QVariantMap RecordingsViewModel::get(const int index) const {
     }
     const auto& entry = entries_.at(index);
     const QFileInfo info(entry.filePath);
+    QVariantList derivedExports;
+    for (const auto& exportRecord : entry.derivedExports) {
+        derivedExports.append(QVariantMap{
+            {QStringLiteral("jobId"), QVariant::fromValue<qulonglong>(exportRecord.jobId)},
+            {QStringLiteral("format"), exportRecord.format},
+            {QStringLiteral("outputPath"), exportRecord.outputPath},
+            {QStringLiteral("state"), exportRecord.state},
+            {QStringLiteral("error"), exportRecord.error}
+        });
+    }
     return {
         {QStringLiteral("filePath"), entry.filePath},
         {QStringLiteral("fileName"), info.fileName().isEmpty() ? entry.filePath : info.fileName()},
@@ -223,7 +266,13 @@ QVariantMap RecordingsViewModel::get(const int index) const {
         {QStringLiteral("duration"), entry.duration},
         {QStringLiteral("timestamp"), entry.timestamp},
         {QStringLiteral("isNative"), entry.isNative},
-        {QStringLiteral("sidecarPath"), entry.sidecarPath}
+        {QStringLiteral("sidecarPath"), entry.sidecarPath},
+        {QStringLiteral("captureSessionId"), entry.captureSessionId},
+        {QStringLiteral("trackTitle"), entry.trackTitle},
+        {QStringLiteral("albumTitle"), entry.albumTitle},
+        {QStringLiteral("applicationName"), entry.applicationName},
+        {QStringLiteral("mediaName"), entry.mediaName},
+        {QStringLiteral("derivedExports"), derivedExports}
     };
 }
 

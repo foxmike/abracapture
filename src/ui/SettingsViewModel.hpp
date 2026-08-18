@@ -1,8 +1,11 @@
 #pragma once
 
+#include "export/ExportTypes.hpp"
+
 #include <QObject>
 #include <QString>
 #include <QStringList>
+#include <QVariantMap>
 
 class SettingsViewModel : public QObject {
     Q_OBJECT
@@ -21,6 +24,33 @@ class SettingsViewModel : public QObject {
     Q_PROPERTY(int autoStopSilenceDuration READ autoStopSilenceDuration WRITE setAutoStopSilenceDuration NOTIFY autoStopSilenceDurationChanged)
     Q_PROPERTY(int preRollSeconds READ preRollSeconds WRITE setPreRollSeconds NOTIFY preRollSecondsChanged)
     Q_PROPERTY(int postRollSeconds READ postRollSeconds WRITE setPostRollSeconds NOTIFY postRollSecondsChanged)
+    Q_PROPERTY(bool useMediaMetadataForAutomatedCaptureNames
+                   READ useMediaMetadataForAutomatedCaptureNames
+                   WRITE setUseMediaMetadataForAutomatedCaptureNames
+                   NOTIFY useMediaMetadataForAutomatedCaptureNamesChanged)
+    Q_PROPERTY(int automaticExportSampleRate READ automaticExportSampleRate
+                   WRITE setAutomaticExportSampleRate NOTIFY automaticExportProfileChanged)
+    Q_PROPERTY(int automaticExportMp3Bitrate READ automaticExportMp3Bitrate
+                   WRITE setAutomaticExportMp3Bitrate NOTIFY automaticExportProfileChanged)
+    Q_PROPERTY(int automaticExportFlacBitDepth READ automaticExportFlacBitDepth
+                   WRITE setAutomaticExportFlacBitDepth NOTIFY automaticExportProfileChanged)
+    Q_PROPERTY(int automaticExportFlacCompressionLevel READ automaticExportFlacCompressionLevel
+                   WRITE setAutomaticExportFlacCompressionLevel NOTIFY automaticExportProfileChanged)
+    Q_PROPERTY(QString automaticExportWavSampleFormat READ automaticExportWavSampleFormat
+                   WRITE setAutomaticExportWavSampleFormat NOTIFY automaticExportProfileChanged)
+    Q_PROPERTY(QStringList automaticExportFormats READ automaticExportFormats CONSTANT)
+    Q_PROPERTY(QStringList automaticExportMp3BitrateOptions READ automaticExportMp3BitrateOptions CONSTANT)
+    Q_PROPERTY(QStringList automaticExportFlacBitDepthOptions READ automaticExportFlacBitDepthOptions CONSTANT)
+    Q_PROPERTY(QStringList automaticExportFlacCompressionOptions READ automaticExportFlacCompressionOptions CONSTANT)
+    Q_PROPERTY(QStringList automaticExportWavSampleFormatOptions READ automaticExportWavSampleFormatOptions CONSTANT)
+    Q_PROPERTY(QStringList automaticExportSampleRateOptions READ automaticExportSampleRateOptions
+                   NOTIFY automaticExportProfileChanged)
+    Q_PROPERTY(QString automaticExportDestinationPolicy READ automaticExportDestinationPolicy
+                   WRITE setAutomaticExportDestinationPolicy NOTIFY automaticExportProfileChanged)
+    Q_PROPERTY(QString automaticExportCustomDirectory READ automaticExportCustomDirectory
+                   WRITE setAutomaticExportCustomDirectory NOTIFY automaticExportProfileChanged)
+    Q_PROPERTY(QString automaticExportPreset READ automaticExportPreset
+                   WRITE setAutomaticExportPreset NOTIFY automaticExportProfileChanged)
     Q_PROPERTY(bool isValid READ isValid NOTIFY validityChanged)
     Q_PROPERTY(QString errorMessage READ errorMessage NOTIFY errorMessageChanged)
     Q_PROPERTY(QStringList availableMasterFormats READ availableMasterFormats CONSTANT)
@@ -56,6 +86,9 @@ public:
 
     [[nodiscard]] QString exportFormat() const;
     void setExportFormat(const QString& exportFormat);
+    [[nodiscard]] abracapture::exporting::AutomaticExportProfile automaticExportProfile() const;
+    void setAutomaticExportProfile(
+        const abracapture::exporting::AutomaticExportProfile& profile);
 
     [[nodiscard]] bool autoStartEnabled() const noexcept;
     void setAutoStartEnabled(bool autoStartEnabled);
@@ -74,6 +107,34 @@ public:
 
     [[nodiscard]] int postRollSeconds() const noexcept;
     void setPostRollSeconds(int postRollSeconds);
+
+    [[nodiscard]] bool useMediaMetadataForAutomatedCaptureNames() const noexcept;
+    void setUseMediaMetadataForAutomatedCaptureNames(bool enabled);
+
+    [[nodiscard]] int automaticExportSampleRate() const noexcept;
+    void setAutomaticExportSampleRate(int sampleRate);
+    [[nodiscard]] int automaticExportMp3Bitrate() const noexcept;
+    void setAutomaticExportMp3Bitrate(int bitrateKbps);
+    [[nodiscard]] int automaticExportFlacBitDepth() const noexcept;
+    void setAutomaticExportFlacBitDepth(int bitDepth);
+    [[nodiscard]] int automaticExportFlacCompressionLevel() const noexcept;
+    void setAutomaticExportFlacCompressionLevel(int compressionLevel);
+    [[nodiscard]] QString automaticExportWavSampleFormat() const;
+    void setAutomaticExportWavSampleFormat(const QString& sampleFormat);
+    [[nodiscard]] QStringList automaticExportFormats() const;
+    [[nodiscard]] QStringList automaticExportMp3BitrateOptions() const;
+    [[nodiscard]] QStringList automaticExportFlacBitDepthOptions() const;
+    [[nodiscard]] QStringList automaticExportFlacCompressionOptions() const;
+    [[nodiscard]] QStringList automaticExportWavSampleFormatOptions() const;
+    [[nodiscard]] QStringList automaticExportSampleRateOptions() const;
+    [[nodiscard]] QString automaticExportDestinationPolicy() const;
+    void setAutomaticExportDestinationPolicy(const QString& policy);
+    [[nodiscard]] QString automaticExportCustomDirectory() const;
+    void setAutomaticExportCustomDirectory(const QString& directory);
+    [[nodiscard]] QString automaticExportPreset() const;
+    void setAutomaticExportPreset(const QString& preset);
+    Q_INVOKABLE QString automaticExportSummary() const;
+    Q_INVOKABLE QString automaticExportPreviewPath(const QVariantMap& source) const;
 
     [[nodiscard]] bool isValid() const noexcept;
     [[nodiscard]] QString errorMessage() const;
@@ -103,6 +164,8 @@ signals:
     void autoStopSilenceDurationChanged(int autoStopSilenceDuration);
     void preRollSecondsChanged(int preRollSeconds);
     void postRollSecondsChanged(int postRollSeconds);
+    void useMediaMetadataForAutomatedCaptureNamesChanged(bool enabled);
+    void automaticExportProfileChanged();
     void validityChanged(bool isValid);
     void errorMessageChanged(const QString& errorMessage);
     void errorOccurred(const QString& errorMessage);
@@ -117,14 +180,14 @@ private:
     QString masterFormat_ = QStringLiteral("wav");
     int captureSampleRate_ = 0; // Auto (source)
     int captureBitDepth_ = 0; // Auto (source)
-    bool exportEnabled_ = false;
-    QString exportFormat_ = QStringLiteral("mp3");
+    abracapture::exporting::AutomaticExportProfile automaticExportProfile_;
     bool autoStartEnabled_ = false;
     double autoStartThreshold_ = -30.0;
     bool autoStopEnabled_ = false;
     int autoStopSilenceDuration_ = 3;
     int preRollSeconds_ = 0;
     int postRollSeconds_ = 0;
+    bool useMediaMetadataForAutomatedCaptureNames_ = false;
 
     bool isValid_ = true;
     QString errorMessage_;

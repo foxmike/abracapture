@@ -61,6 +61,12 @@ ApplicationWindow {
                     background: Rectangle { radius: 5; color: parent.checked ? Theme.AbracaptureTheme.primary : (parent.hovered ? Theme.AbracaptureTheme.controlBackgroundHover : "transparent") }
                 }
                 TabButton {
+                    text: "Export"
+                    Accessible.name: "Export"
+                    contentItem: Text { text: parent.text; color: parent.checked ? Theme.AbracaptureTheme.background : Theme.AbracaptureTheme.text; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+                    background: Rectangle { radius: 5; color: parent.checked ? Theme.AbracaptureTheme.primary : (parent.hovered ? Theme.AbracaptureTheme.controlBackgroundHover : "transparent") }
+                }
+                TabButton {
                     text: "Settings"
                     Accessible.name: "Settings"
                     contentItem: Text { text: parent.text; color: parent.checked ? Theme.AbracaptureTheme.background : Theme.AbracaptureTheme.text; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
@@ -113,7 +119,20 @@ ApplicationWindow {
         }
 
         Pages.RecordingsPage {
+            id: recordingsPage
             recordingsViewModel: appRecordingsViewModel
+            onRequestExportSelected: function(entries) {
+                appManualExportViewModel.setSelectedRecordings(entries)
+                navigationTabs.currentIndex = 2
+            }
+        }
+
+        Pages.ExportPage {
+            id: exportPage
+            settingsViewModel: appSettingsViewModel
+            sourceListModel: appSourceListModel
+            exportManager: appExportManager
+            manualExportViewModel: appManualExportViewModel
         }
 
         Pages.SettingsPage {

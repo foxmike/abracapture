@@ -306,6 +306,42 @@ Item {
                         }
                     }
 
+                    // Automated metadata naming
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 6
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: 10
+
+                            CheckBox {
+                                checked: root.vm ? root.vm.useMediaMetadataForAutomatedCaptureNames : false
+                                onToggled: {
+                                    if (root.vm) {
+                                        root.vm.useMediaMetadataForAutomatedCaptureNames = checked
+                                    }
+                                }
+                            }
+
+                            Text {
+                                text: "Organize automated captures using available media metadata"
+                                font.pixelSize: 13
+                                color: Theme.AbracaptureTheme.text
+                                Layout.fillWidth: true
+                                wrapMode: Text.WordWrap
+                            }
+                        }
+
+                        Text {
+                            text: "When album and track metadata is available, automated captures can use Album / Track.ext. Manual captures keep the normal naming behavior."
+                            font.pixelSize: 11
+                            color: Theme.AbracaptureTheme.disabledText
+                            wrapMode: Text.WordWrap
+                            Layout.fillWidth: true
+                        }
+                    }
+
                     // Master Format
                     ColumnLayout {
                         Layout.fillWidth: true
@@ -836,145 +872,7 @@ Item {
                 }
             }
 
-            // SECTION 3: Post-Capture Export
-            Rectangle {
-                Layout.fillWidth: true
-                implicitHeight: exportSectionLayout.implicitHeight + 32
-                radius: 12
-                color: Theme.AbracaptureTheme.surfaceElevated
-                border.color: Theme.AbracaptureTheme.divider
-                border.width: 1
-
-                ColumnLayout {
-                    id: exportSectionLayout
-                    anchors.fill: parent
-                    anchors.margins: 16
-                    spacing: 16
-
-                    RowLayout {
-                        spacing: 8
-                        Rectangle {
-                            width: 3
-                            height: 16
-                            radius: 1.5
-                            color: "#c084fc"
-                        }
-                        Text {
-                            text: "Post-Capture Export"
-                            font.pixelSize: 16
-                            font.weight: Font.Bold
-                                    color: Theme.AbracaptureTheme.text
-                        }
-                    }
-
-                    RowLayout {
-                        Layout.fillWidth: true
-                        spacing: 12
-
-                        Switch {
-                            id: exportSwitch
-                            checked: root.vm ? root.vm.exportEnabled : false
-                            onToggled: {
-                                if (root.vm) {
-                                    root.vm.exportEnabled = checked
-                                }
-                            }
-                        }
-
-                        ColumnLayout {
-                            Layout.fillWidth: true
-                            spacing: 2
-
-                            Text {
-                                text: "Generate Additional Export File"
-                                font.pixelSize: 14
-                                font.weight: Font.DemiBold
-                                    color: Theme.AbracaptureTheme.text
-                            }
-
-                            Text {
-                                text: "Automatically transcode a secondary delivery format via ffmpeg when capture finishes."
-                                font.pixelSize: 11
-                                    color: Theme.AbracaptureTheme.textSecondary
-                            }
-                        }
-                    }
-
-                    ColumnLayout {
-                        Layout.fillWidth: true
-                        Layout.leftMargin: 48
-                        visible: exportSwitch.checked
-                        spacing: 8
-
-                        Text {
-                            text: "Export Format"
-                            font.pixelSize: 13
-                            font.weight: Font.DemiBold
-                                    color: Theme.AbracaptureTheme.text
-                        }
-
-                        RowLayout {
-                            spacing: 12
-
-                            ComboBox {
-                                id: exportFormatCombo
-                                implicitWidth: 160
-                                model: ["MP3", "FLAC", "OGG Vorbis", "WAV"]
-                                readonly property var formatCodes: ["mp3", "flac", "ogg", "wav"]
-                                currentIndex: {
-                                    if (!root.vm) return 0
-                                    var idx = formatCodes.indexOf(root.vm.exportFormat.toLowerCase())
-                                    return idx >= 0 ? idx : 0
-                                }
-                                onActivated: function(index) {
-                                    if (root.vm) {
-                                        root.vm.exportFormat = formatCodes[index]
-                                    }
-                                }
-                                indicator: Text {
-                                    x: exportFormatCombo.width - width - 10
-                                    y: (exportFormatCombo.height - height) / 2
-                                    text: "▼"
-                                    color: Theme.AbracaptureTheme.textSecondary
-                                    font.pixelSize: 10
-                                }
-                                delegate: ItemDelegate {
-                                    width: exportFormatCombo.width
-                                    contentItem: Text {
-                                        text: modelData
-                                        color: highlighted ? Theme.AbracaptureTheme.primary : Theme.AbracaptureTheme.text
-                                        font.pixelSize: 13
-                                    }
-                                    background: Rectangle {
-                                        color: highlighted ? Theme.AbracaptureTheme.controlBackgroundHover : Theme.AbracaptureTheme.controlBackground
-                                    }
-                                }
-                                contentItem: Text {
-                                    leftPadding: 12
-                                    rightPadding: 24
-                                    text: exportFormatCombo.displayText
-                                    font.pixelSize: 13
-                                    color: Theme.AbracaptureTheme.text
-                                    verticalAlignment: Text.AlignVCenter
-                                }
-                                background: Rectangle {
-                                    radius: 6
-                                    color: Theme.AbracaptureTheme.controlBackground
-                                    border.color: exportFormatCombo.activeFocus ? Theme.AbracaptureTheme.primary : Theme.AbracaptureTheme.border
-                                    border.width: 1
-                                }
-                            }
-
-                            Text {
-                                text: "Master file remains pristine in original lossless format."
-                                font.pixelSize: 12
-                                    color: Theme.AbracaptureTheme.textSecondary
-                                Layout.fillWidth: true
-                            }
-                        }
-                    }
-                }
-            }
+            // Automatic export settings are available on the Export page.
 
             // Bottom Actions Bar
             RowLayout {

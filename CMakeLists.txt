@@ -30,8 +30,16 @@ add_executable(abracapture
     src/config/AppSettings.hpp
     src/core/AudioFormat.cpp
     src/core/AudioFormat.hpp
+    src/export/ExportOutputPlanner.cpp
+    src/export/ExportOutputPlanner.hpp
     src/export/ExportManager.cpp
     src/export/ExportManager.hpp
+    src/export/ManualExportPlanner.cpp
+    src/export/ManualExportPlanner.hpp
+    src/export/ExportTypes.cpp
+    src/export/ExportTypes.hpp
+    src/export/FfmpegArgumentBuilder.cpp
+    src/export/FfmpegArgumentBuilder.hpp
     src/history/RecordingIndex.cpp
     src/history/RecordingIndex.hpp
     src/pipewire/PipeWireContext.cpp
@@ -54,6 +62,8 @@ add_executable(abracapture
     src/recording/WavWriter.hpp
     src/ui/CaptureViewModel.cpp
     src/ui/CaptureViewModel.hpp
+    src/ui/ManualExportViewModel.cpp
+    src/ui/ManualExportViewModel.hpp
     src/ui/NotificationService.cpp
     src/ui/NotificationService.hpp
     src/ui/RecordingsViewModel.cpp
@@ -76,6 +86,7 @@ qt_add_qml_module(abracapture
         qml/pages/CapturePage.qml
         qml/pages/SettingsPage.qml
         qml/pages/RecordingsPage.qml
+        qml/pages/ExportPage.qml
         qml/pages/AboutPage.qml
         qml/theme/AbracaptureTheme.qml
     RESOURCES
@@ -94,5 +105,36 @@ target_link_libraries(abracapture
         PkgConfig::SNDFILE
         PkgConfig::FLAC
 )
+
+include(CTest)
+
+if(BUILD_TESTING)
+    add_executable(test_export
+        tests/export/test_export.cpp
+        src/export/ExportOutputPlanner.cpp
+        src/export/ExportOutputPlanner.hpp
+        src/export/ExportManager.cpp
+        src/export/ExportManager.hpp
+        src/export/ManualExportPlanner.cpp
+        src/export/ManualExportPlanner.hpp
+        src/export/ExportTypes.cpp
+        src/export/ExportTypes.hpp
+        src/export/FfmpegArgumentBuilder.cpp
+        src/export/FfmpegArgumentBuilder.hpp
+        src/recording/OutputPathPolicy.cpp
+        src/recording/OutputPathPolicy.hpp
+        src/config/AppSettings.cpp
+        src/config/AppSettings.hpp
+        src/history/RecordingIndex.cpp
+        src/history/RecordingIndex.hpp
+        src/ui/ManualExportViewModel.cpp
+        src/ui/ManualExportViewModel.hpp
+        src/ui/SettingsViewModel.cpp
+        src/ui/SettingsViewModel.hpp
+    )
+    target_include_directories(test_export PRIVATE src)
+    target_link_libraries(test_export PRIVATE Qt6::Core PkgConfig::SNDFILE)
+    add_test(NAME export COMMAND test_export)
+endif()
 
 include(packaging/install.cmake)

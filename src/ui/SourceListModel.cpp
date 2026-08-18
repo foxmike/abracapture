@@ -390,6 +390,9 @@ QVariantMap SourceListModel::get(int index) const {
     map[QStringLiteral("isActive")] = item.isActive;
     map[QStringLiteral("mediaClass")] = item.mediaClass;
     map[QStringLiteral("nodeName")] = item.nodeName;
+    map[QStringLiteral("mediaName")] = item.mediaName;
+    map[QStringLiteral("mediaTitle")] = item.mediaTitle;
+    map[QStringLiteral("mediaAlbum")] = item.mediaAlbum;
     map[QStringLiteral("isSelected")] = (selectedSourceId_ != 0 && item.id == selectedSourceId_) ||
                                          (selectedIndex_ >= 0 && index == selectedIndex_);
     return map;
@@ -413,6 +416,9 @@ QVariantMap SourceListModel::getSourceById(std::uint32_t sourceId) const {
             map[QStringLiteral("isActive")] = item.isActive;
             map[QStringLiteral("mediaClass")] = item.mediaClass;
             map[QStringLiteral("nodeName")] = item.nodeName;
+            map[QStringLiteral("mediaName")] = item.mediaName;
+            map[QStringLiteral("mediaTitle")] = item.mediaTitle;
+            map[QStringLiteral("mediaAlbum")] = item.mediaAlbum;
             map[QStringLiteral("isSelected")] = (selectedSourceId_ != 0 && item.id == selectedSourceId_) ||
                                                  (selectedIndex_ >= 0 && i == selectedIndex_);
             return map;

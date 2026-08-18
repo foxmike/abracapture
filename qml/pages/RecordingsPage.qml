@@ -8,6 +8,7 @@ Item {
     id: root
 
     property var recordingsViewModel: null
+    signal requestExportSelected(var entries)
 
     readonly property var vm: root.recordingsViewModel
     property int selectedIndex: root.vm ? root.vm.selectedIndex : -1
@@ -133,6 +134,12 @@ Item {
                     }
                 }
             }
+
+            Button {
+                text: "Export Selected" + (root.vm && root.vm.exportSelectionCount > 0 ? " (" + root.vm.exportSelectionCount + ")" : "")
+                enabled: root.vm && root.vm.exportSelectionCount > 0
+                onClicked: root.requestExportSelected(root.vm.exportSelectedEntries())
+            }
         }
 
         // Main content area
@@ -229,6 +236,18 @@ Item {
                         readonly property var itemTimestamp: model.timestamp || ""
                         readonly property bool itemIsNative: model.isNative !== undefined ? model.isNative : true
                         readonly property string itemSidecarPath: model.sidecarPath || ""
+
+                        CheckBox {
+                            id: exportSelectionCheck
+                            z: 2
+                            anchors.top: parent.top
+                            anchors.right: parent.right
+                            anchors.margins: 8
+                            checked: root.vm ? root.vm.isSelectedForExport(index) : false
+                            onToggled: if (root.vm) root.vm.toggleExportSelection(index)
+                            ToolTip.visible: hovered
+                            ToolTip.text: "Include in manual export"
+                        }
 
                         MouseArea {
                             id: cardMouseArea
@@ -800,23 +819,17 @@ Item {
                             }
                         }
 
-                        // Actions Section
+                        // Export uses the shared manual-export workflow.
                         RowLayout {
                             Layout.fillWidth: true
                             spacing: 10
-                            ComboBox {
-                                id: conversionFormat
-                                Layout.fillWidth: true
-                                model: ["wav", "flac", "mp3", "ogg"]
-                            }
                             Button {
-                                text: "Convert"
-                                onClicked: if (root.vm && root.selectedIndex >= 0) root.vm.convertEntry(root.selectedIndex, conversionFormat.currentText)
-                            }
-                            Text {
-                                text: root.vm ? root.vm.operationStatus : ""
-                                color: Theme.AbracaptureTheme.textSecondary
-                                elide: Text.ElideRight
+                                text: "Export This Recording"
+                                onClicked: {
+                                    if (root.vm && root.selectedIndex >= 0) {
+                                        root.requestExportSelected([root.vm.get(root.selectedIndex)])
+                                    }
+                                }
                                 Layout.fillWidth: true
                             }
                         }

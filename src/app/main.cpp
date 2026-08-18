@@ -1,6 +1,7 @@
 #include "AppController.hpp"
 #include "audio/CaptureSession.hpp"
 #include "cli/CliApp.hpp"
+#include "export/ExportManager.hpp"
 #include "pipewire/PipeWireContext.hpp"
 #include "pipewire/SourceCatalog.hpp"
 #include "pipewire/SourceDescriptor.hpp"
@@ -8,6 +9,7 @@
 #include "recording/OutputPathPolicy.hpp"
 #include "recording/RecordingSink.hpp"
 #include "ui/CaptureViewModel.hpp"
+#include "ui/ManualExportViewModel.hpp"
 #include "ui/RecordingsViewModel.hpp"
 #include "ui/SettingsViewModel.hpp"
 #include "ui/SourceListModel.hpp"
@@ -21,6 +23,7 @@
 #include <QApplication>
 #include <QDateTime>
 #include <QFileInfo>
+#include <QHash>
 #include <QMetaObject>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
@@ -122,6 +125,67 @@ QString negotiatedFormatDescription(const int sampleRate, const int channels, co
         .arg(bitrateMbps, 0, 'f', 3);
 }
 
+QString exportJobStateName(const abracapture::exporting::ExportJobState state) {
+    switch (state) {
+    case abracapture::exporting::ExportJobState::Queued: return QStringLiteral("queued");
+    case abracapture::exporting::ExportJobState::Running: return QStringLiteral("running");
+    case abracapture::exporting::ExportJobState::Completed: return QStringLiteral("completed");
+    case abracapture::exporting::ExportJobState::Failed: return QStringLiteral("failed");
+    case abracapture::exporting::ExportJobState::Cancelled: return QStringLiteral("cancelled");
+    }
+    return QStringLiteral("unknown");
+}
+
+QString automaticExportProfileSummary(
+    const abracapture::exporting::AutomaticExportProfile& automaticProfile) {
+    const auto& profile = automaticProfile.profile;
+    QString summary = abracapture::exporting::exportFormatName(profile.format);
+    summary += profile.sampleRate.policy == abracapture::exporting::SampleRatePolicy::Explicit
+                   ? QStringLiteral(" rate=%1").arg(profile.sampleRate.sampleRate)
+                   : QStringLiteral(" rate=preserve_source");
+    if (const auto* const options = std::get_if<abracapture::exporting::Mp3Options>(&profile.options)) {
+        summary += QStringLiteral(" bitrate=%1kbps").arg(options->bitrateKbps);
+    }
+    summary += QStringLiteral(" keepMaster=%1").arg(automaticProfile.keepMaster ? QStringLiteral("true")
+                                                                            : QStringLiteral("false"));
+    return summary;
+}
+
+void fillMissingSourceMetadata(abracapture::recording::CaptureMetadata& metadata,
+                               const SourceDescriptor& source) {
+    if (metadata.mediaTitle.empty()) metadata.mediaTitle = source.mediaTitle;
+    if (metadata.mediaName.empty()) metadata.mediaName = source.mediaName;
+    if (metadata.mediaAlbum.empty()) metadata.mediaAlbum = source.mediaAlbum;
+    if (metadata.applicationName.empty()) metadata.applicationName = source.appName;
+}
+
+QString recordingTrackTitle(const abracapture::recording::CaptureMetadata& metadata) {
+    if (!metadata.mediaTitle.empty()) {
+        return QString::fromStdString(metadata.mediaTitle);
+    }
+    return QString::fromStdString(metadata.mediaName);
+}
+
+std::filesystem::path automaticExportDestinationPath(
+    const std::filesystem::path& masterPath,
+    const abracapture::exporting::AutomaticExportProfile& profile) {
+    std::filesystem::path destinationDirectory = masterPath.parent_path();
+    if (profile.destinationPolicy ==
+        abracapture::exporting::AutomaticExportDestinationPolicy::ExportsSubfolder) {
+        destinationDirectory /= "Exports";
+    } else if (profile.destinationPolicy ==
+                   abracapture::exporting::AutomaticExportDestinationPolicy::CustomFolder &&
+               !profile.customDestinationDirectory.trimmed().isEmpty()) {
+        destinationDirectory = profile.customDestinationDirectory.toStdString();
+    }
+    std::error_code error;
+    std::filesystem::create_directories(destinationDirectory, error);
+    std::filesystem::path exportPath = destinationDirectory / masterPath.filename();
+    exportPath.replace_extension(
+        "." + abracapture::exporting::exportFileExtension(profile.profile.format).toStdString());
+    return exportPath;
+}
+
 } // namespace
 
 int main(int argc, char *argv[]) {
@@ -148,9 +212,117 @@ int main(int argc, char *argv[]) {
     settingsViewModel.load();
     abracapture::history::RecordingIndex recordingIndex;
     static_cast<void>(recordingIndex.load());
+    abracapture::exporting::ExportManager exportManager(&application);
     RecordingsViewModel recordingsViewModel(&recordingIndex);
+    ManualExportViewModel manualExportViewModel(&exportManager, &recordingIndex,
+                                                &settingsViewModel, &application);
+    QObject::connect(&manualExportViewModel, &ManualExportViewModel::recordingHistoryChanged,
+                     &recordingsViewModel, &RecordingsViewModel::refreshEntries);
     static_cast<void>(recordingsViewModel.importDirectory(settingsViewModel.outputDirectory()));
     CaptureViewModel captureViewModel(&sourceListModel, &settingsViewModel);
+
+    QHash<abracapture::exporting::ExportJobId, QString> automaticExportMasters;
+    auto updateDerivedExport = [&recordingIndex, &recordingsViewModel](
+                                   const abracapture::exporting::ExportJobId jobId,
+                                   const QString& masterPath,
+                                   const QString& format,
+                                   const QString& state,
+                                   const QString& outputPath,
+                                   const QString& error) {
+        const auto entries = recordingIndex.entries();
+        for (const auto& existing : entries) {
+            if (existing.filePath != masterPath) {
+                continue;
+            }
+            auto entry = existing;
+            auto exportIt = std::find_if(
+                entry.derivedExports.begin(), entry.derivedExports.end(),
+                [jobId](const abracapture::history::DerivedExport& exportRecord) {
+                    return exportRecord.jobId == jobId;
+                });
+            if (exportIt == entry.derivedExports.end()) {
+                entry.derivedExports.append({
+                    .jobId = jobId,
+                    .format = format,
+                    .outputPath = outputPath,
+                    .state = state,
+                    .error = error,
+                });
+            } else {
+                exportIt->format = format;
+                exportIt->outputPath = outputPath;
+                exportIt->state = state;
+                exportIt->error = error;
+            }
+            static_cast<void>(recordingIndex.update(entry));
+            recordingsViewModel.refreshEntries();
+            return;
+        }
+    };
+
+    QObject::connect(&exportManager, &abracapture::exporting::ExportManager::jobStarted,
+                     &application,
+                     [&automaticExportMasters, &updateDerivedExport, &exportManager](
+                         const abracapture::exporting::ExportJobId jobId) {
+                         const auto it = automaticExportMasters.constFind(jobId);
+                         if (it != automaticExportMasters.cend()) {
+                             const auto job = exportManager.job(jobId);
+                             if (job.has_value()) {
+                                 updateDerivedExport(
+                                     jobId, it.value(),
+                                     abracapture::exporting::exportFormatName(job->request.profile.format),
+                                     QStringLiteral("running"),
+                                     QString::fromStdString(job->request.destinationPath.string()), {});
+                             }
+                             std::fprintf(stderr,
+                                          "[abracapture] automatic export started: job=%llu\n",
+                                          static_cast<unsigned long long>(jobId));
+                         }
+                     });
+    QObject::connect(&exportManager, &abracapture::exporting::ExportManager::jobCompleted,
+                     &application,
+                     [&automaticExportMasters, &updateDerivedExport](
+                         const abracapture::exporting::ExportJobId jobId,
+                         const QString& outputPath) {
+                         const auto it = automaticExportMasters.find(jobId);
+                         if (it == automaticExportMasters.end()) {
+                             return;
+                         }
+                         const QString masterPath = it.value();
+                         const QString format = QFileInfo(outputPath).suffix().toLower();
+                         updateDerivedExport(jobId, masterPath, format,
+                                             QStringLiteral("completed"), outputPath, {});
+                         std::fprintf(stderr,
+                                      "[abracapture] automatic export completed: source=%s output=%s job=%llu\n",
+                                      masterPath.toUtf8().constData(), outputPath.toUtf8().constData(),
+                                      static_cast<unsigned long long>(jobId));
+                         automaticExportMasters.erase(it);
+                     });
+    QObject::connect(&exportManager, &abracapture::exporting::ExportManager::jobFailed,
+                     &application,
+                     [&automaticExportMasters, &updateDerivedExport, &exportManager](
+                         const abracapture::exporting::ExportJobId jobId,
+                         const QString& error) {
+                         const auto it = automaticExportMasters.find(jobId);
+                         if (it == automaticExportMasters.end()) {
+                             return;
+                         }
+                         const QString masterPath = it.value();
+                         const auto job = exportManager.job(jobId);
+                         const QString format = job.has_value()
+                                                    ? abracapture::exporting::exportFormatName(job->request.profile.format)
+                                                    : QStringLiteral("unknown");
+                         const QString outputPath = job.has_value()
+                                                        ? QString::fromStdString(job->request.destinationPath.string())
+                                                        : QString{};
+                         updateDerivedExport(jobId, masterPath, format,
+                                             QStringLiteral("failed"), outputPath, error);
+                         std::fprintf(stderr,
+                                      "[abracapture] automatic export failed: source=%s job=%llu error=%s\n",
+                                      masterPath.toUtf8().constData(),
+                                      static_cast<unsigned long long>(jobId), error.toUtf8().constData());
+                         automaticExportMasters.erase(it);
+                     });
 
     PipeWireContext pipeWireContext;
     SourceCatalog sourceCatalog;
@@ -242,6 +414,7 @@ int main(int argc, char *argv[]) {
     int recordingOutputBitDepth = 0;
     SampleFormat recordingSampleFormat = SampleFormat::Float32;
     abracapture::recording::CaptureMetadata pendingRecordingMetadata;
+    quint32 pendingRecordingSourceId = 0;
     std::vector<std::int32_t> flacConversionBuffer;
 
     // CaptureSession is the engine boundary. The source catalog retains the
@@ -351,6 +524,7 @@ int main(int argc, char *argv[]) {
                                     &recordingActive, &monitorSession, &monitorActive,
                                     &recordingPending, &recordingOutputBitDepth,
                                     &recordingSampleFormat, &pendingRecordingMetadata,
+                                    &pendingRecordingSourceId,
                                     &lastAudioSequence, &lastAudioFreshMs, &audioStale,
                                     &staleVisualizationPublished](
                                        const quint32 sourceId) {
@@ -393,7 +567,15 @@ int main(int argc, char *argv[]) {
                                            ? sourceDescriptor->appName
                                            : sourceDescriptor->displayName,
                              .format = masterFormat.toStdString(),
+                             .mediaTitle = sourceDescriptor->mediaTitle,
+                             .mediaName = sourceDescriptor->mediaName,
+                             .mediaAlbum = sourceDescriptor->mediaAlbum,
+                             .applicationName = sourceDescriptor->appName,
+                             .automatedCapture = captureViewModel.armed(),
+                             .useMediaMetadataNames =
+                                 settingsViewModel.useMediaMetadataForAutomatedCaptureNames(),
                          };
+                         pendingRecordingSourceId = sourceId;
                          recordingOutputBitDepth = outputBitDepth;
                          recordingSampleFormat = recordingUsesFlac
                                                    ? (outputBitDepth == 16 ? SampleFormat::Int16
@@ -417,7 +599,9 @@ int main(int argc, char *argv[]) {
                                     &recordingsViewModel, &recordingSourceName,
                                     &recordingChannels, &sourceListModel, &monitorSession,
                                     &monitorDataSeen, &lastAudioSequence, &lastAudioFreshMs,
-                                    &audioStale, &staleVisualizationPublished, &waveformBridge] {
+                                    &audioStale, &staleVisualizationPublished, &waveformBridge,
+                                    &settingsViewModel, &exportManager, &automaticExportMasters,
+                                    &updateDerivedExport, &pendingRecordingMetadata] {
                          captureSession->stop();
                          bool finalizationSucceeded = true;
                          if (recordingSinkOpen) {
@@ -446,8 +630,65 @@ int main(int argc, char *argv[]) {
                                  entry.duration = result.duration.count();
                                  entry.timestamp = QFileInfo(entry.filePath).lastModified();
                                  entry.isNative = result.provenance == ConversionProvenance::Native;
-                                 recordingIndex.append(entry);
+                                 entry.captureSessionId = captureViewModel.captureSessionId();
+                                 entry.trackTitle = recordingTrackTitle(pendingRecordingMetadata);
+                                 entry.albumTitle = QString::fromStdString(
+                                     pendingRecordingMetadata.mediaAlbum);
+                                 entry.applicationName = QString::fromStdString(
+                                     pendingRecordingMetadata.applicationName);
+                                 entry.mediaName = QString::fromStdString(
+                                     pendingRecordingMetadata.mediaName);
+                                 std::fprintf(stderr, "[abracapture] recording finalized: %s\n",
+                                              entry.filePath.toUtf8().constData());
+                                 static_cast<void>(recordingIndex.append(entry));
                                  recordingsViewModel.refreshEntries();
+
+                                 const auto automaticProfile = settingsViewModel.automaticExportProfile();
+                                 if (automaticProfile.enabled) {
+                                     abracapture::exporting::ExportRequest request;
+                                     request.sourcePath = result.finalPath;
+                                     request.profile = automaticProfile.profile;
+                                     request.captureSessionId = entry.captureSessionId;
+                                     request.sourceSampleRate = result.sampleRate;
+                                     request.destinationPath = automaticExportDestinationPath(
+                                         result.finalPath, automaticProfile);
+
+                                     const auto jobId = exportManager.enqueue(request);
+                                     automaticExportMasters.insert(jobId, entry.filePath);
+                                     const auto queuedJob = exportManager.job(jobId);
+                                     abracapture::history::DerivedExport derivedExport;
+                                     derivedExport.jobId = jobId;
+                                     derivedExport.format = abracapture::exporting::exportFormatName(
+                                         automaticProfile.profile.format);
+                                     derivedExport.outputPath = queuedJob.has_value()
+                                                                    ? QString::fromStdString(
+                                                                          queuedJob->request.destinationPath.string())
+                                                                    : QString::fromStdString(request.destinationPath.string());
+                                     derivedExport.state = queuedJob.has_value()
+                                                               ? exportJobStateName(queuedJob->state)
+                                                               : QStringLiteral("queued");
+                                     derivedExport.error = queuedJob.has_value() ? queuedJob->error : QString{};
+                                     entry.derivedExports.append(derivedExport);
+                                     static_cast<void>(recordingIndex.update(entry));
+                                     recordingsViewModel.refreshEntries();
+
+                                     std::fprintf(stderr,
+                                                  "[abracapture] automatic export queued: source=%s format=%s profile=%s job=%llu\n",
+                                                  entry.filePath.toUtf8().constData(),
+                                                  derivedExport.format.toUtf8().constData(),
+                                                  automaticExportProfileSummary(automaticProfile)
+                                                      .toUtf8().constData(),
+                                                  static_cast<unsigned long long>(jobId));
+                                     if (queuedJob.has_value() &&
+                                         queuedJob->state == abracapture::exporting::ExportJobState::Failed) {
+                                         std::fprintf(stderr,
+                                                      "[abracapture] automatic export failed: source=%s job=%llu error=%s\n",
+                                                      entry.filePath.toUtf8().constData(),
+                                                      static_cast<unsigned long long>(jobId),
+                                                      queuedJob->error.toUtf8().constData());
+                                         automaticExportMasters.remove(jobId);
+                                     }
+                                 }
                              }
                          }
                          recordingActive = false;
@@ -479,6 +720,7 @@ int main(int argc, char *argv[]) {
                                     &recordingSinkOpen, &recordingSourceName,
                                     &recordingChannels, &recordingOutputBitDepth,
                                     &recordingSampleFormat, &pendingRecordingMetadata,
+                                    &pendingRecordingSourceId, &sourceCatalog,
                                     &outputPathPolicy, &monitorDataSeen, &waveformBridge, &captureViewModel,
                                     &sourceListModel, &lastAudioSequence, &lastAudioFreshMs,
                                     &audioStale, &staleVisualizationPublished] {
@@ -487,7 +729,11 @@ int main(int argc, char *argv[]) {
                              const auto channels = captureSession->negotiatedChannels();
                              const auto format = captureSession->negotiatedFormat();
                              if (rate > 0 && channels > 0 && format != SPA_AUDIO_FORMAT_UNKNOWN) {
-                                 auto metadata = pendingRecordingMetadata;
+                                 auto& metadata = pendingRecordingMetadata;
+                                 if (const auto sourceDescriptor =
+                                         sourceCatalog.sourceById(pendingRecordingSourceId)) {
+                                     fillMissingSourceMetadata(metadata, *sourceDescriptor);
+                                 }
                                  metadata.sampleRate = rate;
                                  metadata.channels = static_cast<std::uint16_t>(channels);
                                  const AudioFormat fileFormat{
@@ -619,6 +865,8 @@ int main(int argc, char *argv[]) {
     engine.rootContext()->setContextProperty("appSourceListModel", &sourceListModel);
     engine.rootContext()->setContextProperty("appWaveformBridge", &waveformBridge);
     engine.rootContext()->setContextProperty("appSettingsViewModel", &settingsViewModel);
+    engine.rootContext()->setContextProperty("appExportManager", &exportManager);
+    engine.rootContext()->setContextProperty("appManualExportViewModel", &manualExportViewModel);
     engine.rootContext()->setContextProperty("appCaptureViewModel", &captureViewModel);
     engine.rootContext()->setContextProperty("appRecordingsViewModel", &recordingsViewModel);
     engine.load(QUrl(QStringLiteral("qrc:/Abracapture/qml/Main.qml")));

@@ -7,6 +7,7 @@
 #include <QDateTime>
 #include <QMetaObject>
 #include <QTimer>
+#include <QUuid>
 
 #include <cmath>
 #include <cstdio>
@@ -190,6 +191,10 @@ bool CaptureViewModel::armed() const noexcept {
     return armed_;
 }
 
+QString CaptureViewModel::captureSessionId() const {
+    return captureSessionId_;
+}
+
 void CaptureViewModel::startCapture() {
     if (selectedSourceId_ == 0) {
         setIntegrityStatus(QStringLiteral("Select an audio source before starting."));
@@ -201,6 +206,9 @@ void CaptureViewModel::startCapture() {
     }
 
     const bool automaticStart = autoRecordController_.state() == AutoRecordController::Recording;
+    if (!armed_ || captureSessionId_.isEmpty()) {
+        beginCaptureSession();
+    }
     if (!automaticStart) {
         armed_ = false;
         awaitFreshSignal_ = false;
@@ -258,6 +266,7 @@ void CaptureViewModel::armCapture() {
         return;
     }
     autoRecordController_.reset();
+    beginCaptureSession();
     armed_ = true;
     awaitFreshSignal_ = true;
     startThresholdWaitingLogged_ = false;
@@ -272,6 +281,7 @@ void CaptureViewModel::disarmCapture() {
     }
     autoRecordController_.reset();
     armed_ = false;
+    clearCaptureSession();
     awaitFreshSignal_ = false;
     startThresholdWaitingLogged_ = false;
     emit armedChanged();
@@ -453,4 +463,21 @@ void CaptureViewModel::resetDuration() {
         durationSeconds_ = 0.0;
         emit durationSecondsChanged();
     }
+}
+
+void CaptureViewModel::beginCaptureSession() {
+    const QString nextId = QUuid::createUuid().toString(QUuid::WithoutBraces);
+    if (captureSessionId_ == nextId) {
+        return;
+    }
+    captureSessionId_ = nextId;
+    emit captureSessionIdChanged();
+}
+
+void CaptureViewModel::clearCaptureSession() {
+    if (captureSessionId_.isEmpty()) {
+        return;
+    }
+    captureSessionId_.clear();
+    emit captureSessionIdChanged();
 }

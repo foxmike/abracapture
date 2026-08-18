@@ -12,6 +12,10 @@ class AppSettings : public QObject {
     Q_PROPERTY(bool autoStopEnabled READ autoStopEnabled WRITE setAutoStopEnabled NOTIFY autoStopEnabledChanged)
     Q_PROPERTY(int preRollSeconds READ preRollSeconds WRITE setPreRollSeconds NOTIFY preRollSecondsChanged)
     Q_PROPERTY(int postRollSeconds READ postRollSeconds WRITE setPostRollSeconds NOTIFY postRollSecondsChanged)
+    Q_PROPERTY(bool useMediaMetadataForAutomatedCaptureNames
+                   READ useMediaMetadataForAutomatedCaptureNames
+                   WRITE setUseMediaMetadataForAutomatedCaptureNames
+                   NOTIFY useMediaMetadataForAutomatedCaptureNamesChanged)
 
 public:
     explicit AppSettings(QObject *parent = nullptr);
@@ -37,6 +41,9 @@ public:
     int postRollSeconds() const;
     void setPostRollSeconds(int postRollSeconds);
 
+    bool useMediaMetadataForAutomatedCaptureNames() const;
+    void setUseMediaMetadataForAutomatedCaptureNames(bool enabled);
+
     Q_INVOKABLE void load();
     Q_INVOKABLE void save();
 
@@ -47,6 +54,7 @@ public:
     static bool defaultAutoStopEnabled();
     static int defaultPreRollSeconds();
     static int defaultPostRollSeconds();
+    static bool defaultUseMediaMetadataForAutomatedCaptureNames();
 
 signals:
     void outputDirectoryChanged(const QString &outputDirectory);
@@ -56,6 +64,7 @@ signals:
     void autoStopEnabledChanged(bool autoStopEnabled);
     void preRollSecondsChanged(int preRollSeconds);
     void postRollSecondsChanged(int postRollSeconds);
+    void useMediaMetadataForAutomatedCaptureNamesChanged(bool enabled);
 
 private:
     QString m_outputDirectory;
@@ -65,4 +74,5 @@ private:
     bool m_autoStopEnabled = false;
     int m_preRollSeconds = 0;
     int m_postRollSeconds = 0;
+    bool m_useMediaMetadataForAutomatedCaptureNames = false;
 };

@@ -14,6 +14,8 @@ constexpr const char *kKeyAutoStartEnabled = "autoStartEnabled";
 constexpr const char *kKeyAutoStopEnabled = "autoStopEnabled";
 constexpr const char *kKeyPreRollSeconds = "preRollSeconds";
 constexpr const char *kKeyPostRollSeconds = "postRollSeconds";
+constexpr const char *kKeyUseMediaMetadataForAutomatedCaptureNames =
+    "useMediaMetadataForAutomatedCaptureNames";
 } // namespace
 
 AppSettings::AppSettings(QObject *parent)
@@ -47,6 +49,10 @@ int AppSettings::defaultPreRollSeconds() {
 
 int AppSettings::defaultPostRollSeconds() {
     return 0;
+}
+
+bool AppSettings::defaultUseMediaMetadataForAutomatedCaptureNames() {
+    return false;
 }
 
 QString AppSettings::outputDirectory() const {
@@ -150,6 +156,20 @@ void AppSettings::setPostRollSeconds(int postRollSeconds) {
     emit postRollSecondsChanged(m_postRollSeconds);
 }
 
+bool AppSettings::useMediaMetadataForAutomatedCaptureNames() const {
+    return m_useMediaMetadataForAutomatedCaptureNames;
+}
+
+void AppSettings::setUseMediaMetadataForAutomatedCaptureNames(const bool enabled) {
+    if (m_useMediaMetadataForAutomatedCaptureNames == enabled) {
+        return;
+    }
+    m_useMediaMetadataForAutomatedCaptureNames = enabled;
+    save();
+    emit useMediaMetadataForAutomatedCaptureNamesChanged(
+        m_useMediaMetadataForAutomatedCaptureNames);
+}
+
 void AppSettings::load() {
     QSettings settings(QString::fromUtf8(kOrgName), QString::fromUtf8(kAppName));
 
@@ -169,6 +189,9 @@ void AppSettings::load() {
     if (postRoll < 0) {
         postRoll = 0;
     }
+    const bool useMediaMetadata = settings.value(
+        QString::fromUtf8(kKeyUseMediaMetadataForAutomatedCaptureNames),
+        defaultUseMediaMetadataForAutomatedCaptureNames()).toBool();
 
     if (m_outputDirectory != outDir) {
         m_outputDirectory = outDir;
@@ -198,6 +221,11 @@ void AppSettings::load() {
         m_postRollSeconds = postRoll;
         emit postRollSecondsChanged(m_postRollSeconds);
     }
+    if (m_useMediaMetadataForAutomatedCaptureNames != useMediaMetadata) {
+        m_useMediaMetadataForAutomatedCaptureNames = useMediaMetadata;
+        emit useMediaMetadataForAutomatedCaptureNamesChanged(
+            m_useMediaMetadataForAutomatedCaptureNames);
+    }
 }
 
 void AppSettings::save() {
@@ -209,5 +237,7 @@ void AppSettings::save() {
     settings.setValue(QString::fromUtf8(kKeyAutoStopEnabled), m_autoStopEnabled);
     settings.setValue(QString::fromUtf8(kKeyPreRollSeconds), m_preRollSeconds);
     settings.setValue(QString::fromUtf8(kKeyPostRollSeconds), m_postRollSeconds);
+    settings.setValue(QString::fromUtf8(kKeyUseMediaMetadataForAutomatedCaptureNames),
+                      m_useMediaMetadataForAutomatedCaptureNames);
     settings.sync();
 }

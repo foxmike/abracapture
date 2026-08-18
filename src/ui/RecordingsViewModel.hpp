@@ -1,7 +1,6 @@
 #pragma once
 
 #include "history/RecordingIndex.hpp"
-#include "export/ExportManager.hpp"
 
 #include <QAbstractListModel>
 #include <QByteArray>
@@ -9,6 +8,7 @@
 #include <QHash>
 #include <QList>
 #include <QObject>
+#include <QSet>
 #include <QString>
 #include <QVariant>
 #include <QVariantMap>
@@ -20,6 +20,7 @@ class RecordingsViewModel : public QAbstractListModel {
     Q_PROPERTY(bool isEmpty READ isEmpty NOTIFY countChanged)
     Q_PROPERTY(int selectedIndex READ selectedIndex WRITE setSelectedIndex NOTIFY selectedIndexChanged)
     Q_PROPERTY(QVariantMap selectedEntry READ selectedEntry NOTIFY selectedIndexChanged)
+    Q_PROPERTY(int exportSelectionCount READ exportSelectionCount NOTIFY exportSelectionChanged)
     Q_PROPERTY(QString operationStatus READ operationStatus NOTIFY operationStatusChanged)
 
 public:
@@ -33,7 +34,13 @@ public:
         DurationRole,
         TimestampRole,
         IsNativeRole,
-        SidecarPathRole
+        SidecarPathRole,
+        CaptureSessionIdRole,
+        DerivedExportsRole,
+        TrackTitleRole,
+        AlbumTitleRole,
+        ApplicationNameRole,
+        MediaNameRole
     };
     Q_ENUM(RecordingRoles)
 
@@ -56,7 +63,10 @@ public:
 
     Q_INVOKABLE bool revealInFileManager(int index);
     Q_INVOKABLE bool playEntry(int index);
-    Q_INVOKABLE bool convertEntry(int index, const QString& format);
+    Q_INVOKABLE bool isSelectedForExport(int index) const;
+    Q_INVOKABLE void toggleExportSelection(int index);
+    Q_INVOKABLE void clearExportSelection();
+    Q_INVOKABLE QVariantList exportSelectedEntries() const;
     Q_INVOKABLE bool removeEntry(int index);
     Q_INVOKABLE void refreshEntries();
     Q_INVOKABLE bool importDirectory(const QString& directoryPath);
@@ -66,11 +76,13 @@ signals:
     void countChanged();
     void selectedIndexChanged();
     void operationStatusChanged();
+    void exportSelectionChanged();
 
 private:
     void syncEntries();
     void rebuildModel();
     QString operationStatus() const;
+    [[nodiscard]] int exportSelectionCount() const noexcept;
 
     abracapture::history::RecordingIndex* externalIndex_ = nullptr;
     abracapture::history::RecordingIndex ownedIndex_;
@@ -78,5 +90,5 @@ private:
     int selectedIndex_ = -1;
     QString operationStatus_;
     QString recordingsDirectory_;
-    abracapture::exporting::ExportManager exportManager_;
+    QSet<QString> exportSelectedPaths_;
 };

@@ -1,54 +1,83 @@
 #pragma once
 
+#include "ExportTypes.hpp"
 #include "../recording/CaptureIntegrity.hpp"
 
+#include <QHash>
 #include <QList>
 #include <QObject>
 #include <QProcess>
+#include <QQueue>
+#include <QSet>
 #include <QString>
+#include <QVariantList>
+#include <QVariantMap>
 
-#include <cstdint>
 #include <filesystem>
+#include <optional>
 
 namespace abracapture::exporting {
 
-struct ExportSpec {
-    QString format;
-    std::uint32_t sampleRate = 0;
-    std::uint32_t bitDepth = 0;
-    QString codec;
-    QString outputPath;
-};
-
-// Produces derived files from a completed master capture. Encoding is always
-// performed by the external ffmpeg executable.
+// Shared asynchronous export queue. Each job is encoded through the external
+// ffmpeg executable, one at a time, without blocking capture or the UI thread.
 class ExportManager : public QObject {
     Q_OBJECT
+    Q_PROPERTY(bool busy READ isBusy NOTIFY queueChanged)
+    Q_PROPERTY(int queuedJobCount READ queuedJobCount NOTIFY queueChanged)
 
 public:
     explicit ExportManager(QObject* parent = nullptr);
 
-    void startExports(const std::filesystem::path& masterFilePath,
-                      const recording::CaptureIntegrity& integrity,
-                      const QList<ExportSpec>& exportSpecs);
+    [[nodiscard]] ExportJobId enqueue(const ExportRequest& request);
+    [[nodiscard]] QList<ExportJobId> enqueueAll(const QList<ExportRequest>& requests);
+    [[nodiscard]] bool cancelQueued(ExportJobId jobId);
+
+    [[nodiscard]] std::optional<ExportJob> job(ExportJobId jobId) const;
+    [[nodiscard]] QList<ExportJob> jobs() const;
+    [[nodiscard]] bool isBusy() const noexcept;
+    [[nodiscard]] int queuedJobCount() const noexcept;
+    Q_INVOKABLE QVariantMap currentJobSummary() const;
+    Q_INVOKABLE QVariantList recentJobSummaries(int maximum = 5) const;
 
     [[nodiscard]] bool verifyMaster(const std::filesystem::path& masterFilePath,
                                     const recording::CaptureIntegrity& integrity) const;
 
 signals:
+    void jobQueued(ExportJobId jobId);
+    void jobStarted(ExportJobId jobId);
+    void jobCompleted(ExportJobId jobId, QString outputPath);
+    void jobFailed(ExportJobId jobId, QString error);
+    void jobCancelled(ExportJobId jobId);
+    void queueChanged();
+
+    // Compatibility signals retained for existing UI and CLI consumers.
     void exportStarted(QString format);
     void exportCompleted(QString path);
     void exportFailed(QString format, QString error);
     void allExportsFinished();
 
 private:
+    [[nodiscard]] ExportJobId enqueueInternal(const ExportRequest& request);
+    void scheduleProcessing();
     void startNextExport();
+    void captureProcessStandardError();
+    [[nodiscard]] QString processFailureMessage(int exitCode) const;
+    [[nodiscard]] std::filesystem::path temporaryOutputPathFor(const ExportJob& job) const;
+    [[nodiscard]] bool sourceIsUsable(const ExportRequest& request, QString* error) const;
+    void completeJob(ExportJobId jobId);
+    void failJob(ExportJobId jobId, const QString& error);
+    void releaseDestination(const ExportJob& job);
 
     QProcess process_;
-    QString masterPath_;
-    QList<ExportSpec> exportSpecs_;
-    qsizetype currentExportIndex_ = 0;
-    bool exportInFlight_ = false;
+    QQueue<ExportJobId> queuedJobIds_;
+    QHash<ExportJobId, ExportJob> jobsById_;
+    QList<ExportJobId> jobOrder_;
+    QSet<QString> reservedOutputPaths_;
+    std::optional<ExportJobId> runningJobId_;
+    ExportJobId nextJobId_ = 1;
+    QByteArray standardError_;
+    bool processingScheduled_ = false;
+    bool idle_ = true;
 };
 
 } // namespace abracapture::exporting

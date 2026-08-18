@@ -614,37 +614,39 @@ int CliApp::runRecord(const QStringList& recordArgs) {
                 return 4;
             }
 
-            QList<abracapture::exporting::ExportSpec> exportSpecs;
+            QList<abracapture::exporting::ExportRequest> exportRequests;
             for (const QString& fmt : formatList) {
-                const QString cleanFmt = fmt.trimmed().toLower();
-                if (cleanFmt.isEmpty()) {
-                    continue;
+                const auto exportFormat = abracapture::exporting::exportFormatFromString(fmt);
+                if (!exportFormat.has_value()) {
+                    std::cerr << "Export error: Unsupported export format: "
+                              << fmt.trimmed().toStdString() << "\n";
+                    return 4;
                 }
-                abracapture::exporting::ExportSpec spec;
-                spec.format = cleanFmt;
-                spec.sampleRate = finalizeResult.sampleRate;
-                spec.bitDepth = 16;
-                std::filesystem::path expPath = finalizeResult.finalPath;
-                expPath.replace_extension("." + cleanFmt.toStdString());
-                spec.outputPath = QString::fromStdString(expPath.string());
-                exportSpecs.append(spec);
+                abracapture::exporting::ExportRequest request;
+                request.sourcePath = finalizeResult.finalPath;
+                request.profile = abracapture::exporting::defaultExportProfile(*exportFormat);
+                request.sourceSampleRate = finalizeResult.sampleRate;
+                std::filesystem::path exportPath = finalizeResult.finalPath;
+                exportPath.replace_extension(
+                    "." + abracapture::exporting::exportFileExtension(*exportFormat).toStdString());
+                request.destinationPath = std::move(exportPath);
+                exportRequests.append(std::move(request));
             }
 
-            if (!exportSpecs.isEmpty()) {
+            if (!exportRequests.isEmpty()) {
                 bool exportFailed = false;
-                QString exportErrorMessage;
 
                 QEventLoop loop;
-                QObject::connect(&exportManager, &abracapture::exporting::ExportManager::exportFailed,
-                                 [&](const QString& format, const QString& error) {
+                QObject::connect(&exportManager, &abracapture::exporting::ExportManager::jobFailed,
+                                 [&](const abracapture::exporting::ExportJobId,
+                                     const QString& error) {
                                      exportFailed = true;
-                                     exportErrorMessage = QStringLiteral("Export %1 failed: %2").arg(format, error);
-                                     std::cerr << exportErrorMessage.toStdString() << "\n";
+                                     std::cerr << "Export error: " << error.toStdString() << "\n";
                                  });
                 QObject::connect(&exportManager, &abracapture::exporting::ExportManager::allExportsFinished,
                                  &loop, &QEventLoop::quit);
 
-                exportManager.startExports(finalizeResult.finalPath, integrity, exportSpecs);
+                static_cast<void>(exportManager.enqueueAll(exportRequests));
                 loop.exec();
 
                 if (exportFailed) {

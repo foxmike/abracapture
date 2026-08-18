@@ -17,6 +17,26 @@
 
 namespace abracapture::history {
 
+QJsonObject DerivedExport::toJson() const {
+    QJsonObject obj;
+    obj[QStringLiteral("jobId")] = static_cast<qint64>(jobId);
+    obj[QStringLiteral("format")] = format;
+    obj[QStringLiteral("outputPath")] = outputPath;
+    obj[QStringLiteral("state")] = state;
+    obj[QStringLiteral("error")] = error;
+    return obj;
+}
+
+DerivedExport DerivedExport::fromJson(const QJsonObject& json) {
+    DerivedExport exportRecord;
+    exportRecord.jobId = static_cast<std::uint64_t>(json.value(QStringLiteral("jobId")).toInteger(0));
+    exportRecord.format = json.value(QStringLiteral("format")).toString();
+    exportRecord.outputPath = json.value(QStringLiteral("outputPath")).toString();
+    exportRecord.state = json.value(QStringLiteral("state")).toString();
+    exportRecord.error = json.value(QStringLiteral("error")).toString();
+    return exportRecord;
+}
+
 QJsonObject RecordingEntry::toJson() const {
     QJsonObject obj;
     obj[QStringLiteral("filePath")] = filePath;
@@ -28,6 +48,16 @@ QJsonObject RecordingEntry::toJson() const {
     obj[QStringLiteral("timestamp")] = timestamp.isValid() ? timestamp.toString(Qt::ISODateWithMs) : QString{};
     obj[QStringLiteral("isNative")] = isNative;
     obj[QStringLiteral("sidecarPath")] = sidecarPath;
+    obj[QStringLiteral("captureSessionId")] = captureSessionId;
+    obj[QStringLiteral("trackTitle")] = trackTitle;
+    obj[QStringLiteral("albumTitle")] = albumTitle;
+    obj[QStringLiteral("applicationName")] = applicationName;
+    obj[QStringLiteral("mediaName")] = mediaName;
+    QJsonArray exports;
+    for (const DerivedExport& exportRecord : derivedExports) {
+        exports.append(exportRecord.toJson());
+    }
+    obj[QStringLiteral("derivedExports")] = exports;
     return obj;
 }
 
@@ -50,6 +80,19 @@ RecordingEntry RecordingEntry::fromJson(const QJsonObject& json) {
 
     entry.isNative = json.value(QStringLiteral("isNative")).toBool(true);
     entry.sidecarPath = json.value(QStringLiteral("sidecarPath")).toString();
+    entry.captureSessionId = json.value(QStringLiteral("captureSessionId")).toString();
+    entry.trackTitle = json.value(QStringLiteral("trackTitle")).toString();
+    entry.albumTitle = json.value(QStringLiteral("albumTitle")).toString();
+    entry.applicationName = json.value(QStringLiteral("applicationName")).toString();
+    entry.mediaName = json.value(QStringLiteral("mediaName")).toString();
+    const QJsonValue exportsValue = json.value(QStringLiteral("derivedExports"));
+    if (exportsValue.isArray()) {
+        for (const QJsonValue& exportValue : exportsValue.toArray()) {
+            if (exportValue.isObject()) {
+                entry.derivedExports.append(DerivedExport::fromJson(exportValue.toObject()));
+            }
+        }
+    }
     return entry;
 }
 
@@ -241,6 +284,17 @@ bool RecordingIndex::append(const RecordingEntry& entry) {
     entries_.append(entry);
     sortEntries();
     return save();
+}
+
+bool RecordingIndex::update(const RecordingEntry& entry) {
+    for (RecordingEntry& existing : entries_) {
+        if (existing.filePath == entry.filePath) {
+            existing = entry;
+            sortEntries();
+            return save();
+        }
+    }
+    return false;
 }
 
 bool RecordingIndex::remove(const qsizetype index) {

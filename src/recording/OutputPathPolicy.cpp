@@ -13,25 +13,49 @@ namespace abracapture::recording {
 
 namespace {
 
+std::string trimAsciiWhitespace(std::string value) {
+    const auto isWhitespace = [](const unsigned char character) {
+        return std::isspace(character) != 0;
+    };
+    while (!value.empty() && isWhitespace(static_cast<unsigned char>(value.front()))) {
+        value.erase(value.begin());
+    }
+    while (!value.empty() && isWhitespace(static_cast<unsigned char>(value.back()))) {
+        value.pop_back();
+    }
+    return value;
+}
+
+bool isPlaceholderName(const std::string& value) {
+    std::string normalized;
+    normalized.reserve(value.size());
+    for (const unsigned char character : value) {
+        normalized.push_back(static_cast<char>(std::tolower(character)));
+    }
+    return normalized.empty() || normalized == "." || normalized == ".." ||
+           normalized == "unknown" || normalized == "unknown album" ||
+           normalized == "untitled" || normalized == "null" || normalized == "n/a";
+}
+
 std::string sanitizeSource(std::string_view source) {
-    if (source.empty()) {
-        return "capture";
+    const std::string sanitized = OutputPathPolicy::sanitizePathComponent(source);
+    return sanitized.empty() ? "capture" : sanitized;
+}
+
+std::string usableMetadataComponent(std::string_view value) {
+    const std::string sanitized = OutputPathPolicy::sanitizePathComponent(value);
+    return isPlaceholderName(sanitized) ? std::string{} : sanitized;
+}
+
+std::string metadataTrackName(const CaptureMetadata& metadata) {
+    if (const std::string title = usableMetadataComponent(metadata.mediaTitle); !title.empty()) {
+        return title;
     }
+    return usableMetadataComponent(metadata.mediaName);
+}
 
-    std::string result;
-    result.reserve(source.size());
-
-    for (const char c : source) {
-        if (c == '/' || c == '\\' || c == ':' || c == '*' || c == '?' ||
-            c == '"' || c == '<' || c == '>' || c == '|' ||
-            static_cast<unsigned char>(c) < 32) {
-            result.push_back('_');
-        } else {
-            result.push_back(c);
-        }
-    }
-
-    return result;
+std::string metadataAlbumName(const CaptureMetadata& metadata) {
+    return usableMetadataComponent(metadata.mediaAlbum);
 }
 
 std::string normalizeFormat(std::string_view format, std::string_view defaultFormat) {
@@ -42,7 +66,8 @@ std::string normalizeFormat(std::string_view format, std::string_view defaultFor
     if (fmt.empty()) {
         return "wav";
     }
-    std::string result(fmt);
+    std::string result;
+    result.assign(fmt);
     std::transform(result.begin(), result.end(), result.begin(), [](unsigned char c) {
         return static_cast<char>(std::tolower(c));
     });
@@ -50,6 +75,41 @@ std::string normalizeFormat(std::string_view format, std::string_view defaultFor
 }
 
 } // namespace
+
+std::string OutputPathPolicy::sanitizePathComponent(std::string_view component) {
+    std::string result;
+    result.reserve(component.size());
+    for (const char character : component) {
+        const unsigned char byte = static_cast<unsigned char>(character);
+        if (character == '/' || character == '\\' || character == ':' || character == '*' ||
+            character == '?' || character == '"' || character == '<' || character == '>' ||
+            character == '|' || byte < 32 || byte == 127) {
+            result.push_back('_');
+        } else {
+            result.push_back(character);
+        }
+    }
+    result = trimAsciiWhitespace(std::move(result));
+    while (!result.empty() && (result.back() == '.' || result.back() == ' ')) {
+        result.pop_back();
+    }
+    if (result == "." || result == "..") {
+        return {};
+    }
+
+    constexpr std::size_t kMaximumComponentBytes = 120;
+    if (result.size() > kMaximumComponentBytes) {
+        std::size_t limit = kMaximumComponentBytes;
+        while (limit > 0 && (static_cast<unsigned char>(result[limit]) & 0xC0U) == 0x80U) {
+            --limit;
+        }
+        result.resize(limit);
+        while (!result.empty() && (result.back() == '.' || result.back() == ' ')) {
+            result.pop_back();
+        }
+    }
+    return result;
+}
 
 OutputPathPolicy::OutputPathPolicy(std::filesystem::path baseDirectory,
                                    std::string filenameTemplate,
@@ -141,6 +201,9 @@ bool OutputPathPolicy::validate() const {
 std::filesystem::path OutputPathPolicy::resolveOutputPath(const CaptureMetadata& metadata) const {
     const std::string fmt = normalizeFormat(metadata.format, defaultFormat_);
     const std::string sourceStr = sanitizeSource(metadata.source);
+    const bool useMetadataNames = metadata.automatedCapture && metadata.useMediaMetadataNames;
+    const std::string trackName = useMetadataNames ? metadataTrackName(metadata) : std::string{};
+    const std::string albumName = useMetadataNames ? metadataAlbumName(metadata) : std::string{};
 
     const std::time_t timeT = std::chrono::system_clock::to_time_t(metadata.timestamp);
     std::tm tmBuffer{};
@@ -208,27 +271,40 @@ std::filesystem::path OutputPathPolicy::resolveOutputPath(const CaptureMetadata&
         }
     }
 
-    if (expanded.empty()) {
+    if (!trackName.empty()) {
+        expanded = trackName;
+    } else if (expanded.empty()) {
         expanded = sourceStr + "_" + datetimeStr;
     }
 
     std::filesystem::path filenamePath(expanded);
-    std::string extension = filenamePath.extension().string();
-    std::transform(extension.begin(), extension.end(), extension.begin(), [](unsigned char c) {
-        return static_cast<char>(std::tolower(c));
-    });
-    if (extension != ".wav" && extension != ".wave" && extension != ".rf64" &&
-        extension != ".flac") {
+    if (!trackName.empty()) {
         expanded += "." + fmt;
         filenamePath = std::filesystem::path(expanded);
+    } else {
+        std::string extension = filenamePath.extension().string();
+        std::transform(extension.begin(), extension.end(), extension.begin(), [](unsigned char c) {
+            return static_cast<char>(std::tolower(c));
+        });
+        if (extension != ".wav" && extension != ".wave" && extension != ".rf64" &&
+            extension != ".flac") {
+            expanded += "." + fmt;
+            filenamePath = std::filesystem::path(expanded);
+        }
     }
 
-    const std::filesystem::path outDir = baseDirectory_.empty() ? std::filesystem::current_path() : baseDirectory_;
+    std::filesystem::path outDir =
+        baseDirectory_.empty() ? std::filesystem::current_path() : baseDirectory_;
+    if (!albumName.empty()) {
+        outDir /= albumName;
+    }
 
     std::error_code ec;
-    std::filesystem::create_directories(outDir, ec);
-    if (ec) {
-        throw std::filesystem::filesystem_error("Failed to create output directory", outDir, ec);
+    if (metadata.createDirectories) {
+        std::filesystem::create_directories(outDir, ec);
+        if (ec) {
+            throw std::filesystem::filesystem_error("Failed to create output directory", outDir, ec);
+        }
     }
 
     std::filesystem::path fullPath = std::filesystem::absolute(outDir / filenamePath);

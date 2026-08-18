@@ -31,6 +31,7 @@ class CaptureViewModel final : public QObject {
     Q_PROPERTY(bool autoStartEnabled READ autoStartEnabled NOTIFY autoStartEnabledChanged)
     Q_PROPERTY(bool autoStopEnabled READ autoStopEnabled NOTIFY autoStopEnabledChanged)
     Q_PROPERTY(bool armed READ armed NOTIFY armedChanged)
+    Q_PROPERTY(QString captureSessionId READ captureSessionId NOTIFY captureSessionIdChanged)
 
 public:
     enum CaptureKind {
@@ -63,6 +64,7 @@ public:
     [[nodiscard]] bool autoStartEnabled() const noexcept;
     [[nodiscard]] bool autoStopEnabled() const noexcept;
     [[nodiscard]] bool armed() const noexcept;
+    [[nodiscard]] QString captureSessionId() const;
 
     Q_INVOKABLE void startCapture();
     Q_INVOKABLE void stopCapture();
@@ -90,6 +92,7 @@ signals:
     void autoStartEnabledChanged();
     void autoStopEnabledChanged();
     void armedChanged();
+    void captureSessionIdChanged();
 
     // These requests are consumed by the application/engine composition layer.
     // The view model deliberately has no recording, compression, or PipeWire work.
@@ -104,6 +107,8 @@ private:
     void setIntegrityStatus(const QString& status);
     void resetDuration();
     void stopAutomaticRecording();
+    void beginCaptureSession();
+    void clearCaptureSession();
 
     SourceListModel* sourceListModel_ = nullptr;
     SettingsViewModel* settingsViewModel_ = nullptr;
@@ -122,4 +127,5 @@ private:
     bool startThresholdWaitingLogged_ = false;
     bool automaticStopPending_ = false;
     qint64 captureStartedAtMs_ = 0;
+    QString captureSessionId_;
 };

@@ -10,6 +10,23 @@
 
 namespace abracapture::history {
 
+struct DerivedExport {
+    std::uint64_t jobId = 0;
+    QString format;
+    QString outputPath;
+    QString state;
+    QString error;
+
+    [[nodiscard]] QJsonObject toJson() const;
+    static DerivedExport fromJson(const QJsonObject& json);
+
+    bool operator==(const DerivedExport& other) const noexcept {
+        return jobId == other.jobId && format == other.format &&
+               outputPath == other.outputPath && state == other.state &&
+               error == other.error;
+    }
+};
+
 struct RecordingEntry {
     QString filePath;
     QString format;
@@ -20,6 +37,12 @@ struct RecordingEntry {
     QDateTime timestamp;
     bool isNative = true;
     QString sidecarPath;
+    QString captureSessionId;
+    QString trackTitle;
+    QString albumTitle;
+    QString applicationName;
+    QString mediaName;
+    QList<DerivedExport> derivedExports;
 
     [[nodiscard]] QJsonObject toJson() const;
     static RecordingEntry fromJson(const QJsonObject& json);
@@ -33,7 +56,13 @@ struct RecordingEntry {
                duration == other.duration &&
                timestamp == other.timestamp &&
                isNative == other.isNative &&
-               sidecarPath == other.sidecarPath;
+               sidecarPath == other.sidecarPath &&
+               captureSessionId == other.captureSessionId &&
+               trackTitle == other.trackTitle &&
+               albumTitle == other.albumTitle &&
+               applicationName == other.applicationName &&
+               mediaName == other.mediaName &&
+               derivedExports == other.derivedExports;
     }
 
     bool operator!=(const RecordingEntry& other) const noexcept {
@@ -55,6 +84,7 @@ public:
     bool importDirectory(const QString& directoryPath);
 
     bool append(const RecordingEntry& entry);
+    bool update(const RecordingEntry& entry);
     bool remove(qsizetype index);
     bool remove(int index);
     bool remove(const QString& filePath);
