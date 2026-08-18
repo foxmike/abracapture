@@ -68,7 +68,7 @@ public:
     Q_INVOKABLE void stopCapture();
     Q_INVOKABLE void armCapture();
     Q_INVOKABLE void disarmCapture();
-    Q_INVOKABLE void feedAudioLevel(float peakLinear);
+    Q_INVOKABLE void feedAudioLevel(float peakLinear, bool newAudioGeneration = true);
     Q_INVOKABLE void reportCaptureError(const QString& message);
     [[nodiscard]] bool completeAutomaticRecording();
 
@@ -118,6 +118,8 @@ private:
     QString integrityStatus_ = QStringLiteral("Ready");
     CaptureKind captureKind_ = Native;
     bool armed_ = false;
+    bool awaitFreshSignal_ = false;
+    bool startThresholdWaitingLogged_ = false;
     bool automaticStopPending_ = false;
     qint64 captureStartedAtMs_ = 0;
 };

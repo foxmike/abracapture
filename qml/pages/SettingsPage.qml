@@ -138,8 +138,8 @@ Item {
                 Layout.fillWidth: true
                 implicitHeight: outputSectionLayout.implicitHeight + 32
                 radius: 12
-                color: "#161920"
-                border.color: "#242933"
+                color: Theme.AbracaptureTheme.surfaceElevated
+                border.color: Theme.AbracaptureTheme.divider
                 border.width: 1
 
                 ColumnLayout {
@@ -160,7 +160,7 @@ Item {
                             text: "Output & Storage"
                             font.pixelSize: 16
                             font.weight: Font.Bold
-                            color: "#f8fafc"
+                                    color: Theme.AbracaptureTheme.text
                         }
                     }
 
@@ -173,7 +173,7 @@ Item {
                             text: "Output Directory"
                             font.pixelSize: 13
                             font.weight: Font.DemiBold
-                            color: "#e2e8f0"
+                                    color: Theme.AbracaptureTheme.text
                         }
 
                         RowLayout {
@@ -185,11 +185,11 @@ Item {
                                 Layout.fillWidth: true
                                 text: root.vm ? root.vm.outputDirectory : ""
                                 placeholderText: "/path/to/recordings"
-                                color: "#f8fafc"
+                                    color: Theme.AbracaptureTheme.text
                                 background: Rectangle {
                                     radius: 6
-                                    color: "#0f172a"
-                                    border.color: outputDirField.activeFocus ? "#38bdf8" : "#334155"
+                                    color: Theme.AbracaptureTheme.controlBackground
+                                    border.color: outputDirField.activeFocus ? Theme.AbracaptureTheme.primary : Theme.AbracaptureTheme.border
                                     border.width: 1
                                 }
                                 onTextChanged: {
@@ -217,13 +217,13 @@ Item {
                                     text: browseButton.text
                                     font.pixelSize: 13
                                     font.weight: Font.Medium
-                                    color: "#f8fafc"
+                                    color: Theme.AbracaptureTheme.text
                                     horizontalAlignment: Text.AlignHCenter
                                     verticalAlignment: Text.AlignVCenter
                                 }
                                 background: Rectangle {
                                     radius: 6
-                                    color: browseButton.hovered ? "#334155" : "#1e293b"
+                                    color: browseButton.hovered ? Theme.AbracaptureTheme.controlBackgroundHover : Theme.AbracaptureTheme.surface
                                     border.color: "#475569"
                                     border.width: 1
                                 }
@@ -233,7 +233,7 @@ Item {
                         Text {
                             text: "Location where completed masters and post-capture exports will be stored."
                             font.pixelSize: 11
-                            color: "#64748b"
+                                    color: Theme.AbracaptureTheme.disabledText
                         }
                     }
 
@@ -246,7 +246,7 @@ Item {
                             text: "File Naming Pattern"
                             font.pixelSize: 13
                             font.weight: Font.DemiBold
-                            color: "#e2e8f0"
+                                    color: Theme.AbracaptureTheme.text
                         }
 
                         TextField {
@@ -254,11 +254,11 @@ Item {
                             Layout.fillWidth: true
                             text: root.vm ? root.vm.namingPattern : "{source}_{date}_{time}"
                             placeholderText: "{source}_{date}_{time}"
-                            color: "#f8fafc"
+                                    color: Theme.AbracaptureTheme.text
                             background: Rectangle {
                                 radius: 6
-                                color: "#0f172a"
-                                border.color: namingPatternField.activeFocus ? "#38bdf8" : "#334155"
+                                    color: Theme.AbracaptureTheme.controlBackground
+                                    border.color: namingPatternField.activeFocus ? Theme.AbracaptureTheme.primary : Theme.AbracaptureTheme.border
                                 border.width: 1
                             }
                             onTextChanged: {
@@ -273,35 +273,35 @@ Item {
                             Text {
                                 text: "Available tokens:"
                                 font.pixelSize: 11
-                                color: "#64748b"
+                                    color: Theme.AbracaptureTheme.disabledText
                             }
                             Rectangle {
                                 radius: 4
-                                color: "#1e293b"
+                                    color: Theme.AbracaptureTheme.controlBackgroundHover
                                 implicitWidth: t1.implicitWidth + 8
                                 implicitHeight: 18
-                                Text { id: t1; anchors.centerIn: parent; text: "{source}"; font.pixelSize: 10; color: "#94a3b8" }
+                                Text { id: t1; anchors.centerIn: parent; text: "{source}"; font.pixelSize: 10; color: Theme.AbracaptureTheme.textSecondary }
                             }
                             Rectangle {
                                 radius: 4
-                                color: "#1e293b"
+                                    color: Theme.AbracaptureTheme.controlBackgroundHover
                                 implicitWidth: t2.implicitWidth + 8
                                 implicitHeight: 18
-                                Text { id: t2; anchors.centerIn: parent; text: "{date}"; font.pixelSize: 10; color: "#94a3b8" }
+                                Text { id: t2; anchors.centerIn: parent; text: "{date}"; font.pixelSize: 10; color: Theme.AbracaptureTheme.textSecondary }
                             }
                             Rectangle {
                                 radius: 4
-                                color: "#1e293b"
+                                    color: Theme.AbracaptureTheme.controlBackgroundHover
                                 implicitWidth: t3.implicitWidth + 8
                                 implicitHeight: 18
-                                Text { id: t3; anchors.centerIn: parent; text: "{time}"; font.pixelSize: 10; color: "#94a3b8" }
+                                Text { id: t3; anchors.centerIn: parent; text: "{time}"; font.pixelSize: 10; color: Theme.AbracaptureTheme.textSecondary }
                             }
                             Rectangle {
                                 radius: 4
-                                color: "#1e293b"
+                                    color: Theme.AbracaptureTheme.controlBackgroundHover
                                 implicitWidth: t4.implicitWidth + 8
                                 implicitHeight: 18
-                                Text { id: t4; anchors.centerIn: parent; text: "{counter}"; font.pixelSize: 10; color: "#94a3b8" }
+                                Text { id: t4; anchors.centerIn: parent; text: "{counter}"; font.pixelSize: 10; color: Theme.AbracaptureTheme.textSecondary }
                             }
                         }
                     }
@@ -315,7 +315,7 @@ Item {
                             text: "Master Recording Format"
                             font.pixelSize: 13
                             font.weight: Font.DemiBold
-                            color: "#e2e8f0"
+                                    color: Theme.AbracaptureTheme.text
                         }
 
                         RowLayout {
@@ -331,15 +331,22 @@ Item {
                                         root.vm.masterFormat = (index === 1 ? "flac" : "wav")
                                     }
                                 }
+                                indicator: Text {
+                                    x: masterFormatCombo.width - width - 10
+                                    y: (masterFormatCombo.height - height) / 2
+                                    text: "▼"
+                                    color: Theme.AbracaptureTheme.textSecondary
+                                    font.pixelSize: 10
+                                }
                                 delegate: ItemDelegate {
                                     width: masterFormatCombo.width
                                     contentItem: Text {
                                         text: modelData
-                                        color: highlighted ? "#38bdf8" : "#f8fafc"
+                                        color: highlighted ? Theme.AbracaptureTheme.primary : Theme.AbracaptureTheme.text
                                         font.pixelSize: 13
                                     }
                                     background: Rectangle {
-                                        color: highlighted ? "#1e293b" : "#0f172a"
+                                        color: highlighted ? Theme.AbracaptureTheme.controlBackgroundHover : Theme.AbracaptureTheme.controlBackground
                                     }
                                 }
                                 contentItem: Text {
@@ -347,13 +354,13 @@ Item {
                                     rightPadding: 24
                                     text: masterFormatCombo.displayText
                                     font.pixelSize: 13
-                                    color: "#f8fafc"
+                                    color: Theme.AbracaptureTheme.text
                                     verticalAlignment: Text.AlignVCenter
                                 }
                                 background: Rectangle {
                                     radius: 6
-                                    color: "#0f172a"
-                                    border.color: masterFormatCombo.activeFocus ? "#38bdf8" : "#334155"
+                                    color: Theme.AbracaptureTheme.controlBackground
+                                    border.color: masterFormatCombo.activeFocus ? Theme.AbracaptureTheme.primary : Theme.AbracaptureTheme.border
                                     border.width: 1
                                 }
                             }
@@ -363,7 +370,7 @@ Item {
                                       ? "32-bit float / 24-bit PCM without encoding latency."
                                       : "Bit-perfect FLAC container with compressed storage footprint."
                                 font.pixelSize: 12
-                                color: "#94a3b8"
+                                    color: Theme.AbracaptureTheme.textSecondary
                                 Layout.fillWidth: true
                             }
                         }
@@ -406,6 +413,13 @@ Item {
                             model: root.vm ? root.vm.availableSampleRates : ["Auto (source)", "48000", "96000", "128000", "192000"]
                             currentIndex: root.vm && root.vm.captureSampleRate > 0 ? model.indexOf(String(root.vm.captureSampleRate)) : 0
                             onActivated: if (root.vm) root.vm.captureSampleRate = index === 0 ? 0 : Number(currentText)
+                            indicator: Text {
+                                x: sampleRateCombo.width - width - 8
+                                y: (sampleRateCombo.height - height) / 2
+                                text: "▼"
+                                color: Theme.AbracaptureTheme.textSecondary
+                                font.pixelSize: 10
+                            }
                         }
                         Text { text: "Bit depth"; color: Theme.AbracaptureTheme.textSecondary; font.pixelSize: 13 }
                         ComboBox {
@@ -413,6 +427,13 @@ Item {
                             model: root.vm ? root.vm.availableBitDepths : ["Auto (source)", "16", "24", "32"]
                             currentIndex: root.vm && root.vm.captureBitDepth > 0 ? model.indexOf(String(root.vm.captureBitDepth)) : 0
                             onActivated: if (root.vm) root.vm.captureBitDepth = index === 0 ? 0 : Number(currentText)
+                            indicator: Text {
+                                x: bitDepthCombo.width - width - 8
+                                y: (bitDepthCombo.height - height) / 2
+                                text: "▼"
+                                color: Theme.AbracaptureTheme.textSecondary
+                                font.pixelSize: 10
+                            }
                         }
                     }
                 }
@@ -423,8 +444,8 @@ Item {
                 Layout.fillWidth: true
                 implicitHeight: captureSectionLayout.implicitHeight + 32
                 radius: 12
-                color: "#161920"
-                border.color: "#242933"
+                color: Theme.AbracaptureTheme.surfaceElevated
+                border.color: Theme.AbracaptureTheme.divider
                 border.width: 1
 
                 ColumnLayout {
@@ -445,7 +466,7 @@ Item {
                             text: "Capture Automation & Pre/Post Roll"
                             font.pixelSize: 16
                             font.weight: Font.Bold
-                            color: "#f8fafc"
+                                    color: Theme.AbracaptureTheme.text
                         }
                     }
 
@@ -462,7 +483,7 @@ Item {
                                 text: "Pre-Roll Buffer (seconds)"
                                 font.pixelSize: 13
                                 font.weight: Font.DemiBold
-                                color: "#e2e8f0"
+                                    color: Theme.AbracaptureTheme.text
                             }
 
                             Row {
@@ -473,7 +494,7 @@ Item {
                                 to: 60
                                 stepSize: 1
                                 value: root.vm ? root.vm.preRollSeconds : 0
-                                editable: true
+                                editable: false
                                 onValueModified: {
                                     if (root.vm) {
                                         root.vm.preRollSeconds = value
@@ -482,19 +503,32 @@ Item {
                                 background: Rectangle {
                                     implicitWidth: 140
                                     radius: 6
-                                    color: "#0f172a"
-                                    border.color: preRollSpinBox.activeFocus ? "#38bdf8" : "#334155"
+                                    color: Theme.AbracaptureTheme.controlBackground
+                                    border.color: preRollSpinBox.activeFocus ? Theme.AbracaptureTheme.primary : Theme.AbracaptureTheme.border
                                     border.width: 1
                                 }
                                 contentItem: TextInput {
                                     text: preRollSpinBox.textFromValue(preRollSpinBox.value, preRollSpinBox.locale)
                                     font.pixelSize: 13
-                                    color: "#f8fafc"
+                                    color: Theme.AbracaptureTheme.text
                                     horizontalAlignment: Qt.AlignHCenter
                                     verticalAlignment: Qt.AlignVCenter
-                                    readOnly: !preRollSpinBox.editable
-                                    validator: preRollSpinBox.validator
-                                    inputMethodHints: Qt.ImhFormattedNumbersOnly
+                                    readOnly: true
+                                }
+                                up.indicator: Rectangle {
+                                    x: preRollSpinBox.width - width
+                                    width: 22
+                                    height: preRollSpinBox.height / 2
+                                    color: preRollSpinBox.up.pressed ? Theme.AbracaptureTheme.controlBackgroundHover : "transparent"
+                                    Text { anchors.centerIn: parent; text: "▲"; color: Theme.AbracaptureTheme.textSecondary; font.pixelSize: 9 }
+                                }
+                                down.indicator: Rectangle {
+                                    x: preRollSpinBox.width - width
+                                    y: preRollSpinBox.height / 2
+                                    width: 22
+                                    height: preRollSpinBox.height / 2
+                                    color: preRollSpinBox.down.pressed ? Theme.AbracaptureTheme.controlBackgroundHover : "transparent"
+                                    Text { anchors.centerIn: parent; text: "▼"; color: Theme.AbracaptureTheme.textSecondary; font.pixelSize: 9 }
                                 }
                                 }
                                 Text { text: "s"; color: "#cbd5e1"; font.pixelSize: 13 }
@@ -503,7 +537,7 @@ Item {
                             Text {
                                 text: "Continuously captures audio prior to recording trigger."
                                 font.pixelSize: 11
-                                color: "#64748b"
+                                    color: Theme.AbracaptureTheme.disabledText
                             }
                         }
 
@@ -515,7 +549,7 @@ Item {
                                 text: "Post-Roll Tail (seconds)"
                                 font.pixelSize: 13
                                 font.weight: Font.DemiBold
-                                color: "#e2e8f0"
+                                    color: Theme.AbracaptureTheme.text
                             }
 
                             Row {
@@ -526,7 +560,7 @@ Item {
                                 to: 60
                                 stepSize: 1
                                 value: root.vm ? root.vm.postRollSeconds : 0
-                                editable: true
+                                editable: false
                                 onValueModified: {
                                     if (root.vm) {
                                         root.vm.postRollSeconds = value
@@ -535,19 +569,32 @@ Item {
                                 background: Rectangle {
                                     implicitWidth: 140
                                     radius: 6
-                                    color: "#0f172a"
-                                    border.color: postRollSpinBox.activeFocus ? "#38bdf8" : "#334155"
+                                    color: Theme.AbracaptureTheme.controlBackground
+                                    border.color: postRollSpinBox.activeFocus ? Theme.AbracaptureTheme.primary : Theme.AbracaptureTheme.border
                                     border.width: 1
                                 }
                                 contentItem: TextInput {
                                     text: postRollSpinBox.textFromValue(postRollSpinBox.value, postRollSpinBox.locale)
                                     font.pixelSize: 13
-                                    color: "#f8fafc"
+                                    color: Theme.AbracaptureTheme.text
                                     horizontalAlignment: Qt.AlignHCenter
                                     verticalAlignment: Qt.AlignVCenter
-                                    readOnly: !postRollSpinBox.editable
-                                    validator: postRollSpinBox.validator
-                                    inputMethodHints: Qt.ImhFormattedNumbersOnly
+                                    readOnly: true
+                                }
+                                up.indicator: Rectangle {
+                                    x: postRollSpinBox.width - width
+                                    width: 22
+                                    height: postRollSpinBox.height / 2
+                                    color: postRollSpinBox.up.pressed ? Theme.AbracaptureTheme.controlBackgroundHover : "transparent"
+                                    Text { anchors.centerIn: parent; text: "▲"; color: Theme.AbracaptureTheme.textSecondary; font.pixelSize: 9 }
+                                }
+                                down.indicator: Rectangle {
+                                    x: postRollSpinBox.width - width
+                                    y: postRollSpinBox.height / 2
+                                    width: 22
+                                    height: postRollSpinBox.height / 2
+                                    color: postRollSpinBox.down.pressed ? Theme.AbracaptureTheme.controlBackgroundHover : "transparent"
+                                    Text { anchors.centerIn: parent; text: "▼"; color: Theme.AbracaptureTheme.textSecondary; font.pixelSize: 9 }
                                 }
                                 }
                                 Text { text: "s"; color: "#cbd5e1"; font.pixelSize: 13 }
@@ -556,7 +603,7 @@ Item {
                             Text {
                                 text: "Extends capture after stop signal to preserve reverberation."
                                 font.pixelSize: 11
-                                color: "#64748b"
+                                    color: Theme.AbracaptureTheme.disabledText
                             }
                         }
                     }
@@ -564,7 +611,7 @@ Item {
                     Rectangle {
                         Layout.fillWidth: true
                         height: 1
-                        color: "#242933"
+                        color: Theme.AbracaptureTheme.divider
                     }
 
                     // Auto-Start Switch & Threshold
@@ -594,13 +641,13 @@ Item {
                                     text: "Auto-Start Capture on Signal"
                                     font.pixelSize: 14
                                     font.weight: Font.DemiBold
-                                    color: "#f8fafc"
+                                    color: Theme.AbracaptureTheme.text
                                 }
 
                                 Text {
                                     text: "Arm capture and automatically begin recording when input audio exceeds threshold."
                                     font.pixelSize: 11
-                                    color: "#94a3b8"
+                                    color: Theme.AbracaptureTheme.textSecondary
                                 }
                             }
                         }
@@ -615,7 +662,7 @@ Item {
                             Text {
                                 text: "Start Threshold:"
                                 font.pixelSize: 13
-                                color: "#e2e8f0"
+                                    color: Theme.AbracaptureTheme.text
                             }
 
                             Row {
@@ -626,7 +673,7 @@ Item {
                                 to: 0
                                 stepSize: 1
                                 value: root.vm ? Math.round(root.vm.autoStartThreshold) : -30
-                                editable: true
+                                editable: false
                                 onValueModified: {
                                     if (root.vm) {
                                         root.vm.autoStartThreshold = value
@@ -635,18 +682,32 @@ Item {
                                 background: Rectangle {
                                     implicitWidth: 120
                                     radius: 6
-                                    color: "#0f172a"
-                                    border.color: autoStartSpinBox.activeFocus ? "#38bdf8" : "#334155"
+                                    color: Theme.AbracaptureTheme.controlBackground
+                                    border.color: autoStartSpinBox.activeFocus ? Theme.AbracaptureTheme.primary : Theme.AbracaptureTheme.border
                                     border.width: 1
                                 }
                                 contentItem: TextInput {
                                     text: autoStartSpinBox.value
                                     font.pixelSize: 13
-                                    color: "#f8fafc"
+                                    color: Theme.AbracaptureTheme.text
                                     horizontalAlignment: Qt.AlignHCenter
                                     verticalAlignment: Qt.AlignVCenter
-                                    validator: autoStartSpinBox.validator
-                                    inputMethodHints: Qt.ImhFormattedNumbersOnly
+                                    readOnly: true
+                                }
+                                up.indicator: Rectangle {
+                                    x: autoStartSpinBox.width - width
+                                    width: 22
+                                    height: autoStartSpinBox.height / 2
+                                    color: autoStartSpinBox.up.pressed ? Theme.AbracaptureTheme.controlBackgroundHover : "transparent"
+                                    Text { anchors.centerIn: parent; text: "▲"; color: Theme.AbracaptureTheme.textSecondary; font.pixelSize: 9 }
+                                }
+                                down.indicator: Rectangle {
+                                    x: autoStartSpinBox.width - width
+                                    y: autoStartSpinBox.height / 2
+                                    width: 22
+                                    height: autoStartSpinBox.height / 2
+                                    color: autoStartSpinBox.down.pressed ? Theme.AbracaptureTheme.controlBackgroundHover : "transparent"
+                                    Text { anchors.centerIn: parent; text: "▼"; color: Theme.AbracaptureTheme.textSecondary; font.pixelSize: 9 }
                                 }
                                 }
                                 Text { text: "dBFS"; color: "#cbd5e1"; font.pixelSize: 13 }
@@ -655,7 +716,7 @@ Item {
                             Text {
                                 text: "Default is -30 dBFS."
                                 font.pixelSize: 11
-                                color: "#64748b"
+                                    color: Theme.AbracaptureTheme.disabledText
                             }
                         }
                     }
@@ -663,7 +724,7 @@ Item {
                     Rectangle {
                         Layout.fillWidth: true
                         height: 1
-                        color: "#242933"
+                        color: Theme.AbracaptureTheme.divider
                     }
 
                     // Auto-Stop Switch & Silence Duration
@@ -693,13 +754,13 @@ Item {
                                     text: "Auto-Stop Capture on Silence"
                                     font.pixelSize: 14
                                     font.weight: Font.DemiBold
-                                    color: "#f8fafc"
+                                    color: Theme.AbracaptureTheme.text
                                 }
 
                                 Text {
                                     text: "Automatically finalize recording when input drops below silence threshold."
                                     font.pixelSize: 11
-                                    color: "#94a3b8"
+                                    color: Theme.AbracaptureTheme.textSecondary
                                 }
                             }
                         }
@@ -714,7 +775,7 @@ Item {
                             Text {
                                 text: "Silence Duration:"
                                 font.pixelSize: 13
-                                color: "#e2e8f0"
+                                    color: Theme.AbracaptureTheme.text
                             }
 
                             Row {
@@ -725,7 +786,7 @@ Item {
                                 to: 60
                                 stepSize: 1
                                 value: root.vm ? root.vm.autoStopSilenceDuration : 3
-                                editable: true
+                                editable: false
                                 onValueModified: {
                                     if (root.vm) {
                                         root.vm.autoStopSilenceDuration = value
@@ -734,18 +795,32 @@ Item {
                                 background: Rectangle {
                                     implicitWidth: 120
                                     radius: 6
-                                    color: "#0f172a"
-                                    border.color: autoStopDurationSpinBox.activeFocus ? "#38bdf8" : "#334155"
+                                    color: Theme.AbracaptureTheme.controlBackground
+                                    border.color: autoStopDurationSpinBox.activeFocus ? Theme.AbracaptureTheme.primary : Theme.AbracaptureTheme.border
                                     border.width: 1
                                 }
                                 contentItem: TextInput {
                                     text: autoStopDurationSpinBox.value
                                     font.pixelSize: 13
-                                    color: "#f8fafc"
+                                    color: Theme.AbracaptureTheme.text
                                     horizontalAlignment: Qt.AlignHCenter
                                     verticalAlignment: Qt.AlignVCenter
-                                    validator: autoStopDurationSpinBox.validator
-                                    inputMethodHints: Qt.ImhFormattedNumbersOnly
+                                    readOnly: true
+                                }
+                                up.indicator: Rectangle {
+                                    x: autoStopDurationSpinBox.width - width
+                                    width: 22
+                                    height: autoStopDurationSpinBox.height / 2
+                                    color: autoStopDurationSpinBox.up.pressed ? Theme.AbracaptureTheme.controlBackgroundHover : "transparent"
+                                    Text { anchors.centerIn: parent; text: "▲"; color: Theme.AbracaptureTheme.textSecondary; font.pixelSize: 9 }
+                                }
+                                down.indicator: Rectangle {
+                                    x: autoStopDurationSpinBox.width - width
+                                    y: autoStopDurationSpinBox.height / 2
+                                    width: 22
+                                    height: autoStopDurationSpinBox.height / 2
+                                    color: autoStopDurationSpinBox.down.pressed ? Theme.AbracaptureTheme.controlBackgroundHover : "transparent"
+                                    Text { anchors.centerIn: parent; text: "▼"; color: Theme.AbracaptureTheme.textSecondary; font.pixelSize: 9 }
                                 }
                                 }
                                 Text { text: "s"; color: "#cbd5e1"; font.pixelSize: 13 }
@@ -754,7 +829,7 @@ Item {
                             Text {
                                 text: "Continuous silence before trigger."
                                 font.pixelSize: 11
-                                color: "#64748b"
+                                    color: Theme.AbracaptureTheme.disabledText
                             }
                         }
                     }
@@ -766,8 +841,8 @@ Item {
                 Layout.fillWidth: true
                 implicitHeight: exportSectionLayout.implicitHeight + 32
                 radius: 12
-                color: "#161920"
-                border.color: "#242933"
+                color: Theme.AbracaptureTheme.surfaceElevated
+                border.color: Theme.AbracaptureTheme.divider
                 border.width: 1
 
                 ColumnLayout {
@@ -788,7 +863,7 @@ Item {
                             text: "Post-Capture Export"
                             font.pixelSize: 16
                             font.weight: Font.Bold
-                            color: "#f8fafc"
+                                    color: Theme.AbracaptureTheme.text
                         }
                     }
 
@@ -814,13 +889,13 @@ Item {
                                 text: "Generate Additional Export File"
                                 font.pixelSize: 14
                                 font.weight: Font.DemiBold
-                                color: "#f8fafc"
+                                    color: Theme.AbracaptureTheme.text
                             }
 
                             Text {
                                 text: "Automatically transcode a secondary delivery format via ffmpeg when capture finishes."
                                 font.pixelSize: 11
-                                color: "#94a3b8"
+                                    color: Theme.AbracaptureTheme.textSecondary
                             }
                         }
                     }
@@ -835,7 +910,7 @@ Item {
                             text: "Export Format"
                             font.pixelSize: 13
                             font.weight: Font.DemiBold
-                            color: "#e2e8f0"
+                                    color: Theme.AbracaptureTheme.text
                         }
 
                         RowLayout {
@@ -856,15 +931,22 @@ Item {
                                         root.vm.exportFormat = formatCodes[index]
                                     }
                                 }
+                                indicator: Text {
+                                    x: exportFormatCombo.width - width - 10
+                                    y: (exportFormatCombo.height - height) / 2
+                                    text: "▼"
+                                    color: Theme.AbracaptureTheme.textSecondary
+                                    font.pixelSize: 10
+                                }
                                 delegate: ItemDelegate {
                                     width: exportFormatCombo.width
                                     contentItem: Text {
                                         text: modelData
-                                        color: highlighted ? "#38bdf8" : "#f8fafc"
+                                        color: highlighted ? Theme.AbracaptureTheme.primary : Theme.AbracaptureTheme.text
                                         font.pixelSize: 13
                                     }
                                     background: Rectangle {
-                                        color: highlighted ? "#1e293b" : "#0f172a"
+                                        color: highlighted ? Theme.AbracaptureTheme.controlBackgroundHover : Theme.AbracaptureTheme.controlBackground
                                     }
                                 }
                                 contentItem: Text {
@@ -872,13 +954,13 @@ Item {
                                     rightPadding: 24
                                     text: exportFormatCombo.displayText
                                     font.pixelSize: 13
-                                    color: "#f8fafc"
+                                    color: Theme.AbracaptureTheme.text
                                     verticalAlignment: Text.AlignVCenter
                                 }
                                 background: Rectangle {
                                     radius: 6
-                                    color: "#0f172a"
-                                    border.color: exportFormatCombo.activeFocus ? "#38bdf8" : "#334155"
+                                    color: Theme.AbracaptureTheme.controlBackground
+                                    border.color: exportFormatCombo.activeFocus ? Theme.AbracaptureTheme.primary : Theme.AbracaptureTheme.border
                                     border.width: 1
                                 }
                             }
@@ -886,7 +968,7 @@ Item {
                             Text {
                                 text: "Master file remains pristine in original lossless format."
                                 font.pixelSize: 12
-                                color: "#94a3b8"
+                                    color: Theme.AbracaptureTheme.textSecondary
                                 Layout.fillWidth: true
                             }
                         }
@@ -917,14 +999,14 @@ Item {
                         text: resetButton.text
                         font.pixelSize: 13
                         font.weight: Font.Medium
-                        color: "#94a3b8"
+                                    color: Theme.AbracaptureTheme.textSecondary
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                     }
                     background: Rectangle {
                         radius: 6
-                        color: resetButton.hovered ? "#1f242d" : "#161920"
-                        border.color: "#334155"
+                        color: resetButton.hovered ? Theme.AbracaptureTheme.controlBackgroundHover : Theme.AbracaptureTheme.surfaceElevated
+                        border.color: Theme.AbracaptureTheme.border
                         border.width: 1
                     }
                 }
@@ -944,14 +1026,14 @@ Item {
                         text: saveButton.text
                         font.pixelSize: 13
                         font.weight: Font.Bold
-                        color: saveButton.enabled ? "#0f172a" : "#64748b"
+                        color: saveButton.enabled ? Theme.AbracaptureTheme.text : Theme.AbracaptureTheme.disabledText
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                     }
                     background: Rectangle {
                         radius: 6
-                        color: saveButton.enabled ? (saveButton.hovered ? "#7dd3fc" : "#38bdf8") : "#1e293b"
-                        border.color: saveButton.enabled ? "#38bdf8" : "#334155"
+                        color: saveButton.enabled ? (saveButton.hovered ? Theme.AbracaptureTheme.primary : Theme.AbracaptureTheme.primary) : Theme.AbracaptureTheme.controlBackgroundHover
+                        border.color: saveButton.enabled ? Theme.AbracaptureTheme.primary : Theme.AbracaptureTheme.border
                         border.width: 1
                     }
                 }

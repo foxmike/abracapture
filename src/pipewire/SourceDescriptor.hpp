@@ -21,6 +21,17 @@ struct SourceDescriptor {
     std::string appName;
     std::string mediaClass;
     std::string nodeName;
+    std::string clientId;
+    std::string applicationProcessId;
+    std::string applicationProcessBinary;
+    std::string objectSerial;
+    std::string nodeDescription;
+    std::string mediaName;
+    std::string mediaTitle;
+    std::string mediaAlbum;
+    std::string mediaRole;
+    std::string logicalIdentity;
+    std::string instanceIdentity;
     std::optional<std::uint32_t> deviceId;
     std::optional<std::uint32_t> sampleRate;
     std::optional<std::uint32_t> channels;

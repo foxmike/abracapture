@@ -400,6 +400,7 @@ int CliApp::runRecord(const QStringList& recordArgs) {
     abracapture::audio::AudioRingBuffer ringBuffer(65536 * 4);
     abracapture::audio::PipeWireCaptureStream stream(
         captureLoop, captureCore, ringBuffer, selectedSource->nodeId,
+        selectedSource->objectSerial,
         *selectedSource->sourceFormat, *selectedSource->sourceFormat);
 
     if (!stream.start()) {

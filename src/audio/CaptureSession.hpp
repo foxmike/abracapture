@@ -13,6 +13,7 @@
 #include <functional>
 #include <memory>
 #include <mutex>
+#include <string>
 #include <thread>
 
 struct pw_core;
@@ -52,7 +53,8 @@ public:
     [[nodiscard]] bool begin(std::uint32_t sourceId,
                              spa_audio_format format,
                              std::uint32_t rate,
-                             std::uint32_t channels);
+                             std::uint32_t channels,
+                             std::string targetObjectSerial = {});
     void stop() noexcept;
     void drainPendingSamples() noexcept;
 
@@ -89,6 +91,7 @@ private:
     spa_audio_format requestedFormat_ = SPA_AUDIO_FORMAT_UNKNOWN;
     std::uint32_t requestedRate_ = 0;
     std::uint32_t requestedChannels_ = 0;
+    std::string requestedObjectSerial_;
     std::atomic<std::uint32_t> activeChannels_{0};
 
     const StateCallback stateCallback_;

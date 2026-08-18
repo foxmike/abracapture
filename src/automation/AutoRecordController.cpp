@@ -106,7 +106,7 @@ void AutoRecordController::feedLevel(const float peakLinear) {
     const float peakDbfs = peakLinear > 0.0F && !std::isnan(peakLinear)
                                ? 20.0F * std::log10(peakLinear)
                                : -std::numeric_limits<float>::infinity();
-    const bool aboveStartThreshold = peakDbfs > startThresholdDbfs_;
+    const bool aboveStartThreshold = peakDbfs >= startThresholdDbfs_;
 
     const auto transitionTo = [this](const State nextState) {
         if (state_ == nextState) {
@@ -140,6 +140,8 @@ void AutoRecordController::feedLevel(const float peakLinear) {
             return;
         }
 
+        std::fprintf(stderr,
+                     "[abracapture] automation: start threshold crossed -> recording\n");
         transitionTo(Recording);
         emit startRequested();
         emit preRollRequested(preRollDurationMs_);
@@ -163,6 +165,8 @@ void AutoRecordController::feedLevel(const float peakLinear) {
         }
 
         armedTimer_.invalidate();
+        std::fprintf(stderr,
+                     "[abracapture] automation: start threshold crossed -> recording\n");
         transitionTo(Recording);
         emit startRequested();
         emit preRollRequested(preRollDurationMs_);

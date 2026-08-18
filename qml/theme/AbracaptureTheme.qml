@@ -25,6 +25,21 @@ QtObject {
     readonly property color surface: highContrast
                                         ? (darkMode ? "#111111" : "#ffffff")
                                         : (darkMode ? "#111827" : "#ffffff")
+    readonly property color surfaceElevated: highContrast
+                                                   ? (darkMode ? "#1a1a1a" : "#ffffff")
+                                                   : (darkMode ? "#161920" : "#ffffff")
+    readonly property color controlBackground: highContrast
+                                                     ? (darkMode ? "#202020" : "#ffffff")
+                                                     : (darkMode ? "#0f172a" : "#ffffff")
+    readonly property color controlBackgroundHover: highContrast
+                                                          ? (darkMode ? "#303030" : "#f1f5f9")
+                                                          : (darkMode ? "#1e293b" : "#f1f5f9")
+    readonly property color border: highContrast
+                                        ? (darkMode ? "#ffffff" : "#0f172a")
+                                        : (darkMode ? "#334155" : "#cbd5e1")
+    readonly property color divider: highContrast
+                                         ? (darkMode ? "#ffffff" : "#94a3b8")
+                                         : (darkMode ? "#242933" : "#e2e8f0")
     readonly property color text: highContrast
                                       ? (darkMode ? "#ffffff" : "#000000")
                                       : (darkMode ? "#f8fafc" : "#0f172a")
@@ -32,6 +47,10 @@ QtObject {
                                                ? (darkMode ? "#ffffff" : "#111111")
                                                : (darkMode ? "#cbd5e1" : "#475569")
     readonly property color error: highContrast ? "#ff6b6b" : "#dc2626"
+    readonly property color success: highContrast ? "#00ff85" : (darkMode ? "#34d399" : "#166534")
+    readonly property color warning: highContrast ? "#ffff00" : (darkMode ? "#fbbf24" : "#a16207")
+    readonly property color disabledText: darkMode ? "#64748b" : "#94a3b8"
+    readonly property color controlForeground: text
 
     // capture-active / capture-idle indicators use dedicated backgrounds.
     // Both foreground/background pairs exceed the WCAG AA 4.5:1 ratio.

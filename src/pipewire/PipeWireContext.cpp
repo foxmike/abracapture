@@ -20,6 +20,20 @@ const pw_proxy_events proxyEvents{
 
 const pw_node_events nodeEvents{
     .version = PW_VERSION_NODE_EVENTS,
+    .info = [](void* data, const pw_node_info* info) {
+        auto& object = *static_cast<PipeWireContext::GlobalObject*>(data);
+        if (info == nullptr || object.owner == nullptr ||
+            object.owner->nodePropertiesChanged == nullptr) {
+            return;
+        }
+        try {
+            if ((info->change_mask & PW_NODE_CHANGE_MASK_PROPS) != 0) {
+                object.owner->nodePropertiesChanged(object.id, info->props);
+            }
+        } catch (...) {
+            // Exceptions must not cross the PipeWire callback boundary.
+        }
+    },
     .param = [](void* data, int, const std::uint32_t id, std::uint32_t,
                 std::uint32_t, const spa_pod* const param) {
         auto& object = *static_cast<PipeWireContext::GlobalObject*>(data);

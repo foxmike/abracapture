@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import "../theme" as Theme
 
 ItemDelegate {
     id: root
@@ -13,7 +14,8 @@ ItemDelegate {
     property int cardBitDepth: model.bitDepth !== undefined ? model.bitDepth : 0
     property string cardSampleFormat: model.sampleFormat !== undefined ? model.sampleFormat : "Unknown"
     property bool cardIsActive: model.isActive !== undefined ? model.isActive : false
-    property bool cardIsSelected: model.isSelected !== undefined ? model.isSelected : (ListView.isCurrentItem || false)
+    property int selectedSourceId: 0
+    readonly property bool cardIsSelected: cardSourceId !== 0 && cardSourceId === selectedSourceId
 
     signal sourceSelected(int sourceId)
 
@@ -89,7 +91,7 @@ ItemDelegate {
         if (lower.indexOf("hardware") !== -1 || lower.indexOf("input") !== -1) {
             return "#34d399"
         }
-        return "#94a3b8"
+        return Theme.AbracaptureTheme.textSecondary
     }
 
     implicitWidth: ListView.view ? ListView.view.width : 340
@@ -98,8 +100,12 @@ ItemDelegate {
 
     background: Rectangle {
         radius: 8
-        color: root.cardIsSelected ? "#1e293b" : (root.hovered ? "#1f242d" : "#161920")
-        border.color: root.cardIsSelected ? "#38bdf8" : (root.hovered ? "#374151" : "#242933")
+        color: root.cardIsSelected ? Theme.AbracaptureTheme.surface :
+                                     (root.hovered ? Theme.AbracaptureTheme.controlBackgroundHover
+                                                   : Theme.AbracaptureTheme.surfaceElevated)
+        border.color: root.cardIsSelected ? Theme.AbracaptureTheme.primary :
+                                           (root.hovered ? Theme.AbracaptureTheme.border
+                                                         : Theme.AbracaptureTheme.divider)
         border.width: root.cardIsSelected ? 2 : 1
 
         Rectangle {
@@ -150,7 +156,7 @@ ItemDelegate {
                     text: root.cardDisplayName ? root.cardDisplayName : ("Source #" + root.cardSourceId)
                     font.pixelSize: 14
                     font.weight: Font.Bold
-                    color: root.cardIsSelected ? "#f8fafc" : "#e2e8f0"
+                    color: root.cardIsSelected ? Theme.AbracaptureTheme.text : Theme.AbracaptureTheme.textSecondary
                     elide: Text.ElideRight
                 }
 
@@ -160,8 +166,8 @@ ItemDelegate {
                     implicitWidth: activeRow.implicitWidth + 10
                     implicitHeight: 22
                     radius: 11
-                    color: "#064e3b"
-                    border.color: "#059669"
+                    color: Theme.AbracaptureTheme.captureActiveBackground
+                    border.color: Theme.AbracaptureTheme.success
                     border.width: 1
 
                     RowLayout {
@@ -173,14 +179,14 @@ ItemDelegate {
                             width: 6
                             height: 6
                             radius: 3
-                            color: "#34d399"
+                            color: Theme.AbracaptureTheme.success
                         }
 
                         Text {
                             text: "LIVE"
                             font.pixelSize: 10
                             font.weight: Font.Bold
-                            color: "#a7f3d0"
+                            color: Theme.AbracaptureTheme.textSecondary
                         }
                     }
                 }
@@ -193,46 +199,46 @@ ItemDelegate {
                 Text {
                     text: "ID: " + root.cardSourceId
                     font.pixelSize: 12
-                    color: "#64748b"
+                    color: Theme.AbracaptureTheme.disabledText
                 }
 
                 Rectangle {
                     width: 3
                     height: 3
                     radius: 1.5
-                    color: "#475569"
+                    color: Theme.AbracaptureTheme.border
                 }
 
                 Text {
                     text: root.formatChannels(root.cardChannelCount)
                     font.pixelSize: 12
-                    color: "#94a3b8"
+                    color: Theme.AbracaptureTheme.textSecondary
                 }
 
                 Rectangle {
                     width: 3
                     height: 3
                     radius: 1.5
-                    color: "#475569"
+                    color: Theme.AbracaptureTheme.border
                 }
 
                 Text {
                     text: root.formatSampleRate(root.cardSampleRate)
                     font.pixelSize: 12
-                    color: "#94a3b8"
+                    color: Theme.AbracaptureTheme.textSecondary
                 }
 
                 Rectangle {
                     width: 3
                     height: 3
                     radius: 1.5
-                    color: "#475569"
+                    color: Theme.AbracaptureTheme.border
                 }
 
                 Text {
                     text: root.cardSampleFormat
                     font.pixelSize: 12
-                    color: "#94a3b8"
+                    color: Theme.AbracaptureTheme.textSecondary
                 }
             }
         }

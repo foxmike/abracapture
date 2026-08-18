@@ -166,6 +166,7 @@ PipeWireCaptureStream::PipeWireCaptureStream(pw_thread_loop* const threadLoop,
                                              pw_core* const core,
                                              AudioRingBuffer& ringBuffer,
                                              const std::uint32_t targetNodeId,
+                                             std::string targetObjectSerial,
                                              const spa_audio_info_raw& sourceFormat,
                                              const spa_audio_info_raw& requestedFormat,
                                              StatusCallback statusCallback)
@@ -173,6 +174,7 @@ PipeWireCaptureStream::PipeWireCaptureStream(pw_thread_loop* const threadLoop,
       core_(core),
       ringBuffer_(&ringBuffer),
       targetNodeId_(targetNodeId),
+      targetObjectSerial_(std::move(targetObjectSerial)),
       sourceFormat_(sourceFormat),
       requestedFormat_(requestedFormat),
       statusCallback_(std::move(statusCallback)) {}
@@ -215,11 +217,17 @@ bool PipeWireCaptureStream::start() {
             nullptr);
         char targetNode[32]{};
         std::snprintf(targetNode, sizeof(targetNode), "%u", targetNodeId_);
-        // PW_KEY_NODE_TARGET is the session-manager target selector.  Do not pass
-        // a node id to pw_stream_connect(): that direct target-id path is legacy.
-        // Keeping AUTOCONNECT lets WirePlumber create channel-matched links to this
-        // exact node instead of falling back to the default Audio/Source.
+        // Jammy's WirePlumber 0.4.8 does not honor target.object. Keep the
+        // concrete object serial for lifecycle/rebind identity, but route via
+        // the supported node.target token and connect with PW_ID_ANY.
         pw_properties_set(properties, PW_KEY_NODE_TARGET, targetNode);
+        pw_properties_set(properties, PW_KEY_NODE_DONT_RECONNECT, "true");
+        std::fprintf(stderr,
+                     "[abracapture] routing compatibility: wireplumber=0.4.8 "
+                     "mechanism=node.target\n"
+                     "[abracapture] target instance: node=%u serial=%s\n",
+                     targetNodeId_,
+                     targetObjectSerial_.c_str());
         pw_properties_set(properties, PW_KEY_NODE_AUTOCONNECT, "true");
         stream_ = pw_stream_new(core_, "Abracapture capture", properties);
         if (stream_ == nullptr) {
@@ -525,6 +533,12 @@ void PipeWireCaptureStream::handleParamChanged(const std::uint32_t id,
         return;
     }
     logFormat("capture", negotiated);
+    std::fprintf(stderr,
+                 "[abracapture] monitor rebound: node=%u serial=%s rate=%u channels=%u\n",
+                 targetNodeId_,
+                 targetObjectSerial_.c_str(),
+                 negotiated.rate,
+                 negotiated.channels);
     if (requestedFormat_.format == sourceFormat_.format &&
         requestedFormat_.rate == sourceFormat_.rate &&
         requestedFormat_.channels == sourceFormat_.channels &&

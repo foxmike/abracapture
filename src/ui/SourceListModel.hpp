@@ -5,10 +5,12 @@
 #include <QHash>
 #include <QList>
 #include <QMutex>
+#include <QSet>
 #include <QObject>
 #include <QString>
 #include <QVariant>
 #include <QVariantMap>
+#include <QTimer>
 #include <cstdint>
 
 struct SourceItem {
@@ -23,6 +25,13 @@ struct SourceItem {
     bool isActive = false;
     QString mediaClass;
     QString nodeName;
+    QString clientId;
+    QString mediaName;
+    QString mediaTitle;
+    QString mediaAlbum;
+    QString objectSerial;
+    QString logicalIdentity;
+    QString instanceIdentity;
 
     bool operator==(const SourceItem& other) const noexcept {
         return id == other.id &&
@@ -35,7 +44,14 @@ struct SourceItem {
                sampleFormat == other.sampleFormat &&
                isActive == other.isActive &&
                mediaClass == other.mediaClass &&
-               nodeName == other.nodeName;
+               nodeName == other.nodeName &&
+               clientId == other.clientId &&
+               mediaName == other.mediaName &&
+               mediaTitle == other.mediaTitle &&
+               mediaAlbum == other.mediaAlbum &&
+               objectSerial == other.objectSerial &&
+               logicalIdentity == other.logicalIdentity &&
+               instanceIdentity == other.instanceIdentity;
     }
 };
 
@@ -100,10 +116,25 @@ signals:
     void selectionChanged();
     void refreshRequested();
     void sourceSelected(std::uint32_t sourceId);
+    void sourceInstanceChanged(std::uint32_t sourceId, QString objectSerial);
 
 private:
+    void resolvePendingReplacement();
+
     mutable QMutex mutex_;
     QList<SourceItem> sources_;
     int selectedIndex_ = -1;
     std::uint32_t selectedSourceId_ = 0;
+    QString selectedObjectSerial_;
+    QString selectedLogicalIdentity_;
+    QString selectedInstanceIdentity_;
+    QTimer* selectionExpiryTimer_ = nullptr;
+
+    // A selected stream may disappear while PipeWire creates its replacement.
+    // Keep only candidates added after that disappearance; pre-existing
+    // siblings from the same application are not valid replacements.
+    bool replacementPending_ = false;
+    SourceItem pendingReplacementSource_;
+    QSet<std::uint32_t> replacementCandidateIds_;
+    QSet<std::uint32_t> replacementMaturedCandidateIds_;
 };

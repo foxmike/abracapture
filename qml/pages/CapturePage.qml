@@ -70,14 +70,14 @@ Item {
 
                     Text {
                         text: "Capture sources"
-                        color: "#f8fafc"
+                        color: Theme.AbracaptureTheme.text
                         font.pixelSize: 23
                         font.weight: Font.Bold
                     }
 
                     Text {
                         text: "Choose an application, system monitor, or physical input."
-                        color: "#94a3b8"
+                        color: Theme.AbracaptureTheme.textSecondary
                         font.pixelSize: 12
                         wrapMode: Text.WordWrap
                         Layout.fillWidth: true
@@ -108,7 +108,7 @@ Item {
                         Layout.fillWidth: true
                         implicitHeight: 27
                         radius: 5
-                        color: "#161e2d"
+                        color: Theme.AbracaptureTheme.surfaceElevated
                         border.color: modelData.color
                         border.width: 1
 
@@ -127,8 +127,8 @@ Item {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 radius: 10
-                color: "#111827"
-                border.color: "#273449"
+                color: Theme.AbracaptureTheme.surface
+                border.color: Theme.AbracaptureTheme.border
                 border.width: 1
 
                 ListView {
@@ -138,10 +138,9 @@ Item {
                     clip: true
                     spacing: 8
                     model: root.sources
-                    currentIndex: root.sources ? root.sources.selectedIndex : -1
-
                     delegate: Components.SourceCard {
                         width: sourceList.width
+                        selectedSourceId: root.sources ? root.sources.selectedSourceId : 0
                         onSourceSelected: function(sourceId) {
                             if (root.sources) {
                                 root.sources.selectSourceById(sourceId)
@@ -158,7 +157,7 @@ Item {
                         text: "No capture sources discovered yet. Check that PipeWire is running, then refresh."
                         horizontalAlignment: Text.AlignHCenter
                         wrapMode: Text.WordWrap
-                        color: "#94a3b8"
+                        color: Theme.AbracaptureTheme.textSecondary
                         font.pixelSize: 13
                     }
                 }
@@ -180,7 +179,7 @@ Item {
 
                     Text {
                         text: "Live capture"
-                        color: "#f8fafc"
+                        color: Theme.AbracaptureTheme.text
                         font.pixelSize: 23
                         font.weight: Font.Bold
                     }
@@ -189,7 +188,7 @@ Item {
                         text: root.capture && root.capture.selectedSourceId !== 0
                               ? "Source #" + root.capture.selectedSourceId
                               : "Select a source to begin"
-                        color: "#94a3b8"
+                        color: Theme.AbracaptureTheme.textSecondary
                         font.pixelSize: 13
                     }
                 }
@@ -200,13 +199,13 @@ Item {
                     radius: 14
                     color: root.capture && root.capture.captureState === "capturing" ? "#065f46"
                           : root.capture && root.capture.captureState === "connecting" ? "#713f12"
-                          : "#1e293b"
+                          : Theme.AbracaptureTheme.controlBackgroundHover
 
                     Text {
                         id: stateLabel
                         anchors.centerIn: parent
                         text: root.capture ? root.capture.captureState.toUpperCase() : "IDLE"
-                        color: "#e2e8f0"
+                        color: Theme.AbracaptureTheme.text
                         font.pixelSize: 11
                         font.weight: Font.Bold
                     }
@@ -228,14 +227,14 @@ Item {
                     Layout.fillWidth: true
                     implicitHeight: 78
                     radius: 8
-                    color: "#111827"
-                    border.color: "#273449"
+                    color: Theme.AbracaptureTheme.surface
+                    border.color: Theme.AbracaptureTheme.border
 
                     Column {
                         anchors.centerIn: parent
                         spacing: 5
-                        Text { text: "DURATION"; color: "#64748b"; font.pixelSize: 10; font.weight: Font.DemiBold }
-                        Text { text: root.durationLabel(root.capture ? root.capture.durationSeconds : 0); color: "#f8fafc"; font.pixelSize: 20; font.family: "monospace" }
+                        Text { text: "DURATION"; color: Theme.AbracaptureTheme.disabledText; font.pixelSize: 10; font.weight: Font.DemiBold }
+                        Text { text: root.durationLabel(root.capture ? root.capture.durationSeconds : 0); color: Theme.AbracaptureTheme.text; font.pixelSize: 20; font.family: "monospace" }
                     }
                 }
 
@@ -243,18 +242,18 @@ Item {
                     Layout.fillWidth: true
                     implicitHeight: 78
                     radius: 8
-                    color: "#111827"
-                    border.color: "#273449"
+                    color: Theme.AbracaptureTheme.surface
+                    border.color: Theme.AbracaptureTheme.border
 
                     Column {
                         anchors.centerIn: parent
                         width: parent.width - 16
                         spacing: 5
-                        Text { text: "FORMAT"; color: "#64748b"; font.pixelSize: 10; font.weight: Font.DemiBold }
+                        Text { text: "FORMAT"; color: Theme.AbracaptureTheme.disabledText; font.pixelSize: 10; font.weight: Font.DemiBold }
                         Text {
                             width: parent.width
                             text: root.capture ? root.capture.formatDescription : "—"
-                            color: "#e2e8f0"
+                            color: Theme.AbracaptureTheme.text
                             font.pixelSize: 12
                             horizontalAlignment: Text.AlignHCenter
                             elide: Text.ElideRight
@@ -266,18 +265,18 @@ Item {
                     Layout.fillWidth: true
                     implicitHeight: 78
                     radius: 8
-                    color: "#111827"
-                    border.color: "#273449"
+                    color: Theme.AbracaptureTheme.surface
+                    border.color: Theme.AbracaptureTheme.border
 
                     Column {
                         anchors.centerIn: parent
                         width: parent.width - 16
                         spacing: 5
-                        Text { text: "SIGNAL PATH"; color: "#64748b"; font.pixelSize: 10; font.weight: Font.DemiBold }
+                        Text { text: "SIGNAL PATH"; color: Theme.AbracaptureTheme.disabledText; font.pixelSize: 10; font.weight: Font.DemiBold }
                         Text {
                             width: parent.width
                             text: root.captureKindLabel()
-                            color: root.capture && root.capture.isNativeCapture ? "#34d399" : "#fbbf24"
+                            color: root.capture && root.capture.isNativeCapture ? Theme.AbracaptureTheme.success : Theme.AbracaptureTheme.warning
                             font.pixelSize: 12
                             horizontalAlignment: Text.AlignHCenter
                             elide: Text.ElideRight
@@ -290,15 +289,15 @@ Item {
                 Layout.fillWidth: true
                 implicitHeight: integrityText.implicitHeight + 20
                 radius: 7
-                color: "#101c2c"
-                border.color: root.capture && root.capture.integrityStatus.indexOf("error") >= 0 ? "#ef4444" : "#235472"
+                color: Theme.AbracaptureTheme.surfaceElevated
+                border.color: root.capture && root.capture.integrityStatus.indexOf("error") >= 0 ? Theme.AbracaptureTheme.error : Theme.AbracaptureTheme.border
 
                 Text {
                     id: integrityText
                     anchors.fill: parent
                     anchors.margins: 10
                     text: root.capture ? root.capture.integrityStatus : "Preparing capture engine"
-                    color: "#bae6fd"
+                    color: Theme.AbracaptureTheme.textSecondary
                     font.pixelSize: 12
                     wrapMode: Text.WordWrap
                 }
@@ -310,7 +309,7 @@ Item {
 
                 Text {
                     text: "Output destination"
-                    color: "#cbd5e1"
+                    color: Theme.AbracaptureTheme.textSecondary
                     font.pixelSize: 12
                     font.weight: Font.DemiBold
                 }
@@ -320,7 +319,7 @@ Item {
                     Layout.fillWidth: true
                     text: root.capture ? root.capture.outputPath : ""
                     placeholderText: "/path/to/recordings"
-                    color: "#f8fafc"
+                    color: Theme.AbracaptureTheme.text
                     selectByMouse: true
                     onEditingFinished: {
                         if (root.capture) root.capture.outputPath = text
@@ -328,9 +327,9 @@ Item {
                     }
                     background: Rectangle {
                         radius: 6
-                        color: "#0f172a"
+                        color: Theme.AbracaptureTheme.controlBackground
                         border.width: 1
-                        border.color: destinationField.activeFocus ? "#38bdf8" : "#334155"
+                        border.color: destinationField.activeFocus ? Theme.AbracaptureTheme.primary : Theme.AbracaptureTheme.border
                     }
                 }
 
@@ -340,12 +339,12 @@ Item {
 
                     Text {
                         text: "Pre-roll: " + (root.capture ? root.capture.preRollSeconds : 0) + " s"
-                        color: "#94a3b8"
+                        color: Theme.AbracaptureTheme.textSecondary
                         font.pixelSize: 11
                     }
                     Text {
                         text: "Post-roll: " + (root.capture ? root.capture.postRollSeconds : 0) + " s"
-                        color: "#94a3b8"
+                        color: Theme.AbracaptureTheme.textSecondary
                         font.pixelSize: 11
                     }
                     Item { Layout.fillWidth: true }
@@ -390,7 +389,7 @@ Item {
                     onClicked: if (root.capture) root.capture.startCapture()
                     contentItem: Text {
                         text: startButton.text
-                        color: "#052e16"
+                        color: Theme.AbracaptureTheme.darkMode ? "#052e16" : "#ffffff"
                         font.pixelSize: 13
                         font.weight: Font.Bold
                         horizontalAlignment: Text.AlignHCenter
@@ -398,7 +397,7 @@ Item {
                     }
                     background: Rectangle {
                         radius: 6
-                        color: startButton.enabled ? "#34d399" : "#475569"
+                        color: startButton.enabled ? Theme.AbracaptureTheme.captureActive : Theme.AbracaptureTheme.captureIdleBackground
                     }
                 }
 
@@ -411,7 +410,7 @@ Item {
                     onClicked: if (root.capture) root.capture.stopCapture()
                     contentItem: Text {
                         text: stopButton.text
-                        color: "#fee2e2"
+                        color: Theme.AbracaptureTheme.text
                         font.pixelSize: 13
                         font.weight: Font.Bold
                         horizontalAlignment: Text.AlignHCenter
@@ -419,7 +418,7 @@ Item {
                     }
                     background: Rectangle {
                         radius: 6
-                        color: stopButton.enabled ? "#b91c1c" : "#475569"
+                        color: stopButton.enabled ? Theme.AbracaptureTheme.error : Theme.AbracaptureTheme.captureIdleBackground
                     }
                 }
             }

@@ -8,6 +8,10 @@
 #include <QMetaObject>
 #include <QTimer>
 
+#include <cmath>
+#include <cstdio>
+#include <limits>
+
 CaptureViewModel::CaptureViewModel(SourceListModel* const sourceListModel,
                                    SettingsViewModel* const settingsViewModel,
                                    QObject* const parent)
@@ -36,11 +40,6 @@ CaptureViewModel::CaptureViewModel(SourceListModel* const sourceListModel,
                     }
                 }
                 notificationService->onCaptureStarted(sourceName);
-            }, Qt::QueuedConnection);
-
-    connect(this, &CaptureViewModel::stopCaptureRequested,
-            notificationService, [this, notificationService] {
-                notificationService->onCaptureStopped(outputPath_, durationSeconds_);
             }, Qt::QueuedConnection);
 
     if (sourceListModel_ != nullptr) {
@@ -204,6 +203,8 @@ void CaptureViewModel::startCapture() {
     const bool automaticStart = autoRecordController_.state() == AutoRecordController::Recording;
     if (!automaticStart) {
         armed_ = false;
+        awaitFreshSignal_ = false;
+        startThresholdWaitingLogged_ = false;
         emit armedChanged();
         autoRecordController_.reset();
     }
@@ -220,6 +221,8 @@ void CaptureViewModel::stopCapture() {
     }
 
     automaticStopPending_ = false;
+    awaitFreshSignal_ = false;
+    startThresholdWaitingLogged_ = false;
     autoRecordController_.reset();
     armed_ = false;
     emit armedChanged();
@@ -242,6 +245,8 @@ bool CaptureViewModel::completeAutomaticRecording() {
         return false;
     }
     automaticStopPending_ = false;
+    awaitFreshSignal_ = true;
+    startThresholdWaitingLogged_ = false;
     resetDuration();
     setCaptureState(QStringLiteral("armed_waiting"));
     setIntegrityStatus(QStringLiteral("Armed; waiting for signal."));
@@ -254,6 +259,8 @@ void CaptureViewModel::armCapture() {
     }
     autoRecordController_.reset();
     armed_ = true;
+    awaitFreshSignal_ = true;
+    startThresholdWaitingLogged_ = false;
     emit armedChanged();
     setCaptureState(QStringLiteral("armed_waiting"));
     setIntegrityStatus(QStringLiteral("Armed; waiting for manual or automatic start."));
@@ -265,6 +272,8 @@ void CaptureViewModel::disarmCapture() {
     }
     autoRecordController_.reset();
     armed_ = false;
+    awaitFreshSignal_ = false;
+    startThresholdWaitingLogged_ = false;
     emit armedChanged();
     if (captureState_ == QStringLiteral("idle")) {
         setIntegrityStatus(QStringLiteral("Ready"));
@@ -274,9 +283,34 @@ void CaptureViewModel::disarmCapture() {
     }
 }
 
-void CaptureViewModel::feedAudioLevel(const float peakLinear) {
+void CaptureViewModel::feedAudioLevel(const float peakLinear,
+                                      const bool newAudioGeneration) {
     if (!armed_ && autoRecordController_.state() == AutoRecordController::Idle) {
         return;
+    }
+    if (awaitFreshSignal_) {
+        if (!newAudioGeneration) {
+            return;
+        }
+        const float peakDbfs = peakLinear > 0.0F && !std::isnan(peakLinear)
+                                   ? 20.0F * std::log10(peakLinear)
+                                   : -std::numeric_limits<float>::infinity();
+        const float thresholdDbfs = autoRecordController_.startThreshold();
+        awaitFreshSignal_ = false;
+        std::fprintf(stderr,
+                     "[abracapture] automation: fresh generation accepted, level=%g "
+                     "threshold=%g\n",
+                     static_cast<double>(peakDbfs),
+                     static_cast<double>(thresholdDbfs));
+        if (peakDbfs < thresholdDbfs) {
+            if (!startThresholdWaitingLogged_) {
+                std::fprintf(stderr,
+                             "[abracapture] automation: signal below start threshold -> "
+                             "remain armed_waiting\n");
+                startThresholdWaitingLogged_ = true;
+            }
+            return;
+        }
     }
     autoRecordController_.feedLevel(peakLinear);
 }
@@ -320,6 +354,10 @@ void CaptureViewModel::handleSessionState(const abracapture::audio::SessionState
                     Q_ARG(double, finalDuration));
             }
         }
+        // A terminal state is handled once.  Leaving the start timestamp set
+        // would make every subsequent duplicate Stopped callback look like a
+        // fresh recording and flood desktop notifications.
+        captureStartedAtMs_ = 0;
         break;
     }
     case SessionState::Connecting:
@@ -341,6 +379,7 @@ void CaptureViewModel::handleSessionState(const abracapture::audio::SessionState
         break;
     case SessionState::Error: {
         durationTimer_->stop();
+        captureStartedAtMs_ = 0;
         setCaptureState(QStringLiteral("idle"));
         const QString errorMsg = QStringLiteral("Capture engine reported an error.");
         setIntegrityStatus(errorMsg);

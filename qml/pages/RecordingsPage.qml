@@ -79,14 +79,14 @@ Item {
 
                 Text {
                     text: "Recordings"
-                    color: "#f8fafc"
+                    color: Theme.AbracaptureTheme.text
                     font.pixelSize: 23
                     font.weight: Font.Bold
                 }
 
                 Text {
                     text: "Browse captured audio sessions, inspect master metadata, and manage history."
-                    color: "#94a3b8"
+                    color: Theme.AbracaptureTheme.textSecondary
                     font.pixelSize: 13
                 }
             }
@@ -95,15 +95,15 @@ Item {
                 implicitWidth: countText.implicitWidth + 20
                 implicitHeight: 28
                 radius: 14
-                color: "#1e293b"
-                border.color: "#334155"
+                    color: Theme.AbracaptureTheme.surface
+                    border.color: Theme.AbracaptureTheme.border
                 border.width: 1
 
                 Text {
                     id: countText
                     anchors.centerIn: parent
                     text: (root.vm ? root.vm.count : 0) + " items"
-                    color: "#94a3b8"
+                    color: Theme.AbracaptureTheme.textSecondary
                     font.pixelSize: 11
                     font.weight: Font.DemiBold
                 }
@@ -116,15 +116,15 @@ Item {
                 implicitHeight: 32
                 contentItem: Text {
                     text: refreshButton.text
-                    color: "#e2e8f0"
+                    color: Theme.AbracaptureTheme.text
                     font.pixelSize: 12
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                 }
                 background: Rectangle {
-                    color: refreshButton.down ? "#334155" : (refreshButton.hovered ? "#273449" : "#1e293b")
+                    color: refreshButton.down ? Theme.AbracaptureTheme.controlBackgroundHover : (refreshButton.hovered ? Theme.AbracaptureTheme.surface : Theme.AbracaptureTheme.controlBackgroundHover)
                     radius: 6
-                    border.color: "#334155"
+                    border.color: Theme.AbracaptureTheme.border
                     border.width: 1
                 }
                 onClicked: {
@@ -149,8 +149,8 @@ Item {
                 Layout.fillHeight: true
                 Layout.preferredWidth: root.width >= 1060 ? 460 : -1
                 radius: 10
-                color: "#111827"
-                border.color: "#273449"
+                color: Theme.AbracaptureTheme.surface
+                border.color: Theme.AbracaptureTheme.border
                 border.width: 1
 
                 ListView {
@@ -178,14 +178,14 @@ Item {
                             width: 48
                             height: 48
                             radius: 24
-                            color: "#1e293b"
-                            border.color: "#334155"
+                            color: Theme.AbracaptureTheme.controlBackgroundHover
+                            border.color: Theme.AbracaptureTheme.border
                             border.width: 1
 
                             Text {
                                 anchors.centerIn: parent
                                 text: "♫"
-                                color: "#64748b"
+                    color: Theme.AbracaptureTheme.disabledText
                                 font.pixelSize: 20
                             }
                         }
@@ -193,7 +193,7 @@ Item {
                         Text {
                             Layout.fillWidth: true
                             text: "No recordings in index"
-                            color: "#f8fafc"
+                    color: Theme.AbracaptureTheme.text
                             font.pixelSize: 15
                             font.weight: Font.DemiBold
                             horizontalAlignment: Text.AlignHCenter
@@ -202,7 +202,7 @@ Item {
                         Text {
                             Layout.fillWidth: true
                             text: "Captured audio sessions will appear here automatically with full sample and format metadata."
-                            color: "#94a3b8"
+                    color: Theme.AbracaptureTheme.textSecondary
                             font.pixelSize: 12
                             wrapMode: Text.WordWrap
                             horizontalAlignment: Text.AlignHCenter
@@ -214,8 +214,8 @@ Item {
                         width: recordingsListView.width - (recordingsListView.ScrollBar.vertical.visible ? 12 : 0)
                         implicitHeight: itemLayout.implicitHeight + 20
                         radius: 8
-                        color: isSelected ? "#1e293b" : (cardMouseArea.containsMouse ? "#162032" : "#0f172a")
-                        border.color: isSelected ? "#3b82f6" : (cardMouseArea.containsMouse ? "#334155" : "#1e293b")
+                        color: isSelected ? Theme.AbracaptureTheme.surface : (cardMouseArea.containsMouse ? Theme.AbracaptureTheme.controlBackgroundHover : Theme.AbracaptureTheme.controlBackground)
+                        border.color: isSelected ? Theme.AbracaptureTheme.primary : (cardMouseArea.containsMouse ? Theme.AbracaptureTheme.border : Theme.AbracaptureTheme.divider)
                         border.width: isSelected ? 2 : 1
 
                         readonly property bool isSelected: root.selectedIndex === index
@@ -295,7 +295,7 @@ Item {
 
                                 Text {
                                     text: root.timestampLabel(itemCard.itemTimestamp)
-                                    color: "#64748b"
+                    color: Theme.AbracaptureTheme.disabledText
                                     font.pixelSize: 11
                                     font.family: "monospace"
                                 }
@@ -305,7 +305,7 @@ Item {
                             Text {
                                 Layout.fillWidth: true
                                 text: itemCard.itemFileName.length > 0 ? itemCard.itemFileName : itemCard.itemFilePath
-                                color: "#f8fafc"
+                    color: Theme.AbracaptureTheme.text
                                 font.pixelSize: 14
                                 font.weight: Font.DemiBold
                                 elide: Text.ElideMiddle
@@ -335,7 +335,7 @@ Item {
 
                                     Text {
                                         text: root.sampleRateLabel(itemCard.itemSampleRate)
-                                        color: "#94a3b8"
+                    color: Theme.AbracaptureTheme.textSecondary
                                         font.pixelSize: 11
                                     }
 
@@ -347,7 +347,7 @@ Item {
 
                                     Text {
                                         text: root.bitDepthLabel(itemCard.itemBitDepth)
-                                        color: "#94a3b8"
+                    color: Theme.AbracaptureTheme.textSecondary
                                         font.pixelSize: 11
                                     }
 
@@ -359,7 +359,7 @@ Item {
 
                                     Text {
                                         text: root.channelsLabel(itemCard.itemChannels)
-                                        color: "#94a3b8"
+                    color: Theme.AbracaptureTheme.textSecondary
                                         font.pixelSize: 11
                                     }
                                 }
@@ -396,9 +396,9 @@ Item {
                                             verticalAlignment: Text.AlignVCenter
                                         }
                                         background: Rectangle {
-                                            color: revealBtn.down ? "#334155" : (revealBtn.hovered ? "#273449" : "#1e293b")
+                                            color: revealBtn.down ? Theme.AbracaptureTheme.controlBackgroundHover : (revealBtn.hovered ? Theme.AbracaptureTheme.surface : Theme.AbracaptureTheme.controlBackgroundHover)
                                             radius: 4
-                                            border.color: "#334155"
+                                            border.color: Theme.AbracaptureTheme.border
                                             border.width: 1
                                         }
                                         onClicked: {
@@ -424,9 +424,9 @@ Item {
                                             verticalAlignment: Text.AlignVCenter
                                         }
                                         background: Rectangle {
-                                            color: deleteBtn.down ? "#7f1d1d" : (deleteBtn.hovered ? "#450a0a" : "#1e293b")
+                                            color: deleteBtn.down ? Theme.AbracaptureTheme.error : (deleteBtn.hovered ? Theme.AbracaptureTheme.error : Theme.AbracaptureTheme.controlBackgroundHover)
                                             radius: 4
-                                            border.color: deleteBtn.hovered ? "#ef4444" : "#334155"
+                                            border.color: deleteBtn.hovered ? Theme.AbracaptureTheme.error : Theme.AbracaptureTheme.border
                                             border.width: 1
                                         }
                                         onClicked: {
@@ -447,8 +447,8 @@ Item {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 radius: 10
-                color: "#111827"
-                border.color: "#273449"
+                color: Theme.AbracaptureTheme.surface
+                border.color: Theme.AbracaptureTheme.border
                 border.width: 1
 
                 readonly property var currentEntry: {
@@ -468,8 +468,8 @@ Item {
                         width: 48
                         height: 48
                         radius: 24
-                        color: "#1e293b"
-                        border.color: "#334155"
+                        color: Theme.AbracaptureTheme.controlBackgroundHover
+                        border.color: Theme.AbracaptureTheme.border
                         border.width: 1
 
                         Text {
@@ -482,7 +482,7 @@ Item {
                     Text {
                         Layout.fillWidth: true
                         text: "Recording details"
-                        color: "#f8fafc"
+                    color: Theme.AbracaptureTheme.text
                         font.pixelSize: 15
                         font.weight: Font.DemiBold
                         horizontalAlignment: Text.AlignHCenter
@@ -491,7 +491,7 @@ Item {
                     Text {
                         Layout.fillWidth: true
                         text: "Select a recording from the list to inspect audio format specifications, source file paths, and sidecar metadata."
-                        color: "#94a3b8"
+                    color: Theme.AbracaptureTheme.textSecondary
                         font.pixelSize: 12
                         wrapMode: Text.WordWrap
                         horizontalAlignment: Text.AlignHCenter
@@ -560,7 +560,7 @@ Item {
                             Text {
                                 Layout.fillWidth: true
                                 text: parent.parent.parent.parent.currentEntry ? parent.parent.parent.parent.currentEntry.fileName : ""
-                                color: "#f8fafc"
+                    color: Theme.AbracaptureTheme.text
                                 font.pixelSize: 18
                                 font.weight: Font.Bold
                                 wrapMode: Text.WordWrap
@@ -579,8 +579,8 @@ Item {
                                 Layout.fillWidth: true
                                 implicitHeight: 64
                                 radius: 6
-                                color: "#0f172a"
-                                border.color: "#1e293b"
+                color: Theme.AbracaptureTheme.controlBackground
+                                border.color: Theme.AbracaptureTheme.divider
                                 border.width: 1
 
                                 ColumnLayout {
@@ -590,7 +590,7 @@ Item {
 
                                     Text {
                                         text: "DURATION"
-                                        color: "#64748b"
+                    color: Theme.AbracaptureTheme.disabledText
                                         font.pixelSize: 10
                                         font.weight: Font.DemiBold
                                     }
@@ -613,8 +613,8 @@ Item {
                                 Layout.fillWidth: true
                                 implicitHeight: 64
                                 radius: 6
-                                color: "#0f172a"
-                                border.color: "#1e293b"
+                color: Theme.AbracaptureTheme.controlBackground
+                                border.color: Theme.AbracaptureTheme.divider
                                 border.width: 1
 
                                 ColumnLayout {
@@ -624,7 +624,7 @@ Item {
 
                                     Text {
                                         text: "SAMPLE RATE"
-                                        color: "#64748b"
+                    color: Theme.AbracaptureTheme.disabledText
                                         font.pixelSize: 10
                                         font.weight: Font.DemiBold
                                     }
@@ -634,7 +634,7 @@ Item {
                                             var sr = parent.parent.parent.parent.parent.parent.currentEntry ? parent.parent.parent.parent.parent.parent.currentEntry.sampleRate : 0
                                             return root.sampleRateLabel(sr) + " (" + sr + " Hz)"
                                         }
-                                        color: "#f8fafc"
+                    color: Theme.AbracaptureTheme.text
                                         font.pixelSize: 13
                                         font.weight: Font.DemiBold
                                     }
@@ -646,8 +646,8 @@ Item {
                                 Layout.fillWidth: true
                                 implicitHeight: 64
                                 radius: 6
-                                color: "#0f172a"
-                                border.color: "#1e293b"
+                color: Theme.AbracaptureTheme.controlBackground
+                                border.color: Theme.AbracaptureTheme.divider
                                 border.width: 1
 
                                 ColumnLayout {
@@ -657,14 +657,14 @@ Item {
 
                                     Text {
                                         text: "BIT DEPTH"
-                                        color: "#64748b"
+                    color: Theme.AbracaptureTheme.disabledText
                                         font.pixelSize: 10
                                         font.weight: Font.DemiBold
                                     }
 
                                     Text {
                                         text: root.bitDepthLabel(parent.parent.parent.parent.parent.parent.currentEntry ? parent.parent.parent.parent.parent.parent.currentEntry.bitDepth : 0)
-                                        color: "#f8fafc"
+                    color: Theme.AbracaptureTheme.text
                                         font.pixelSize: 13
                                         font.weight: Font.DemiBold
                                     }
@@ -676,8 +676,8 @@ Item {
                                 Layout.fillWidth: true
                                 implicitHeight: 64
                                 radius: 6
-                                color: "#0f172a"
-                                border.color: "#1e293b"
+                color: Theme.AbracaptureTheme.controlBackground
+                                border.color: Theme.AbracaptureTheme.divider
                                 border.width: 1
 
                                 ColumnLayout {
@@ -687,14 +687,14 @@ Item {
 
                                     Text {
                                         text: "CHANNELS"
-                                        color: "#64748b"
+                    color: Theme.AbracaptureTheme.disabledText
                                         font.pixelSize: 10
                                         font.weight: Font.DemiBold
                                     }
 
                                     Text {
                                         text: root.channelsLabel(parent.parent.parent.parent.parent.parent.currentEntry ? parent.parent.parent.parent.parent.parent.currentEntry.channels : 0)
-                                        color: "#f8fafc"
+                    color: Theme.AbracaptureTheme.text
                                         font.pixelSize: 13
                                         font.weight: Font.DemiBold
                                     }
@@ -707,8 +707,8 @@ Item {
                             Layout.fillWidth: true
                             implicitHeight: timestampLayout.implicitHeight + 16
                             radius: 6
-                            color: "#0f172a"
-                            border.color: "#1e293b"
+                color: Theme.AbracaptureTheme.controlBackground
+                            border.color: Theme.AbracaptureTheme.divider
                             border.width: 1
 
                             ColumnLayout {
@@ -719,14 +719,14 @@ Item {
 
                                 Text {
                                     text: "RECORDED AT"
-                                    color: "#64748b"
+                    color: Theme.AbracaptureTheme.disabledText
                                     font.pixelSize: 10
                                     font.weight: Font.DemiBold
                                 }
 
                                 Text {
                                     text: root.timestampLabel(parent.parent.parent.parent.parent.currentEntry ? parent.parent.parent.parent.parent.currentEntry.timestamp : "")
-                                    color: "#e2e8f0"
+                                    color: Theme.AbracaptureTheme.text
                                     font.pixelSize: 12
                                     font.family: "monospace"
                                 }
@@ -738,8 +738,8 @@ Item {
                             Layout.fillWidth: true
                             implicitHeight: filePathLayout.implicitHeight + 16
                             radius: 6
-                            color: "#0f172a"
-                            border.color: "#1e293b"
+                color: Theme.AbracaptureTheme.controlBackground
+                            border.color: Theme.AbracaptureTheme.divider
                             border.width: 1
 
                             ColumnLayout {
@@ -750,7 +750,7 @@ Item {
 
                                 Text {
                                     text: "FILE PATH"
-                                    color: "#64748b"
+                    color: Theme.AbracaptureTheme.disabledText
                                     font.pixelSize: 10
                                     font.weight: Font.DemiBold
                                 }
@@ -758,7 +758,7 @@ Item {
                                 Text {
                                     Layout.fillWidth: true
                                     text: parent.parent.parent.parent.parent.currentEntry ? (parent.parent.parent.parent.parent.currentEntry.filePath || "—") : "—"
-                                    color: "#e2e8f0"
+                                    color: Theme.AbracaptureTheme.text
                                     font.pixelSize: 12
                                     font.family: "monospace"
                                     wrapMode: Text.WordWrap
@@ -771,8 +771,8 @@ Item {
                             Layout.fillWidth: true
                             implicitHeight: sidecarLayout.implicitHeight + 16
                             radius: 6
-                            color: "#0f172a"
-                            border.color: "#1e293b"
+                color: Theme.AbracaptureTheme.controlBackground
+                            border.color: Theme.AbracaptureTheme.divider
                             border.width: 1
                             visible: !!(parent.parent.parent.parent.currentEntry && parent.parent.parent.parent.currentEntry.sidecarPath && parent.parent.parent.parent.currentEntry.sidecarPath.length > 0)
 
@@ -784,7 +784,7 @@ Item {
 
                                 Text {
                                     text: "SIDECAR METADATA"
-                                    color: "#64748b"
+                    color: Theme.AbracaptureTheme.disabledText
                                     font.pixelSize: 10
                                     font.weight: Font.DemiBold
                                 }
@@ -792,7 +792,7 @@ Item {
                                 Text {
                                     Layout.fillWidth: true
                                     text: parent.parent.parent.parent.parent.currentEntry ? parent.parent.parent.parent.parent.currentEntry.sidecarPath : ""
-                                    color: "#94a3b8"
+                    color: Theme.AbracaptureTheme.textSecondary
                                     font.pixelSize: 11
                                     font.family: "monospace"
                                     wrapMode: Text.WordWrap
@@ -839,7 +839,7 @@ Item {
                                 implicitHeight: 38
                                 contentItem: Text {
                                     text: "Reveal in File Manager"
-                                    color: "#f8fafc"
+                    color: Theme.AbracaptureTheme.text
                                     font.pixelSize: 13
                                     font.weight: Font.DemiBold
                                     horizontalAlignment: Text.AlignHCenter
@@ -869,9 +869,9 @@ Item {
                                     verticalAlignment: Text.AlignVCenter
                                 }
                                 background: Rectangle {
-                                    color: detailDeleteBtn.down ? "#7f1d1d" : (detailDeleteBtn.hovered ? "#450a0a" : "#1e293b")
+                                    color: detailDeleteBtn.down ? Theme.AbracaptureTheme.error : (detailDeleteBtn.hovered ? Theme.AbracaptureTheme.error : Theme.AbracaptureTheme.controlBackgroundHover)
                                     radius: 6
-                                    border.color: detailDeleteBtn.hovered ? "#ef4444" : "#334155"
+                                    border.color: detailDeleteBtn.hovered ? Theme.AbracaptureTheme.error : Theme.AbracaptureTheme.border
                                     border.width: 1
                                 }
                                 onClicked: {

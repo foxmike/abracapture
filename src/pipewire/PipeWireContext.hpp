@@ -42,6 +42,7 @@ public:
 
     std::function<void(std::uint32_t id, const char* type, const spa_dict* props)> globalAdded;
     std::function<void(std::uint32_t id)> globalRemoved;
+    std::function<void(std::uint32_t id, const spa_dict* props)> nodePropertiesChanged;
     std::function<void(std::uint32_t id, const spa_pod* format)> nodeFormatChanged;
 
 private:

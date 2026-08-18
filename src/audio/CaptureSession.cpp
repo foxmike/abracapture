@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <array>
 #include <cstdio>
+#include <iterator>
 #include <limits>
 #include <utility>
 
@@ -63,7 +64,8 @@ CaptureSession::~CaptureSession() {
 bool CaptureSession::begin(const std::uint32_t sourceId,
                            const spa_audio_format format,
                            const std::uint32_t rate,
-                           const std::uint32_t channels) {
+                           const std::uint32_t channels,
+                           std::string targetObjectSerial) {
     lifecycleGeneration_.fetch_add(1, std::memory_order_acq_rel);
     stopRequested_.store(true, std::memory_order_release);
     {
@@ -72,8 +74,11 @@ bool CaptureSession::begin(const std::uint32_t sourceId,
     }
 
     const auto source = sourceCatalog_.sourceById(sourceId);
-    if (!source || !source->sourceFormat || threadLoop_ == nullptr || core_ == nullptr ||
+    if (!source || threadLoop_ == nullptr || core_ == nullptr ||
         channels > SPA_AUDIO_MAX_CHANNELS) {
+        std::fprintf(stderr,
+                     "[abracapture] monitor rebind failed: source unavailable node=%u\n",
+                     sourceId);
         transitionTo(SessionState::Error);
         return false;
     }
@@ -81,6 +86,9 @@ bool CaptureSession::begin(const std::uint32_t sourceId,
     {
         std::lock_guard streamLock(streamMutex_);
         if (stream_) {
+            std::fprintf(stderr,
+                         "[abracapture] old monitor/capture binding stopped serial=%s\n",
+                         requestedObjectSerial_.c_str());
             stream_->stop();
             stream_.reset();
         }
@@ -89,12 +97,36 @@ bool CaptureSession::begin(const std::uint32_t sourceId,
         requestedFormat_ = format;
         requestedRate_ = rate;
         requestedChannels_ = channels;
+        requestedObjectSerial_ = targetObjectSerial.empty()
+                                     ? source->objectSerial
+                                     : std::move(targetObjectSerial);
         activeChannels_.store(0, std::memory_order_release);
-        stream_ = makeStream(*source);
+        if (source->sourceFormat) {
+            stream_ = makeStream(*source);
+        }
     }
 
-    fprintf(stderr, "[abracapture] source selection: target=node=%u node.name=%s app=%s\n",
-            source->nodeId, source->nodeName.c_str(), source->appName.c_str());
+    if (!source->sourceFormat) {
+        std::fprintf(stderr,
+                     "[abracapture] monitor rebind pending format node=%u serial=%s\n",
+                     source->nodeId,
+                     requestedObjectSerial_.c_str());
+        stopRequested_.store(false, std::memory_order_release);
+        transitionTo(SessionState::Connecting);
+        {
+            std::lock_guard reconnectLock(reconnectMutex_);
+            reconnectRequested_ = true;
+        }
+        reconnectCondition_.notify_one();
+        return true;
+    }
+
+    fprintf(stderr,
+            "[abracapture] source selection: target=node=%u serial=%s node.name=%s app=%s\n",
+            source->nodeId,
+            requestedObjectSerial_.c_str(),
+            source->nodeName.c_str(),
+            source->appName.c_str());
 
     stopRequested_.store(false, std::memory_order_release);
     transitionTo(SessionState::Connecting);
@@ -262,6 +294,15 @@ void CaptureSession::reconnectLoop() {
                 lifecycleGeneration_.load(std::memory_order_acquire) != generation) {
                 break;
             }
+            // The numeric node ID may be reused for a new PipeWire object.
+            // Refresh both the stable descriptor and the concrete serial
+            // before constructing the replacement stream.
+            stableSource_ = *source;
+            requestedObjectSerial_ = source->objectSerial;
+            std::fprintf(stderr,
+                         "[abracapture] source selection: target=node=%u serial=%s\n",
+                         source->nodeId,
+                         requestedObjectSerial_.c_str());
             suppressStreamStatus_.store(true, std::memory_order_release);
             if (stream_) {
                 stream_->stop();
@@ -292,19 +333,59 @@ std::optional<SourceDescriptor> CaptureSession::resolveSource() const {
         expected = stableSource_;
     }
     const auto& sources = sourceCatalog_.sources();
-    const auto match = std::find_if(sources.begin(), sources.end(),
-                                    [&expected](const SourceDescriptor& source) {
-                                        return isSameStableSource(expected, source);
-                                    });
-    if (match == sources.end()) {
+    const auto sameLogical = [&expected](const SourceDescriptor& source) {
+        return !expected.logicalIdentity.empty() &&
+               source.logicalIdentity == expected.logicalIdentity;
+    };
+    const auto usable = [](const SourceDescriptor& source) {
+        return source.sourceFormat.has_value();
+    };
+    const auto exactNode = std::find_if(sources.begin(), sources.end(),
+                                        [&expected, &sameLogical, &usable](const SourceDescriptor& source) {
+                                            return usable(source) && sameLogical(source) &&
+                                                   source.nodeId == expected.nodeId;
+                                        });
+    if (exactNode != sources.end()) {
+        return *exactNode;
+    }
+    const auto exactInstance = std::find_if(sources.begin(), sources.end(),
+                                            [&expected, &usable](const SourceDescriptor& source) {
+                                                return usable(source) &&
+                                                       !expected.instanceIdentity.empty() &&
+                                                       source.instanceIdentity == expected.instanceIdentity;
+                                            });
+    if (exactInstance != sources.end()) {
+        return *exactInstance;
+    }
+    const auto logicalBegin = std::find_if(sources.begin(), sources.end(),
+                                           [&sameLogical, &usable](const SourceDescriptor& source) {
+                                               return usable(source) && sameLogical(source);
+                                           });
+    if (logicalBegin != sources.end()) {
+        const auto logicalNext = std::find_if(
+            std::next(logicalBegin), sources.end(),
+            [&sameLogical, &usable](const SourceDescriptor& source) {
+                return usable(source) && sameLogical(source);
+            });
+        if (logicalNext == sources.end()) {
+            return *logicalBegin;
+        }
         return std::nullopt;
     }
-    return *match;
+    const auto match = std::find_if(sources.begin(), sources.end(),
+                                    [&expected, &usable](const SourceDescriptor& source) {
+                                        return usable(source) && isSameStableSource(expected, source);
+                                    });
+    return match == sources.end() ? std::nullopt : std::optional<SourceDescriptor>(*match);
 }
 
 std::unique_ptr<PipeWireCaptureStream> CaptureSession::makeStream(
     const SourceDescriptor& source) {
     spa_audio_info_raw requested = *source.sourceFormat;
+    SourceDescriptor target = source;
+    if (!requestedObjectSerial_.empty()) {
+        target.objectSerial = requestedObjectSerial_;
+    }
     // A non-zero rate is an explicit user conversion request. Otherwise the
     // current source node's rate, channels, sample representation and layout
     // are proposed unchanged.
@@ -312,7 +393,8 @@ std::unique_ptr<PipeWireCaptureStream> CaptureSession::makeStream(
         requested.rate = requestedRate_;
     }
     return std::make_unique<PipeWireCaptureStream>(
-        threadLoop_, core_, ringBuffer_, source.nodeId, *source.sourceFormat, requested,
+        threadLoop_, core_, ringBuffer_, source.nodeId, target.objectSerial,
+        *source.sourceFormat, requested,
         [this](const PipeWireCaptureStream::StreamStatus status) {
             handleStreamStatus(status);
         });

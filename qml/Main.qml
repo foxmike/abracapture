@@ -51,18 +51,26 @@ ApplicationWindow {
                 TabButton {
                     text: "Capture"
                     Accessible.name: "Capture"
+                    contentItem: Text { text: parent.text; color: parent.checked ? Theme.AbracaptureTheme.background : Theme.AbracaptureTheme.text; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+                    background: Rectangle { radius: 5; color: parent.checked ? Theme.AbracaptureTheme.primary : (parent.hovered ? Theme.AbracaptureTheme.controlBackgroundHover : "transparent") }
                 }
                 TabButton {
                     text: "Recordings"
                     Accessible.name: "Recordings"
+                    contentItem: Text { text: parent.text; color: parent.checked ? Theme.AbracaptureTheme.background : Theme.AbracaptureTheme.text; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+                    background: Rectangle { radius: 5; color: parent.checked ? Theme.AbracaptureTheme.primary : (parent.hovered ? Theme.AbracaptureTheme.controlBackgroundHover : "transparent") }
                 }
                 TabButton {
                     text: "Settings"
                     Accessible.name: "Settings"
+                    contentItem: Text { text: parent.text; color: parent.checked ? Theme.AbracaptureTheme.background : Theme.AbracaptureTheme.text; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+                    background: Rectangle { radius: 5; color: parent.checked ? Theme.AbracaptureTheme.primary : (parent.hovered ? Theme.AbracaptureTheme.controlBackgroundHover : "transparent") }
                 }
                 TabButton {
                     text: "About"
                     Accessible.name: "About Abracapture"
+                    contentItem: Text { text: parent.text; color: parent.checked ? Theme.AbracaptureTheme.background : Theme.AbracaptureTheme.text; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+                    background: Rectangle { radius: 5; color: parent.checked ? Theme.AbracaptureTheme.primary : (parent.hovered ? Theme.AbracaptureTheme.controlBackgroundHover : "transparent") }
                 }
             }
 
@@ -71,6 +79,8 @@ ApplicationWindow {
                 Accessible.name: Theme.AbracaptureTheme.darkMode
                                ? "Switch to light theme" : "Switch to dark theme"
                 onClicked: Theme.AbracaptureTheme.darkMode = !Theme.AbracaptureTheme.darkMode
+                contentItem: Text { text: parent.text; color: Theme.AbracaptureTheme.text; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+                background: Rectangle { radius: 5; color: parent.hovered ? Theme.AbracaptureTheme.controlBackgroundHover : "transparent" }
             }
 
             ToolButton {
@@ -78,6 +88,8 @@ ApplicationWindow {
                 Accessible.name: Theme.AbracaptureTheme.highContrast
                                ? "Disable high contrast" : "Enable high contrast"
                 onClicked: Theme.AbracaptureTheme.highContrast = !Theme.AbracaptureTheme.highContrast
+                contentItem: Text { text: parent.text; color: Theme.AbracaptureTheme.text; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+                background: Rectangle { radius: 5; color: parent.hovered ? Theme.AbracaptureTheme.controlBackgroundHover : "transparent" }
             }
 
             Text {

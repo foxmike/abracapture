@@ -10,6 +10,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <string>
 struct pw_core;
 struct pw_stream;
 struct pw_thread_loop;
@@ -45,6 +46,7 @@ public:
                           pw_core* core,
                           AudioRingBuffer& ringBuffer,
                           std::uint32_t targetNodeId,
+                          std::string targetObjectSerial,
                           const spa_audio_info_raw& sourceFormat,
                           const spa_audio_info_raw& requestedFormat,
                           StatusCallback statusCallback = {});
@@ -96,6 +98,7 @@ private:
     bool streamListenerInstalled_ = false;
 
     const std::uint32_t targetNodeId_;
+    const std::string targetObjectSerial_;
     const spa_audio_info_raw sourceFormat_;
     const spa_audio_info_raw requestedFormat_;
     const StatusCallback statusCallback_;

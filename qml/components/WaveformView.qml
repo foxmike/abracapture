@@ -1,18 +1,19 @@
 import QtQuick
+import "../theme" as Theme
 
 Item {
     id: root
 
     property var waveformBridge: null
-    property color backgroundColor: "#161920"
-    property color borderColor: "#242933"
-    property color waveformColor: "#38bdf8"
-    property color centerLineColor: "#334155"
-    property color meterTrackColor: "#0f172a"
-    property color meterColor: "#10b981"
-    property color warningColor: "#f59e0b"
-    property color clipColor: "#ef4444"
-    property color rmsColor: "#e2e8f0"
+    property color backgroundColor: Theme.AbracaptureTheme.surfaceElevated
+    property color borderColor: Theme.AbracaptureTheme.divider
+    property color waveformColor: Theme.AbracaptureTheme.primary
+    property color centerLineColor: Theme.AbracaptureTheme.border
+    property color meterTrackColor: Theme.AbracaptureTheme.controlBackground
+    property color meterColor: Theme.AbracaptureTheme.success
+    property color warningColor: Theme.AbracaptureTheme.warning
+    property color clipColor: Theme.AbracaptureTheme.error
+    property color rmsColor: Theme.AbracaptureTheme.text
 
     readonly property var waveformSamples: waveformBridge ? waveformBridge.waveformSamples : []
     readonly property real peakLevel: boundedLevel(waveformBridge ? waveformBridge.peakLevel : 0)
