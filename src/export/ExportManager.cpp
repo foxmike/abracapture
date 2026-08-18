@@ -72,9 +72,15 @@ ExportManager::ExportManager(QObject* const parent)
                     temporaryInfo.exists() && temporaryInfo.isFile() && temporaryInfo.size() > 0) {
                     const QString temporaryPath = temporaryInfo.absoluteFilePath();
                     const QString finalPath = QString::fromStdString(job.request.destinationPath.string());
-                    if (QFileInfo::exists(finalPath)) {
+                    if (QFileInfo::exists(finalPath) &&
+                        job.request.profile.collisionPolicy != CollisionPolicy::ReplaceExisting) {
                         failJob(jobId, QStringLiteral("Export destination appeared before output could be committed"));
                     } else {
+                        if (QFileInfo::exists(finalPath) && !QFile::remove(finalPath)) {
+                            failJob(jobId, QStringLiteral("Unable to replace existing export output"));
+                            scheduleProcessing();
+                            return;
+                        }
                         QFile temporaryFile(temporaryPath);
                         if (!temporaryFile.rename(finalPath)) {
                             failJob(jobId, QStringLiteral("Unable to commit export output: %1")
@@ -302,7 +308,8 @@ void ExportManager::startNextExport() {
             failJob(jobId, error);
             continue;
         }
-        if (QFileInfo::exists(QString::fromStdString(jobIt->request.destinationPath.string()))) {
+        if (QFileInfo::exists(QString::fromStdString(jobIt->request.destinationPath.string())) &&
+            jobIt->request.profile.collisionPolicy != CollisionPolicy::ReplaceExisting) {
             failJob(jobId, QStringLiteral("Export destination already exists"));
             continue;
         }

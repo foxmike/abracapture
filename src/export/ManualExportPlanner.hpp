@@ -26,6 +26,7 @@ struct ManualExportSource {
 
 struct ManualExportDestination {
     ManualExportDestinationPolicy policy = ManualExportDestinationPolicy::SameDirectory;
+    CollisionPolicy collisionPolicy = CollisionPolicy::GenerateUniqueName;
     QString customDirectory;
     bool useStoredMetadataNames = false;
     bool organizeAlbumDirectory = false;

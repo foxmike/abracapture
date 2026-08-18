@@ -3,6 +3,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Dialogs
 import "../theme" as Theme
+import "../components" as Components
 
 Item {
     id: root
@@ -11,6 +12,7 @@ Item {
     property var sourceListModel: null
     property var exportManager: null
     property var manualExportViewModel: null
+    signal requestRecordingsPage()
     readonly property var vm: root.settingsViewModel
     property var currentSource: ({})
     property int queueVersion: 0
@@ -142,15 +144,33 @@ Item {
                     RowLayout {
                         Layout.fillWidth: true
                         spacing: 8
-                        Button { text: "File"; onClicked: manualFileDialog.open() }
                         Button {
+                            id: manualFileModeButton
+                            text: "File"
+                            checkable: true
+                            checked: root.manualExportViewModel && root.manualExportViewModel.sourceMode === "file"
+                            background: Rectangle { radius: 5; color: parent.checked ? Theme.AbracaptureTheme.primary : Theme.AbracaptureTheme.controlBackgroundHover; border.color: Theme.AbracaptureTheme.border }
+                            contentItem: Text { text: manualFileModeButton.text; color: manualFileModeButton.enabled ? (manualFileModeButton.checked ? Theme.AbracaptureTheme.background : Theme.AbracaptureTheme.text) : Theme.AbracaptureTheme.disabledText; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter; elide: Text.ElideRight; font.pixelSize: 12 }
+                            onClicked: manualFileDialog.open()
+                        }
+                        Button {
+                            id: manualRecordingsModeButton
                             text: "Selected Recordings"
+                            checkable: true
+                            checked: root.manualExportViewModel && root.manualExportViewModel.sourceMode === "recordings"
+                            background: Rectangle { radius: 5; color: parent.checked ? Theme.AbracaptureTheme.primary : Theme.AbracaptureTheme.controlBackgroundHover; border.color: Theme.AbracaptureTheme.border }
+                            contentItem: Text { text: manualRecordingsModeButton.text; color: manualRecordingsModeButton.enabled ? (manualRecordingsModeButton.checked ? Theme.AbracaptureTheme.background : Theme.AbracaptureTheme.text) : Theme.AbracaptureTheme.disabledText; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter; elide: Text.ElideRight; font.pixelSize: 12 }
                             onClicked: if (root.manualExportViewModel) root.manualExportViewModel.activateSelectedRecordings()
                             ToolTip.visible: hovered
                             ToolTip.text: "Select masters on the Recordings page, then choose Export Selected."
                         }
                         Button {
+                            id: manualDirectoryModeButton
                             text: "Directory"
+                            checkable: true
+                            checked: root.manualExportViewModel && root.manualExportViewModel.sourceMode === "directory"
+                            background: Rectangle { radius: 5; color: parent.checked ? Theme.AbracaptureTheme.primary : Theme.AbracaptureTheme.controlBackgroundHover; border.color: Theme.AbracaptureTheme.border }
+                            contentItem: Text { text: manualDirectoryModeButton.text; color: manualDirectoryModeButton.enabled ? (manualDirectoryModeButton.checked ? Theme.AbracaptureTheme.background : Theme.AbracaptureTheme.text) : Theme.AbracaptureTheme.disabledText; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter; elide: Text.ElideRight; font.pixelSize: 12 }
                             onClicked: {
                                 if (!root.manualExportViewModel) return
                                 var directory = appController.selectOutputDirectory(root.manualExportViewModel.selectedDirectory)
@@ -158,7 +178,12 @@ Item {
                             }
                         }
                         Button {
+                            id: manualSessionModeButton
                             text: "Most Recent Capture Session"
+                            checkable: true
+                            checked: root.manualExportViewModel && root.manualExportViewModel.sourceMode === "session"
+                            background: Rectangle { radius: 5; color: parent.checked ? Theme.AbracaptureTheme.primary : Theme.AbracaptureTheme.controlBackgroundHover; border.color: Theme.AbracaptureTheme.border }
+                            contentItem: Text { text: manualSessionModeButton.text; color: manualSessionModeButton.enabled ? (manualSessionModeButton.checked ? Theme.AbracaptureTheme.background : Theme.AbracaptureTheme.text) : Theme.AbracaptureTheme.disabledText; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter; elide: Text.ElideRight; font.pixelSize: 12 }
                             onClicked: if (root.manualExportViewModel) root.manualExportViewModel.selectMostRecentCaptureSession()
                         }
                         Item { Layout.fillWidth: true }
@@ -168,7 +193,7 @@ Item {
                         visible: root.manualExportViewModel && root.manualExportViewModel.captureSessions.length > 0
                         Layout.fillWidth: true
                         Text { text: "Capture session"; color: Theme.AbracaptureTheme.text; font.pixelSize: 13 }
-                        ComboBox {
+                        Components.ThemedComboBox {
                             id: sessionCombo
                             Layout.fillWidth: true
                             model: root.manualExportViewModel ? root.manualExportViewModel.captureSessions : []
@@ -215,6 +240,19 @@ Item {
                     }
 
                     Text {
+                        visible: root.manualExportViewModel && root.manualExportViewModel.sourceMode === "recordings" && root.manualExportViewModel.sourceCount === 0
+                        text: "No recordings selected. Select one or more recordings on the Recordings page, then choose Export Selected."
+                        color: Theme.AbracaptureTheme.warning
+                        font.pixelSize: 12
+                        wrapMode: Text.WordWrap
+                        Layout.fillWidth: true
+                    }
+                    Button {
+                        visible: root.manualExportViewModel && root.manualExportViewModel.sourceMode === "recordings" && root.manualExportViewModel.sourceCount === 0
+                        text: "Go to Recordings"
+                        onClicked: root.requestRecordingsPage()
+                    }
+                    Text {
                         text: root.manualExportViewModel ? root.manualExportViewModel.sourceCount + " source file" + (root.manualExportViewModel.sourceCount === 1 ? "" : "s") : "0 source files"
                         font.pixelSize: 13; font.weight: Font.DemiBold; color: Theme.AbracaptureTheme.primary
                     }
@@ -247,11 +285,15 @@ Item {
 
                     RowLayout {
                         Layout.fillWidth: true
-                        CheckBox {
-                            checked: root.manualExportViewModel ? root.manualExportViewModel.useAutomaticProfile : true
-                            onToggled: if (root.manualExportViewModel) root.manualExportViewModel.useAutomaticProfile = checked
+                        Text { text: "Profile"; color: Theme.AbracaptureTheme.text; font.pixelSize: 13 }
+                        Components.ThemedComboBox {
+                            id: manualProfileModeCombo
+                            model: ["automatic", "manual"]
+                            readonly property var labels: ["Automatic Profile", "Custom Manual Profile"]
+                            currentIndex: root.manualExportViewModel ? (root.manualExportViewModel.profileMode === "manual" ? 1 : 0) : 0
+                            onActivated: function(index) { if (root.manualExportViewModel) root.manualExportViewModel.profileMode = model[index] }
+                            contentItem: Text { leftPadding: 12; text: manualProfileModeCombo.labels[manualProfileModeCombo.currentIndex]; color: Theme.AbracaptureTheme.text; verticalAlignment: Text.AlignVCenter }
                         }
-                        Text { text: "Use Automatic Export Profile"; color: Theme.AbracaptureTheme.text; font.pixelSize: 13 }
                         Text { text: root.manualExportViewModel ? root.manualExportViewModel.profileSummary : ""; color: Theme.AbracaptureTheme.textSecondary; font.pixelSize: 11; Layout.fillWidth: true }
                     }
 
@@ -260,7 +302,7 @@ Item {
                         Layout.fillWidth: true; Layout.leftMargin: 32; spacing: 8
                         RowLayout {
                             Text { text: "Preset"; color: Theme.AbracaptureTheme.text; font.pixelSize: 13 }
-                            ComboBox {
+                            Components.ThemedComboBox {
                                 id: manualPresetCombo
                                 model: root.manualExportViewModel ? root.manualExportViewModel.presetOptions : []
                                 readonly property var labels: ["MP3 320", "MP3 256", "FLAC 16-bit", "FLAC 24-bit", "WAV 24-bit", "Preserve Source Lossless", "Custom"]
@@ -272,7 +314,7 @@ Item {
                         }
                         RowLayout {
                             Text { text: "Format"; color: Theme.AbracaptureTheme.text; font.pixelSize: 13 }
-                            ComboBox {
+                            Components.ThemedComboBox {
                                 id: manualFormatCombo
                                 model: root.manualExportViewModel ? root.manualExportViewModel.formatOptions : []
                                 currentIndex: root.manualExportViewModel ? Math.max(0, model.indexOf(root.manualExportViewModel.manualFormat)) : 0
@@ -280,7 +322,7 @@ Item {
                                 contentItem: Text { leftPadding: 12; text: manualFormatCombo.currentText.toUpperCase(); color: Theme.AbracaptureTheme.text; verticalAlignment: Text.AlignVCenter }
                             }
                             Text { text: "Sample Rate"; color: Theme.AbracaptureTheme.text; font.pixelSize: 13 }
-                            ComboBox {
+                            Components.ThemedComboBox {
                                 id: manualRateCombo
                                 model: root.manualExportViewModel ? root.manualExportViewModel.sampleRateOptions : []
                                 currentIndex: root.manualExportViewModel ? Math.max(0, model.indexOf(root.manualExportViewModel.manualSampleRate === 0 ? "preserve" : String(root.manualExportViewModel.manualSampleRate))) : 0
@@ -292,7 +334,7 @@ Item {
                         RowLayout {
                             visible: root.manualExportViewModel && root.manualExportViewModel.manualFormat === "mp3"
                             Text { text: "Bitrate"; color: Theme.AbracaptureTheme.text; font.pixelSize: 13 }
-                            ComboBox {
+                            Components.ThemedComboBox {
                                 id: manualBitrateCombo
                                 model: root.manualExportViewModel ? root.manualExportViewModel.mp3BitrateOptions : []
                                 currentIndex: root.manualExportViewModel ? Math.max(0, model.indexOf(String(root.manualExportViewModel.manualMp3Bitrate))) : 3
@@ -303,7 +345,7 @@ Item {
                         RowLayout {
                             visible: root.manualExportViewModel && root.manualExportViewModel.manualFormat === "flac"
                             Text { text: "Bit Depth"; color: Theme.AbracaptureTheme.text; font.pixelSize: 13 }
-                            ComboBox {
+                            Components.ThemedComboBox {
                                 id: manualFlacDepthCombo
                                 model: root.manualExportViewModel ? root.manualExportViewModel.flacBitDepthOptions : []
                                 currentIndex: root.manualExportViewModel ? Math.max(0, model.indexOf(String(root.manualExportViewModel.manualFlacBitDepth))) : 0
@@ -311,7 +353,7 @@ Item {
                                 contentItem: Text { leftPadding: 12; text: manualFlacDepthCombo.currentText + "-bit"; color: Theme.AbracaptureTheme.text; verticalAlignment: Text.AlignVCenter }
                             }
                             Text { text: "Compression"; color: Theme.AbracaptureTheme.text; font.pixelSize: 13 }
-                            ComboBox {
+                            Components.ThemedComboBox {
                                 id: manualFlacCompressionCombo
                                 model: root.manualExportViewModel ? root.manualExportViewModel.flacCompressionOptions : []
                                 currentIndex: root.manualExportViewModel ? Math.max(0, model.indexOf(String(root.manualExportViewModel.manualFlacCompressionLevel))) : 5
@@ -321,7 +363,7 @@ Item {
                         RowLayout {
                             visible: root.manualExportViewModel && root.manualExportViewModel.manualFormat === "wav"
                             Text { text: "Sample Format"; color: Theme.AbracaptureTheme.text; font.pixelSize: 13 }
-                            ComboBox {
+                            Components.ThemedComboBox {
                                 id: manualWavFormatCombo
                                 model: root.manualExportViewModel ? root.manualExportViewModel.wavSampleFormatOptions : []
                                 currentIndex: root.manualExportViewModel ? Math.max(0, model.indexOf(root.manualExportViewModel.manualWavSampleFormat)) : 0
@@ -334,7 +376,7 @@ Item {
                     RowLayout {
                         Layout.fillWidth: true
                         Text { text: "Destination"; color: Theme.AbracaptureTheme.text; font.pixelSize: 13 }
-                        ComboBox {
+                        Components.ThemedComboBox {
                             id: manualDestinationCombo
                             model: ["same", "exports", "custom"]
                             readonly property var labels: ["Same directory as source", "Exports subfolder", "Custom directory"]
@@ -355,6 +397,19 @@ Item {
                     Text { visible: root.manualExportViewModel && root.manualExportViewModel.destinationPolicy === "custom"; text: root.manualExportViewModel ? root.manualExportViewModel.customDestinationDirectory : ""; color: Theme.AbracaptureTheme.textSecondary; font.pixelSize: 11; elide: Text.ElideMiddle; Layout.fillWidth: true }
                     RowLayout {
                         Layout.fillWidth: true
+                        Text { text: "Existing outputs"; color: Theme.AbracaptureTheme.text; font.pixelSize: 13 }
+                        Components.ThemedComboBox {
+                            id: manualCollisionCombo
+                            model: ["skip", "unique", "replace"]
+                            readonly property var labels: ["Skip Existing", "Create Unique Name", "Replace Existing"]
+                            currentIndex: Math.max(0, model.indexOf(root.manualExportViewModel ? root.manualExportViewModel.collisionPolicy : "skip"))
+                            onActivated: function(index) { if (root.manualExportViewModel) root.manualExportViewModel.collisionPolicy = model[index] }
+                            contentItem: Text { leftPadding: 12; text: manualCollisionCombo.labels[manualCollisionCombo.currentIndex]; color: Theme.AbracaptureTheme.text; verticalAlignment: Text.AlignVCenter }
+                        }
+                        Text { text: "Replace requires explicit selection"; color: Theme.AbracaptureTheme.disabledText; font.pixelSize: 11; Layout.fillWidth: true }
+                    }
+                    RowLayout {
+                        Layout.fillWidth: true
                         CheckBox { checked: root.manualExportViewModel ? root.manualExportViewModel.useStoredMetadataNames : false; onToggled: if (root.manualExportViewModel) root.manualExportViewModel.useStoredMetadataNames = checked }
                         Text { text: "Use stored track metadata when available"; color: Theme.AbracaptureTheme.text; font.pixelSize: 12 }
                         CheckBox { checked: root.manualExportViewModel ? root.manualExportViewModel.organizeAlbumDirectory : false; enabled: root.manualExportViewModel ? root.manualExportViewModel.useStoredMetadataNames : false; onToggled: if (root.manualExportViewModel) root.manualExportViewModel.organizeAlbumDirectory = checked }
@@ -362,11 +417,25 @@ Item {
                         Item { Layout.fillWidth: true }
                     }
                     Text { text: "Preview: " + (root.manualExportViewModel ? root.manualExportViewModel.destinationPreview : ""); color: Theme.AbracaptureTheme.textSecondary; font.pixelSize: 11; elide: Text.ElideMiddle; Layout.fillWidth: true }
+                    Text {
+                        visible: root.manualExportViewModel && root.manualExportViewModel.sourceCount > 1
+                        text: {
+                            var p = root.manualExportViewModel ? root.manualExportViewModel.bulkPreview : {}
+                            return (p.sourceCount || 0) + " source files\nOutput: " + (p.profile || "") +
+                                   "\nDestination: " + (p.destination || "") +
+                                   "\nExisting: " + (p.skippedCount || 0) + " will be skipped\nNew: " + (p.newCount || 0) + " will be exported"
+                        }
+                        color: Theme.AbracaptureTheme.textSecondary; font.pixelSize: 11; Layout.fillWidth: true
+                    }
 
                     RowLayout {
                         Layout.fillWidth: true
                         Button {
-                            text: "Export " + (root.manualExportViewModel ? root.manualExportViewModel.sourceCount : 0) + " File" + (root.manualExportViewModel && root.manualExportViewModel.sourceCount === 1 ? "" : "s")
+                            text: {
+                                var p = root.manualExportViewModel ? root.manualExportViewModel.bulkPreview : {}
+                                var count = root.manualExportViewModel && root.manualExportViewModel.sourceCount > 1 ? (p.newCount || 0) : (root.manualExportViewModel ? root.manualExportViewModel.sourceCount : 0)
+                                return "Export " + count + " File" + (count === 1 ? "" : "s")
+                            }
                             enabled: root.manualExportViewModel && root.manualExportViewModel.sourceCount > 0
                             onClicked: root.manualExportViewModel.enqueueExport()
                         }
@@ -489,7 +558,7 @@ Item {
                             Layout.fillWidth: true
                             spacing: 12
                             Text { text: "Format"; font.pixelSize: 13; color: Theme.AbracaptureTheme.text }
-                            ComboBox {
+                            Components.ThemedComboBox {
                                 id: formatCombo
                                 implicitWidth: 170
                                 model: root.vm ? root.vm.automaticExportFormats : []
@@ -510,7 +579,7 @@ Item {
                             Layout.fillWidth: true
                             spacing: 12
                             Text { text: "Sample Rate"; font.pixelSize: 13; color: Theme.AbracaptureTheme.text }
-                            ComboBox {
+                            Components.ThemedComboBox {
                                 id: rateCombo
                                 implicitWidth: 170
                                 model: root.vm ? root.vm.automaticExportSampleRateOptions : []
@@ -524,11 +593,18 @@ Item {
                                     if (root.vm) root.vm.automaticExportSampleRate = model[index] === "preserve" ? 0 : Number(model[index])
                                 }
                                 delegate: ItemDelegate {
-                                    width: rateCombo.width
+                                    width: rateCombo.popup.width
+                                    highlighted: rateCombo.highlightedIndex === index
                                     contentItem: Text {
+                                        leftPadding: 10
                                         text: root.rateLabel(modelData)
-                                        color: highlighted ? Theme.AbracaptureTheme.primary : Theme.AbracaptureTheme.text
-                                        font.pixelSize: 13
+                                        color: highlighted ? Theme.AbracaptureTheme.background : Theme.AbracaptureTheme.text
+                                        verticalAlignment: Text.AlignVCenter
+                                    }
+                                    background: Rectangle {
+                                        color: highlighted ? Theme.AbracaptureTheme.primary
+                                                            : (hovered ? Theme.AbracaptureTheme.controlBackgroundHover
+                                                                        : Theme.AbracaptureTheme.controlBackground)
                                     }
                                 }
                                 contentItem: Text {
@@ -547,7 +623,7 @@ Item {
                             Layout.fillWidth: true
                             spacing: 12
                             Text { text: "Bitrate"; font.pixelSize: 13; color: Theme.AbracaptureTheme.text }
-                            ComboBox {
+                            Components.ThemedComboBox {
                                 id: bitrateCombo
                                 implicitWidth: 170
                                 model: root.vm ? root.vm.automaticExportMp3BitrateOptions : []
@@ -569,7 +645,7 @@ Item {
                             Layout.fillWidth: true
                             spacing: 12
                             Text { text: "Bit Depth"; font.pixelSize: 13; color: Theme.AbracaptureTheme.text }
-                            ComboBox {
+                            Components.ThemedComboBox {
                                 id: flacDepthCombo
                                 implicitWidth: 170
                                 model: root.vm ? root.vm.automaticExportFlacBitDepthOptions : []
@@ -584,7 +660,7 @@ Item {
                                 }
                             }
                             Text { text: "Compression"; font.pixelSize: 13; color: Theme.AbracaptureTheme.text }
-                            ComboBox {
+                            Components.ThemedComboBox {
                                 id: flacCompressionCombo
                                 implicitWidth: 100
                                 model: root.vm ? root.vm.automaticExportFlacCompressionOptions : []
@@ -604,7 +680,7 @@ Item {
                             Layout.fillWidth: true
                             spacing: 12
                             Text { text: "Sample Format"; font.pixelSize: 13; color: Theme.AbracaptureTheme.text }
-                            ComboBox {
+                            Components.ThemedComboBox {
                                 id: wavFormatCombo
                                 implicitWidth: 190
                                 model: root.vm ? root.vm.automaticExportWavSampleFormatOptions : []
@@ -624,7 +700,7 @@ Item {
                             Layout.fillWidth: true
                             spacing: 12
                             Text { text: "Preset"; font.pixelSize: 13; color: Theme.AbracaptureTheme.text }
-                            ComboBox {
+                            Components.ThemedComboBox {
                                 id: presetCombo
                                 implicitWidth: 190
                                 model: ["mp3_320", "mp3_256", "flac_16", "flac_24", "wav_24", "preserve_lossless", "custom"]
@@ -663,7 +739,7 @@ Item {
                             Layout.fillWidth: true
                             spacing: 12
                             Text { text: "Destination"; font.pixelSize: 13; color: Theme.AbracaptureTheme.text }
-                            ComboBox {
+                            Components.ThemedComboBox {
                                 id: destinationCombo
                                 implicitWidth: 190
                                 model: ["same", "exports", "custom"]

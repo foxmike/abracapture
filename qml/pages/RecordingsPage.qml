@@ -140,6 +140,21 @@ Item {
                 enabled: root.vm && root.vm.exportSelectionCount > 0
                 onClicked: root.requestExportSelected(root.vm.exportSelectedEntries())
             }
+            Button {
+                text: "Select All"
+                enabled: root.vm && root.vm.count > 0
+                onClicked: if (root.vm) root.vm.selectAllForExport()
+            }
+            Button {
+                text: "Clear Selection"
+                enabled: root.vm && root.vm.exportSelectionCount > 0
+                onClicked: if (root.vm) root.vm.clearExportSelection()
+            }
+            Text {
+                text: "Manual export selection: " + (root.vm ? root.vm.exportSelectionCount : 0) + " selected"
+                color: Theme.AbracaptureTheme.textSecondary
+                font.pixelSize: 11
+            }
         }
 
         // Main content area

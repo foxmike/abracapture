@@ -187,6 +187,7 @@ bool ManualExportPlanner::planRequest(const ManualExportSource& source,
                                (baseName.toStdString() + "." +
                                 exportFileExtension(profile.format).toStdString());
     request->profile = profile;
+    request->profile.collisionPolicy = destination.collisionPolicy;
     request->captureSessionId = source.captureSessionId;
     request->sourceSampleRate = source.sampleRate;
     return true;

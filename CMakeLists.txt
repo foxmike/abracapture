@@ -82,6 +82,7 @@ qt_add_qml_module(abracapture
     QML_FILES
         qml/Main.qml
         qml/components/SourceCard.qml
+        qml/components/ThemedComboBox.qml
         qml/components/WaveformView.qml
         qml/pages/CapturePage.qml
         qml/pages/SettingsPage.qml

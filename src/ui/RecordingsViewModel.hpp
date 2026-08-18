@@ -66,6 +66,7 @@ public:
     Q_INVOKABLE bool isSelectedForExport(int index) const;
     Q_INVOKABLE void toggleExportSelection(int index);
     Q_INVOKABLE void clearExportSelection();
+    Q_INVOKABLE void selectAllForExport();
     Q_INVOKABLE QVariantList exportSelectedEntries() const;
     Q_INVOKABLE bool removeEntry(int index);
     Q_INVOKABLE void refreshEntries();

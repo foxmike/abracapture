@@ -76,6 +76,12 @@ bool ExportOutputPlanner::plan(const ExportRequest& request,
             return false;
         }
 
+        if (request.profile.collisionPolicy == CollisionPolicy::ReplaceExisting) {
+            *plannedRequest = request;
+            plannedRequest->destinationPath = destination;
+            return true;
+        }
+
         const std::filesystem::path parent = destination.parent_path();
         const std::string stem = destination.stem().string();
         const std::string extensionWithDot = destination.extension().string();

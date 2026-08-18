@@ -133,6 +133,7 @@ ApplicationWindow {
             sourceListModel: appSourceListModel
             exportManager: appExportManager
             manualExportViewModel: appManualExportViewModel
+            onRequestRecordingsPage: navigationTabs.currentIndex = 1
         }
 
         Pages.SettingsPage {

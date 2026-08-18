@@ -36,6 +36,7 @@ struct SampleRateOption {
 enum class CollisionPolicy {
     GenerateUniqueName,
     FailIfExists,
+    ReplaceExisting,
 };
 
 enum class Mp3BitrateMode {

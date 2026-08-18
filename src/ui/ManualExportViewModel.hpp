@@ -44,6 +44,9 @@ class ManualExportViewModel : public QObject {
     Q_PROPERTY(bool useStoredMetadataNames READ useStoredMetadataNames WRITE setUseStoredMetadataNames NOTIFY destinationChanged)
     Q_PROPERTY(bool organizeAlbumDirectory READ organizeAlbumDirectory WRITE setOrganizeAlbumDirectory NOTIFY destinationChanged)
     Q_PROPERTY(QString destinationPreview READ destinationPreview NOTIFY destinationChanged)
+    Q_PROPERTY(QString profileMode READ profileMode WRITE setProfileMode NOTIFY profileChanged)
+    Q_PROPERTY(QString collisionPolicy READ collisionPolicy WRITE setCollisionPolicy NOTIFY destinationChanged)
+    Q_PROPERTY(QVariantMap bulkPreview READ bulkPreview NOTIFY bulkPreviewChanged)
     Q_PROPERTY(QVariantList jobs READ jobs NOTIFY jobsChanged)
     Q_PROPERTY(QString statusMessage READ statusMessage NOTIFY statusMessageChanged)
 
@@ -65,6 +68,8 @@ public:
 
     [[nodiscard]] bool useAutomaticProfile() const noexcept;
     void setUseAutomaticProfile(bool enabled);
+    [[nodiscard]] QString profileMode() const;
+    void setProfileMode(const QString& mode);
     [[nodiscard]] QString manualFormat() const;
     void setManualFormat(const QString& format);
     [[nodiscard]] int manualSampleRate() const noexcept;
@@ -97,6 +102,9 @@ public:
     [[nodiscard]] bool organizeAlbumDirectory() const noexcept;
     void setOrganizeAlbumDirectory(bool enabled);
     [[nodiscard]] QString destinationPreview() const;
+    [[nodiscard]] QString collisionPolicy() const;
+    void setCollisionPolicy(const QString& policy);
+    [[nodiscard]] QVariantMap bulkPreview() const;
     [[nodiscard]] QVariantList jobs() const;
     [[nodiscard]] QString statusMessage() const;
 
@@ -120,10 +128,13 @@ signals:
     void jobsChanged();
     void statusMessageChanged();
     void recordingHistoryChanged();
+    void bulkPreviewChanged();
 
 private:
     [[nodiscard]] abracapture::exporting::ExportProfile activeProfile() const;
     [[nodiscard]] abracapture::exporting::ManualExportDestination activeDestination() const;
+    [[nodiscard]] QList<abracapture::exporting::ExportRequest> plannedRequests(
+        int* skipped, QString* error) const;
     [[nodiscard]] abracapture::exporting::ManualExportSource sourceFromVariant(
         const QVariantMap& entry) const;
     [[nodiscard]] QVariantMap sourceDetails(const abracapture::exporting::ManualExportSource& source) const;
@@ -146,6 +157,7 @@ private:
     QVariantList captureSessions_;
     QString selectedSessionId_;
     bool useAutomaticProfile_ = true;
+    bool collisionPolicyExplicit_ = false;
     abracapture::exporting::ExportProfile manualProfile_;
     abracapture::exporting::ManualExportDestination destination_;
     QHash<abracapture::exporting::ExportJobId, abracapture::exporting::ExportRequest> manualRequests_;

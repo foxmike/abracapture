@@ -1,6 +1,7 @@
 #include "ManualExportViewModel.hpp"
 
 #include "SettingsViewModel.hpp"
+#include "export/ExportOutputPlanner.hpp"
 #include "history/RecordingIndex.hpp"
 
 #include <QDir>
@@ -49,6 +50,22 @@ QString destinationPolicyName(const ManualExportDestinationPolicy policy) {
     case ManualExportDestinationPolicy::CustomDirectory: return QStringLiteral("custom");
     }
     return QStringLiteral("same");
+}
+
+QString collisionPolicyName(const abracapture::exporting::CollisionPolicy policy) {
+    switch (policy) {
+    case abracapture::exporting::CollisionPolicy::FailIfExists: return QStringLiteral("skip");
+    case abracapture::exporting::CollisionPolicy::ReplaceExisting: return QStringLiteral("replace");
+    case abracapture::exporting::CollisionPolicy::GenerateUniqueName: return QStringLiteral("unique");
+    }
+    return QStringLiteral("unique");
+}
+
+abracapture::exporting::CollisionPolicy collisionPolicyFromName(const QString& name) {
+    const QString normalized = name.trimmed().toLower();
+    if (normalized == QStringLiteral("skip")) return abracapture::exporting::CollisionPolicy::FailIfExists;
+    if (normalized == QStringLiteral("replace")) return abracapture::exporting::CollisionPolicy::ReplaceExisting;
+    return abracapture::exporting::CollisionPolicy::GenerateUniqueName;
 }
 
 ManualExportDestinationPolicy destinationPolicyFromName(const QString& name) {
@@ -147,6 +164,17 @@ void ManualExportViewModel::setUseAutomaticProfile(const bool enabled) {
     if (useAutomaticProfile_ == enabled) return;
     useAutomaticProfile_ = enabled;
     emit profileChanged();
+    emit bulkPreviewChanged();
+}
+
+QString ManualExportViewModel::profileMode() const {
+    return useAutomaticProfile_ ? QStringLiteral("automatic") : QStringLiteral("manual");
+}
+
+void ManualExportViewModel::setProfileMode(const QString& mode) {
+    const QString normalized = mode.trimmed().toLower();
+    if (normalized == QStringLiteral("automatic")) setUseAutomaticProfile(true);
+    else if (normalized == QStringLiteral("manual")) setUseAutomaticProfile(false);
 }
 
 QString ManualExportViewModel::manualFormat() const {
@@ -158,6 +186,7 @@ void ManualExportViewModel::setManualFormat(const QString& format) {
     if (!parsed.has_value() || *parsed == manualProfile_.format) return;
     manualProfile_ = abracapture::exporting::defaultExportProfile(*parsed);
     emit profileChanged();
+    emit bulkPreviewChanged();
 }
 
 int ManualExportViewModel::manualSampleRate() const noexcept {
@@ -175,6 +204,7 @@ void ManualExportViewModel::setManualSampleRate(const int rate) {
         return;
     }
     emit profileChanged();
+    emit bulkPreviewChanged();
 }
 
 int ManualExportViewModel::manualMp3Bitrate() const noexcept {
@@ -188,6 +218,7 @@ void ManualExportViewModel::setManualMp3Bitrate(const int bitrate) {
     manualProfile_.options = Mp3Options{static_cast<std::uint32_t>(bitrate),
                                          abracapture::exporting::Mp3BitrateMode::Constant};
     emit profileChanged();
+    emit bulkPreviewChanged();
 }
 
 int ManualExportViewModel::manualFlacBitDepth() const noexcept {
@@ -202,6 +233,7 @@ void ManualExportViewModel::setManualFlacBitDepth(const int bitDepth) {
     manualProfile_.options = FlacOptions{static_cast<std::uint32_t>(bitDepth),
                                           options != nullptr ? options->compressionLevel : 5};
     emit profileChanged();
+    emit bulkPreviewChanged();
 }
 
 int ManualExportViewModel::manualFlacCompressionLevel() const noexcept {
@@ -214,6 +246,7 @@ void ManualExportViewModel::setManualFlacCompressionLevel(const int level) {
     const auto* options = std::get_if<FlacOptions>(&manualProfile_.options);
     manualProfile_.options = FlacOptions{options != nullptr ? options->bitDepth : 16, level};
     emit profileChanged();
+    emit bulkPreviewChanged();
 }
 
 QString ManualExportViewModel::manualWavSampleFormat() const {
@@ -261,6 +294,7 @@ void ManualExportViewModel::setManualPreset(const QString& preset) {
             ? WavSampleFormat::Signed24 : WavSampleFormat::Float32;
     } else return;
     emit profileChanged();
+    emit bulkPreviewChanged();
 }
 
 QStringList ManualExportViewModel::presetOptions() const {
@@ -275,6 +309,7 @@ void ManualExportViewModel::setManualWavSampleFormat(const QString& format) {
     if (!parsed.has_value()) return;
     manualProfile_.options = WavOptions{*parsed};
     emit profileChanged();
+    emit bulkPreviewChanged();
 }
 
 QStringList ManualExportViewModel::formatOptions() const {
@@ -313,6 +348,7 @@ void ManualExportViewModel::setDestinationPolicy(const QString& policy) {
     if (destination_.policy == next) return;
     destination_.policy = next;
     emit destinationChanged();
+    emit bulkPreviewChanged();
 }
 QString ManualExportViewModel::customDestinationDirectory() const { return destination_.customDirectory; }
 void ManualExportViewModel::setCustomDestinationDirectory(const QString& directory) {
@@ -320,18 +356,35 @@ void ManualExportViewModel::setCustomDestinationDirectory(const QString& directo
     if (destination_.customDirectory == next) return;
     destination_.customDirectory = next;
     emit destinationChanged();
+    emit bulkPreviewChanged();
 }
 bool ManualExportViewModel::useStoredMetadataNames() const noexcept { return destination_.useStoredMetadataNames; }
 void ManualExportViewModel::setUseStoredMetadataNames(const bool enabled) {
     if (destination_.useStoredMetadataNames == enabled) return;
     destination_.useStoredMetadataNames = enabled;
     emit destinationChanged();
+    emit bulkPreviewChanged();
 }
 bool ManualExportViewModel::organizeAlbumDirectory() const noexcept { return destination_.organizeAlbumDirectory; }
 void ManualExportViewModel::setOrganizeAlbumDirectory(const bool enabled) {
     if (destination_.organizeAlbumDirectory == enabled) return;
     destination_.organizeAlbumDirectory = enabled;
     emit destinationChanged();
+    emit bulkPreviewChanged();
+}
+
+QString ManualExportViewModel::collisionPolicy() const {
+    if (!collisionPolicyExplicit_ && sources_.size() > 1) return QStringLiteral("skip");
+    return collisionPolicyName(destination_.collisionPolicy);
+}
+
+void ManualExportViewModel::setCollisionPolicy(const QString& policy) {
+    const auto next = collisionPolicyFromName(policy);
+    if (collisionPolicyExplicit_ && destination_.collisionPolicy == next) return;
+    destination_.collisionPolicy = next;
+    collisionPolicyExplicit_ = true;
+    emit destinationChanged();
+    emit bulkPreviewChanged();
 }
 
 QString ManualExportViewModel::destinationPreview() const {
@@ -343,6 +396,22 @@ QString ManualExportViewModel::destinationPreview() const {
         return error;
     }
     return QDir::toNativeSeparators(QString::fromStdString(request.destinationPath.string()));
+}
+
+QVariantMap ManualExportViewModel::bulkPreview() const {
+    int skipped = 0;
+    QString error;
+    const auto requests = plannedRequests(&skipped, &error);
+    return {
+        {QStringLiteral("sourceCount"), sources_.size()},
+        {QStringLiteral("skippedCount"), skipped},
+        {QStringLiteral("newCount"), requests.size()},
+        {QStringLiteral("error"), error},
+        {QStringLiteral("profile"), profileSummary()},
+        {QStringLiteral("destination"), destination_.policy == ManualExportDestinationPolicy::ExportsSubfolder
+            ? QStringLiteral("Exports/") : destination_.policy == ManualExportDestinationPolicy::CustomDirectory
+                ? destination_.customDirectory : QStringLiteral("Same directory as source")}
+    };
 }
 
 QVariantList ManualExportViewModel::jobs() const {
@@ -424,7 +493,11 @@ void ManualExportViewModel::setSelectedRecordings(const QVariantList& entries) {
 
 bool ManualExportViewModel::activateSelectedRecordings() {
     if (selectedRecordingSources_.isEmpty()) {
-        updateStatus(QStringLiteral("Select one or more masters on the Recordings page first"));
+        selectedFile_.clear();
+        selectedDirectory_.clear();
+        selectedSessionId_.clear();
+        setSources(QStringLiteral("recordings"), {});
+        updateStatus(QStringLiteral("Select one or more masters on the Recordings page, then choose Export Selected"));
         return false;
     }
     selectedFile_.clear();
@@ -462,18 +535,15 @@ int ManualExportViewModel::enqueueExport() {
         updateStatus(QStringLiteral("Choose at least one source before exporting"));
         return 0;
     }
-    const ExportProfile profile = activeProfile();
-    QList<abracapture::exporting::ExportRequest> requests;
-    for (const auto& source : sources_) {
-        abracapture::exporting::ExportRequest request;
-        QString error;
-        if (!abracapture::exporting::ManualExportPlanner::planRequest(
-                source, profile, activeDestination(), true, &request, &error)) {
-            updateStatus(error);
-            continue;
+    int skipped = 0;
+    QString planningError;
+    QList<abracapture::exporting::ExportRequest> requests = plannedRequests(&skipped, &planningError);
+    for (const auto& request : requests) {
+        if (!QDir().mkpath(QString::fromStdString(request.destinationPath.parent_path().string()))) {
+            if (planningError.isEmpty()) planningError = QStringLiteral("Unable to create export destination directory");
         }
-        requests.append(request);
     }
+    if (!planningError.isEmpty() && requests.isEmpty()) updateStatus(planningError);
     if (requests.isEmpty()) return 0;
     const QList<ExportJobId> ids = exportManager_->enqueueAll(requests);
     for (const ExportJobId id : ids) {
@@ -485,8 +555,9 @@ int ManualExportViewModel::enqueueExport() {
         updateDerivedExport(id, job->state == ExportJobState::Failed ? QStringLiteral("failed") : QStringLiteral("queued"),
                             {}, job->error);
     }
-    updateStatus(QStringLiteral("Queued %1 export job%2").arg(ids.size())
-                     .arg(ids.size() == 1 ? QString() : QStringLiteral("s")));
+    updateStatus(QStringLiteral("Queued %1 export job%2; %3 skipped")
+                     .arg(ids.size()).arg(ids.size() == 1 ? QString() : QStringLiteral("s"))
+                     .arg(skipped));
     emit jobsChanged();
     return ids.size();
 }
@@ -521,7 +592,43 @@ ExportProfile ManualExportViewModel::activeProfile() const {
 }
 
 abracapture::exporting::ManualExportDestination ManualExportViewModel::activeDestination() const {
-    return destination_;
+    auto destination = destination_;
+    destination.collisionPolicy = collisionPolicyFromName(collisionPolicy());
+    return destination;
+}
+
+QList<abracapture::exporting::ExportRequest> ManualExportViewModel::plannedRequests(
+    int* const skipped, QString* const error) const {
+    if (skipped != nullptr) *skipped = 0;
+    if (error != nullptr) error->clear();
+    QList<abracapture::exporting::ExportRequest> requests;
+    QSet<QString> reserved;
+    const auto destination = activeDestination();
+    const auto profile = activeProfile();
+    for (const auto& source : sources_) {
+        abracapture::exporting::ExportRequest baseRequest;
+        QString planError;
+        if (!abracapture::exporting::ManualExportPlanner::planRequest(
+                source, profile, destination, false, &baseRequest, &planError)) {
+            if (error != nullptr && error->isEmpty()) *error = planError;
+            continue;
+        }
+        if (destination.collisionPolicy == abracapture::exporting::CollisionPolicy::FailIfExists &&
+            (QFileInfo::exists(QString::fromStdString(baseRequest.destinationPath.string())) ||
+             reserved.contains(abracapture::exporting::ExportOutputPlanner::normalizedPathKey(baseRequest.destinationPath)))) {
+            if (skipped != nullptr) ++*skipped;
+            continue;
+        }
+        abracapture::exporting::ExportRequest planned;
+        if (!abracapture::exporting::ExportOutputPlanner::plan(
+                baseRequest, reserved, &planned, &planError)) {
+            if (error != nullptr && error->isEmpty()) *error = planError;
+            continue;
+        }
+        reserved.insert(abracapture::exporting::ExportOutputPlanner::normalizedPathKey(planned.destinationPath));
+        requests.append(std::move(planned));
+    }
+    return requests;
 }
 
 abracapture::exporting::ManualExportSource ManualExportViewModel::sourceFromVariant(
@@ -574,6 +681,7 @@ void ManualExportViewModel::setSources(QString mode,
     sources_ = std::move(sources);
     emit sourceChanged();
     emit destinationChanged();
+    emit bulkPreviewChanged();
 }
 
 void ManualExportViewModel::rebuildCaptureSessions() {

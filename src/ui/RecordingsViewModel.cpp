@@ -184,6 +184,16 @@ void RecordingsViewModel::clearExportSelection() {
     emit exportSelectionChanged();
 }
 
+void RecordingsViewModel::selectAllForExport() {
+    QSet<QString> allPaths;
+    for (const auto& entry : entries_) {
+        if (!entry.filePath.isEmpty()) allPaths.insert(entry.filePath);
+    }
+    if (exportSelectedPaths_ == allPaths) return;
+    exportSelectedPaths_ = std::move(allPaths);
+    emit exportSelectionChanged();
+}
+
 QVariantList RecordingsViewModel::exportSelectedEntries() const {
     QVariantList selected;
     for (int index = 0; index < entries_.size(); ++index) {

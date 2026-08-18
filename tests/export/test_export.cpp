@@ -6,6 +6,7 @@
 #include "history/RecordingIndex.hpp"
 #include "recording/OutputPathPolicy.hpp"
 #include "ui/ManualExportViewModel.hpp"
+#include "ui/SettingsViewModel.hpp"
 
 #include <QCoreApplication>
 #include <QDataStream>
@@ -293,6 +294,76 @@ void testOutputPlanningAvoidsCollisions() {
     expect(!abracapture::exporting::ExportOutputPlanner::plan(
                requestFor(failProfile, desired), {}, &planned, &error),
            "Fail-if-exists collision policy rejects occupied output");
+
+    auto replaceProfile = profile;
+    replaceProfile.collisionPolicy = abracapture::exporting::CollisionPolicy::ReplaceExisting;
+    expect(abracapture::exporting::ExportOutputPlanner::plan(
+               requestFor(replaceProfile, desired), {}, &planned, &error) &&
+               planned.destinationPath == desired,
+           "Replace-existing requires an explicit policy and retains the requested path");
+}
+
+void testManualProfileModesAndBulkPreflight() {
+    QTemporaryDir directory;
+    expect(directory.isValid(), "Manual profile fixture directory is available");
+    if (!directory.isValid()) return;
+    const std::filesystem::path root = directory.path().toStdString();
+    const auto first = root / "first.wav";
+    const auto second = root / "second.wav";
+    expect(writeSilenceWav(first) && writeSilenceWav(second), "Bulk profile WAV fixtures can be created");
+    QFile existing(QString::fromStdString((root / "first.mp3").string()));
+    expect(existing.open(QIODevice::WriteOnly), "Existing derivative fixture can be created");
+    existing.write("existing", 8);
+    existing.close();
+
+    abracapture::exporting::ExportManager manager;
+    SettingsViewModel settings;
+    const auto automaticBefore = settings.automaticExportProfile().profile;
+    ManualExportViewModel manual(&manager, nullptr, &settings);
+    expect(manual.profileMode() == QStringLiteral("automatic"),
+           "Manual export starts with an explicit Automatic Profile mode");
+    expect(!manual.activateSelectedRecordings() && manual.sourceMode() == QStringLiteral("recordings") &&
+               manual.sourceCount() == 0 && manual.statusMessage().contains(QStringLiteral("Recordings page")),
+           "Empty Selected Recordings mode gives direct navigation guidance without stale sources");
+    manual.setProfileMode(QStringLiteral("manual"));
+    manual.setManualFormat(QStringLiteral("flac"));
+    manual.setManualSampleRate(44100);
+    manual.setManualFlacBitDepth(16);
+    expect(manual.profileMode() == QStringLiteral("manual") &&
+               manual.profileSummary().contains(QStringLiteral("FLAC")) &&
+               manual.profileSummary().contains(QStringLiteral("16-bit")),
+           "Custom manual FLAC profile is independent and visible");
+    const auto* automaticMp3 = std::get_if<abracapture::exporting::Mp3Options>(&automaticBefore.options);
+    const auto automaticAfter = settings.automaticExportProfile().profile;
+    const auto* unchangedAutomaticMp3 = std::get_if<abracapture::exporting::Mp3Options>(
+        &automaticAfter.options);
+    expect(automaticMp3 != nullptr && unchangedAutomaticMp3 != nullptr &&
+               automaticMp3->bitrateKbps == unchangedAutomaticMp3->bitrateKbps,
+           "Changing the manual profile does not alter automatic export settings");
+    manual.setManualFormat(QStringLiteral("wav"));
+    manual.setManualWavSampleFormat(QStringLiteral("s24"));
+    expect(manual.profileSummary().contains(QStringLiteral("WAV")) &&
+               manual.profileSummary().contains(QStringLiteral("24-bit")),
+           "Custom manual WAV profile is selectable");
+
+    manual.setManualFormat(QStringLiteral("mp3"));
+    manual.setManualMp3Bitrate(320);
+    manual.setSelectedRecordings({
+        QVariantMap{{QStringLiteral("filePath"), QString::fromStdString(first.string())}},
+        QVariantMap{{QStringLiteral("filePath"), QString::fromStdString(second.string())}}
+    });
+    expect(manual.sourceCount() == 2, "Multiple recordings become one manual source set");
+    expect(manual.collisionPolicy() == QStringLiteral("skip"),
+           "Bulk manual export defaults to Skip Existing");
+    const QVariantMap preview = manual.bulkPreview();
+    expect(preview.value(QStringLiteral("skippedCount")).toInt() == 1 &&
+               preview.value(QStringLiteral("newCount")).toInt() == 1,
+           "Bulk preflight counts existing and new outputs before enqueue");
+    expect(manual.enqueueExport() == 1 && manager.jobs().size() == 1,
+           "Skipped existing output is not submitted to ffmpeg");
+    manual.setCollisionPolicy(QStringLiteral("unique"));
+    expect(manual.bulkPreview().value(QStringLiteral("newCount")).toInt() == 2,
+           "Explicit unique-name policy plans both bulk outputs");
 }
 
 void testQueueAcceptsMultiplePendingJobs() {
@@ -600,6 +671,7 @@ int main(int argc, char* argv[]) {
     testWavSampleFormat();
     testInvalidProfileIsRejected();
     testOutputPlanningAvoidsCollisions();
+    testManualProfileModesAndBulkPreflight();
     testQueueAcceptsMultiplePendingJobs();
     testManualDirectoryEnumerationAndOutputPlanning();
     testQueuedJobCanBeCancelled();
