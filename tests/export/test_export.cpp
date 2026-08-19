@@ -198,6 +198,16 @@ void testAudioFormatCatalog() {
     expect(presets.size() >= 6, "Catalog has at least 6 presets");
     const auto mp3320 = abracapture::exporting::AudioFormatCatalog::preset(QStringLiteral("mp3_320"));
     expect(mp3320.has_value() && mp3320->bitrate == 320, "mp3_320 preset has 320 bitrate");
+
+    const auto foundTarget = abracapture::exporting::AudioFormatCatalog::findTarget(QStringLiteral("MP3"));
+    expect(foundTarget.has_value() && foundTarget->container == abracapture::exporting::AudioContainer::Mp3,
+           "findTarget resolves MP3 format string");
+
+    const auto presetTarget = abracapture::exporting::AudioFormatCatalog::targetFromPreset(QStringLiteral("mp3_320"));
+    expect(presetTarget.has_value() && presetTarget->container == abracapture::exporting::AudioContainer::Mp3,
+           "targetFromPreset instantiates target from mp3_320 preset");
+    expect(abracapture::exporting::AudioFormatCatalog::findMatchingPreset(*presetTarget) == QStringLiteral("mp3_320"),
+           "findMatchingPreset recognizes target matching mp3_320");
 }
 
 // ---- Part 5: FfmpegCapabilities ----
@@ -882,6 +892,15 @@ void testDerivedExportSerialization() {
     const auto legacy = abracapture::history::DerivedExport::fromJson(oldFormat);
     expect(legacy.container.isEmpty() && legacy.codec.isEmpty() && legacy.sampleRate == 0,
            "Old DerivedExport JSON without container/codec fields deserializes gracefully");
+
+    const auto profile = abracapture::exporting::defaultExportProfile(
+        abracapture::exporting::AudioContainer::Mp3, abracapture::exporting::AudioCodec::Mp3);
+    const auto req = requestFor(profile, "/exports/track.mp3");
+    const auto derivedRecord = abracapture::exporting::createDerivedExportRecord(
+        42, req, QStringLiteral("completed"), QStringLiteral("/exports/track.mp3"), QString());
+    expect(derivedRecord.container == QStringLiteral("mp3") && derivedRecord.codec == QStringLiteral("mp3") &&
+           derivedRecord.bitrate == 320,
+           "createDerivedExportRecord populates container, codec, and bitrate");
 }
 
 } // namespace

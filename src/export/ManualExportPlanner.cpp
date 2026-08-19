@@ -208,6 +208,8 @@ QString ManualExportPlanner::profileSummary(const ExportProfile& profile) {
         case AudioSampleFormat::Unknown:
             break;
         }
+    } else if (const auto* options = std::get_if<VorbisOptions>(&target.codecOptions)) {
+        summary += QStringLiteral(" • quality %1").arg(options->quality);
     }
     return summary;
 }

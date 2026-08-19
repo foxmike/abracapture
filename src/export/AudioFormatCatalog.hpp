@@ -47,14 +47,22 @@ struct PresetDescriptor {
     int vorbisQuality = -1;
 };
 
+struct AudioEncodingTarget;
+
 class AudioFormatCatalog {
 public:
     [[nodiscard]] static const QList<AudioTargetDescriptor>& targets();
     [[nodiscard]] static std::optional<AudioTargetDescriptor> target(AudioContainer container,
                                                                      AudioCodec codec);
+    [[nodiscard]] static std::optional<AudioTargetDescriptor> findTarget(const QString& nameOrExtension);
     [[nodiscard]] static bool isValidPairing(AudioContainer container, AudioCodec codec);
     [[nodiscard]] static const QList<PresetDescriptor>& presets();
     [[nodiscard]] static std::optional<PresetDescriptor> preset(const QString& id);
+    [[nodiscard]] static QString findMatchingPreset(const AudioEncodingTarget& target);
+    [[nodiscard]] static std::optional<AudioEncodingTarget> targetFromPreset(const QString& presetId);
+
+    [[nodiscard]] static QStringList presetOptions();
+    [[nodiscard]] static QStringList presetOptionLabels();
 
     [[nodiscard]] static QStringList formatLabels();
     [[nodiscard]] static QStringList sampleRateOptions(AudioContainer container, AudioCodec codec);
@@ -63,6 +71,13 @@ public:
     [[nodiscard]] static QStringList compressionLevelOptions(AudioContainer container,
                                                              AudioCodec codec);
     [[nodiscard]] static QStringList sampleFormatOptions(AudioContainer container, AudioCodec codec);
+
+    [[nodiscard]] static QStringList sampleRateOptionLabels(AudioContainer container, AudioCodec codec);
+    [[nodiscard]] static QStringList bitrateOptionLabels(AudioContainer container, AudioCodec codec);
+    [[nodiscard]] static QStringList bitDepthOptionLabels(AudioContainer container, AudioCodec codec);
+    [[nodiscard]] static QStringList compressionLevelOptionLabels(AudioContainer container, AudioCodec codec);
+    [[nodiscard]] static QStringList sampleFormatOptionLabels(AudioContainer container, AudioCodec codec);
+
     [[nodiscard]] static bool supportsExplicitSampleRate(AudioContainer container, AudioCodec codec,
                                                          std::uint32_t sampleRate);
     [[nodiscard]] static QString fileExtension(AudioContainer container, AudioCodec codec);

@@ -11,6 +11,8 @@
 #include <optional>
 #include <variant>
 
+namespace abracapture::history { struct DerivedExport; }
+
 namespace abracapture::exporting {
 
 // ---------------------------------------------------------------------------
@@ -184,5 +186,12 @@ struct LegacyExportProfile {
 };
 
 [[nodiscard]] ExportProfile migrateProfile(const LegacyExportProfile& legacy);
+
+[[nodiscard]] abracapture::history::DerivedExport createDerivedExportRecord(
+    ExportJobId jobId,
+    const ExportRequest& request,
+    const QString& state,
+    const QString& outputPath = {},
+    const QString& error = {});
 
 } // namespace abracapture::exporting

@@ -1,7 +1,10 @@
 #include "FfmpegCapabilities.hpp"
 
+#include <QCoreApplication>
+#include <QPointer>
 #include <QProcess>
 #include <QStandardPaths>
+#include <QThread>
 
 namespace abracapture::exporting {
 
@@ -48,33 +51,74 @@ QString parseVersion(const QByteArray& output) {
 FfmpegCapabilities::FfmpegCapabilities(QObject* const parent)
     : QObject(parent) {}
 
-bool FfmpegCapabilities::probe() {
-    ffmpegPath_ = locateFfmpeg();
+FfmpegCapabilities::ProbeResult FfmpegCapabilities::executeProbe() {
+    ProbeResult result;
+    result.ffmpegPath = locateFfmpeg();
 
     QProcess versionProcess;
-    versionProcess.start(ffmpegPath_, {QStringLiteral("-version")});
+    versionProcess.start(result.ffmpegPath, {QStringLiteral("-version")});
     if (!versionProcess.waitForFinished(5000)) {
-        return false;
+        return result;
     }
-    version_ = parseVersion(versionProcess.readAllStandardOutput());
+    result.version = parseVersion(versionProcess.readAllStandardOutput());
 
     QProcess encoderProcess;
-    encoderProcess.start(ffmpegPath_, {QStringLiteral("-encoders"), QStringLiteral("-hide_banner")});
+    encoderProcess.start(result.ffmpegPath, {QStringLiteral("-encoders"), QStringLiteral("-hide_banner")});
     if (!encoderProcess.waitForFinished(5000)) {
-        return false;
+        return result;
     }
-    encoders_ = parseListOutput(encoderProcess.readAllStandardOutput());
+    result.encoders = parseListOutput(encoderProcess.readAllStandardOutput());
 
     QProcess muxerProcess;
-    muxerProcess.start(ffmpegPath_, {QStringLiteral("-muxers"), QStringLiteral("-hide_banner")});
+    muxerProcess.start(result.ffmpegPath, {QStringLiteral("-muxers"), QStringLiteral("-hide_banner")});
     if (!muxerProcess.waitForFinished(5000)) {
-        return false;
+        return result;
     }
-    muxers_ = parseListOutput(muxerProcess.readAllStandardOutput());
+    result.muxers = parseListOutput(muxerProcess.readAllStandardOutput());
 
-    probed_ = true;
+    result.success = true;
+    return result;
+}
+
+bool FfmpegCapabilities::probe() {
+    ProbeResult res = executeProbe();
+    ffmpegPath_ = std::move(res.ffmpegPath);
+    version_ = std::move(res.version);
+    encoders_ = std::move(res.encoders);
+    muxers_ = std::move(res.muxers);
+    probed_ = res.success;
     emit probeCompleted();
-    return true;
+    return probed_;
+}
+
+void FfmpegCapabilities::probeAsync() {
+    if (probed_ || probing_) {
+        return;
+    }
+    probing_ = true;
+    emit probingChanged();
+
+    QPointer<FfmpegCapabilities> self(this);
+    QThread* thread = QThread::create([self]() {
+        ProbeResult res = executeProbe();
+        if (QCoreApplication::instance() != nullptr) {
+            QMetaObject::invokeMethod(QCoreApplication::instance(), [self, res = std::move(res)]() mutable {
+                if (!self) {
+                    return;
+                }
+                self->ffmpegPath_ = std::move(res.ffmpegPath);
+                self->version_ = std::move(res.version);
+                self->encoders_ = std::move(res.encoders);
+                self->muxers_ = std::move(res.muxers);
+                self->probed_ = res.success;
+                self->probing_ = false;
+                emit self->probingChanged();
+                emit self->probeCompleted();
+            });
+        }
+    });
+    QObject::connect(thread, &QThread::finished, thread, &QObject::deleteLater);
+    thread->start();
 }
 
 QString FfmpegCapabilities::ffmpegPath() const {
@@ -87,6 +131,10 @@ QString FfmpegCapabilities::version() const {
 
 bool FfmpegCapabilities::isProbed() const noexcept {
     return probed_;
+}
+
+bool FfmpegCapabilities::isProbing() const noexcept {
+    return probing_;
 }
 
 bool FfmpegCapabilities::isEncoderAvailable(const QString& encoderName) const {

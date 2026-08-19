@@ -225,7 +225,7 @@ int main(int argc, char *argv[]) {
     auto updateDerivedExport = [&recordingIndex, &recordingsViewModel](
                                    const abracapture::exporting::ExportJobId jobId,
                                    const QString& masterPath,
-                                   const QString& format,
+                                   const abracapture::exporting::ExportRequest& request,
                                    const QString& state,
                                    const QString& outputPath,
                                    const QString& error) {
@@ -241,17 +241,14 @@ int main(int argc, char *argv[]) {
                     return exportRecord.jobId == jobId;
                 });
             if (exportIt == entry.derivedExports.end()) {
-                entry.derivedExports.append({
-                    .jobId = jobId,
-                    .format = format,
-                    .outputPath = outputPath,
-                    .state = state,
-                    .error = error,
-                });
+                entry.derivedExports.append(
+                    abracapture::exporting::createDerivedExportRecord(
+                        jobId, request, state, outputPath, error));
             } else {
-                exportIt->format = format;
-                exportIt->outputPath = outputPath;
                 exportIt->state = state;
+                if (!outputPath.isEmpty()) {
+                    exportIt->outputPath = outputPath;
+                }
                 exportIt->error = error;
             }
             static_cast<void>(recordingIndex.update(entry));
@@ -269,8 +266,7 @@ int main(int argc, char *argv[]) {
                              const auto job = exportManager.job(jobId);
                              if (job.has_value()) {
                                  updateDerivedExport(
-                                     jobId, it.value(),
-                                     abracapture::exporting::audioContainerName(job->request.profile.target.container),
+                                     jobId, it.value(), job->request,
                                      QStringLiteral("running"),
                                      QString::fromStdString(job->request.destinationPath.string()), {});
                              }
@@ -281,7 +277,7 @@ int main(int argc, char *argv[]) {
                      });
     QObject::connect(&exportManager, &abracapture::exporting::ExportManager::jobCompleted,
                      &application,
-                     [&automaticExportMasters, &updateDerivedExport](
+                     [&automaticExportMasters, &updateDerivedExport, &exportManager](
                          const abracapture::exporting::ExportJobId jobId,
                          const QString& outputPath) {
                          const auto it = automaticExportMasters.find(jobId);
@@ -289,9 +285,11 @@ int main(int argc, char *argv[]) {
                              return;
                          }
                          const QString masterPath = it.value();
-                         const QString format = QFileInfo(outputPath).suffix().toLower();
-                         updateDerivedExport(jobId, masterPath, format,
-                                             QStringLiteral("completed"), outputPath, {});
+                         const auto job = exportManager.job(jobId);
+                         if (job.has_value()) {
+                             updateDerivedExport(jobId, masterPath, job->request,
+                                                 QStringLiteral("completed"), outputPath, {});
+                         }
                          std::fprintf(stderr,
                                       "[abracapture] automatic export completed: source=%s output=%s job=%llu\n",
                                       masterPath.toUtf8().constData(), outputPath.toUtf8().constData(),
@@ -309,14 +307,11 @@ int main(int argc, char *argv[]) {
                          }
                          const QString masterPath = it.value();
                          const auto job = exportManager.job(jobId);
-                         const QString format = job.has_value()
-                                                    ? abracapture::exporting::audioContainerName(job->request.profile.target.container)
-                                                    : QStringLiteral("unknown");
-                         const QString outputPath = job.has_value()
-                                                        ? QString::fromStdString(job->request.destinationPath.string())
-                                                        : QString{};
-                         updateDerivedExport(jobId, masterPath, format,
-                                             QStringLiteral("failed"), outputPath, error);
+                         if (job.has_value()) {
+                             const QString outputPath = QString::fromStdString(job->request.destinationPath.string());
+                             updateDerivedExport(jobId, masterPath, job->request,
+                                                 QStringLiteral("failed"), outputPath, error);
+                         }
                          std::fprintf(stderr,
                                       "[abracapture] automatic export failed: source=%s job=%llu error=%s\n",
                                       masterPath.toUtf8().constData(),

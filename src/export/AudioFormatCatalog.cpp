@@ -1,4 +1,5 @@
 #include "AudioFormatCatalog.hpp"
+#include "ExportTypes.hpp"
 
 namespace abracapture::exporting {
 
@@ -105,6 +106,28 @@ std::optional<AudioTargetDescriptor> AudioFormatCatalog::target(const AudioConta
     return std::nullopt;
 }
 
+std::optional<AudioTargetDescriptor> AudioFormatCatalog::findTarget(const QString& nameOrExtension) {
+    const QString normalized = nameOrExtension.trimmed().toLower();
+    if (normalized.isEmpty()) {
+        return std::nullopt;
+    }
+    if (normalized == QStringLiteral("wave")) {
+        return target(AudioContainer::Wav, AudioCodec::Pcm);
+    }
+    if (normalized == QStringLiteral("vorbis")) {
+        return target(AudioContainer::Ogg, AudioCodec::Vorbis);
+    }
+    for (const auto& descriptor : builtinTargets()) {
+        if (QString::compare(descriptor.fileExtension, normalized, Qt::CaseInsensitive) == 0 ||
+            QString::compare(audioContainerName(descriptor.container), normalized, Qt::CaseInsensitive) == 0 ||
+            QString::compare(audioCodecName(descriptor.codec), normalized, Qt::CaseInsensitive) == 0 ||
+            QString::compare(descriptor.label, normalized, Qt::CaseInsensitive) == 0) {
+            return descriptor;
+        }
+    }
+    return std::nullopt;
+}
+
 bool AudioFormatCatalog::isValidPairing(const AudioContainer container, const AudioCodec codec) {
     return target(container, codec).has_value();
 }
@@ -120,6 +143,82 @@ std::optional<PresetDescriptor> AudioFormatCatalog::preset(const QString& id) {
         }
     }
     return std::nullopt;
+}
+
+QString AudioFormatCatalog::findMatchingPreset(const AudioEncodingTarget& target) {
+    if (target.sampleRate.policy != SampleRatePolicy::PreserveSource) {
+        return QStringLiteral("custom");
+    }
+    for (const auto& preset : builtinPresets()) {
+        if (preset.container != target.container || preset.codec != target.codec) {
+            continue;
+        }
+        if (target.codec == AudioCodec::Mp3) {
+            const auto* options = std::get_if<Mp3Options>(&target.codecOptions);
+            if (options != nullptr && options->bitrateKbps == preset.bitrate &&
+                options->bitrateMode == Mp3BitrateMode::Constant) {
+                return preset.id;
+            }
+        } else if (target.codec == AudioCodec::Flac) {
+            const auto* options = std::get_if<FlacOptions>(&target.codecOptions);
+            if (options != nullptr && options->bitDepth == preset.bitDepth &&
+                (preset.compressionLevel == -1 || options->compressionLevel == preset.compressionLevel)) {
+                return preset.id;
+            }
+        } else if (target.codec == AudioCodec::Pcm) {
+            const auto* options = std::get_if<PcmOptions>(&target.codecOptions);
+            if (options != nullptr && options->sampleFormat == preset.sampleFormat) {
+                return preset.id;
+            }
+        } else if (target.codec == AudioCodec::Vorbis) {
+            const auto* options = std::get_if<VorbisOptions>(&target.codecOptions);
+            if (options != nullptr && options->quality == preset.vorbisQuality) {
+                return preset.id;
+            }
+        }
+    }
+    return QStringLiteral("custom");
+}
+
+std::optional<AudioEncodingTarget> AudioFormatCatalog::targetFromPreset(const QString& presetId) {
+    const QString normalized = presetId.trimmed().toLower();
+    if (normalized == QStringLiteral("custom")) {
+        return std::nullopt;
+    }
+    const auto descriptor = preset(normalized);
+    if (!descriptor.has_value()) {
+        return std::nullopt;
+    }
+    AudioEncodingTarget target = defaultEncodingTarget(descriptor->container, descriptor->codec);
+    if (descriptor->bitrate > 0) {
+        target.codecOptions = Mp3Options{descriptor->bitrate, Mp3BitrateMode::Constant};
+    } else if (descriptor->bitDepth > 0) {
+        target.codecOptions = FlacOptions{
+            descriptor->bitDepth, descriptor->compressionLevel >= 0 ? descriptor->compressionLevel : 5};
+    } else if (descriptor->sampleFormat != AudioSampleFormat::Unknown) {
+        target.codecOptions = PcmOptions{descriptor->sampleFormat};
+    } else if (descriptor->vorbisQuality >= -1) {
+        target.codecOptions = VorbisOptions{descriptor->vorbisQuality};
+    }
+    return target;
+}
+
+QStringList AudioFormatCatalog::presetOptions() {
+    QStringList options;
+    for (const auto& descriptor : builtinPresets()) {
+        options.append(descriptor.id);
+    }
+    options.append(QStringLiteral("custom"));
+    return options;
+}
+
+QStringList AudioFormatCatalog::presetOptionLabels() {
+    QStringList labels;
+    for (const auto& descriptor : builtinPresets()) {
+        labels.append(descriptor.label);
+    }
+    labels.append(QStringLiteral("Custom"));
+    return labels;
 }
 
 QStringList AudioFormatCatalog::formatLabels() {
@@ -194,6 +293,78 @@ QStringList AudioFormatCatalog::sampleFormatOptions(const AudioContainer contain
         options.append(audioSampleFormatName(format));
     }
     return options;
+}
+
+QStringList AudioFormatCatalog::sampleRateOptionLabels(const AudioContainer container,
+                                                        const AudioCodec codec) {
+    const auto opts = sampleRateOptions(container, codec);
+    QStringList labels;
+    for (const QString& opt : opts) {
+        if (opt == QStringLiteral("preserve")) {
+            labels.append(QStringLiteral("Preserve Source"));
+        } else {
+            bool ok = false;
+            const double rate = opt.toDouble(&ok);
+            if (ok) {
+                const auto numeric = static_cast<long long>(rate);
+                labels.append(QStringLiteral("%1 kHz").arg(rate / 1000.0, 0, 'f', numeric % 1000 == 0 ? 0 : 1));
+            } else {
+                labels.append(opt);
+            }
+        }
+    }
+    return labels;
+}
+
+QStringList AudioFormatCatalog::bitrateOptionLabels(const AudioContainer container,
+                                                     const AudioCodec codec) {
+    const auto opts = bitrateOptions(container, codec);
+    QStringList labels;
+    for (const QString& opt : opts) {
+        labels.append(opt + QStringLiteral(" kbps"));
+    }
+    return labels;
+}
+
+QStringList AudioFormatCatalog::bitDepthOptionLabels(const AudioContainer container,
+                                                      const AudioCodec codec) {
+    const auto opts = bitDepthOptions(container, codec);
+    QStringList labels;
+    for (const QString& opt : opts) {
+        labels.append(opt + QStringLiteral("-bit"));
+    }
+    return labels;
+}
+
+QStringList AudioFormatCatalog::compressionLevelOptionLabels(const AudioContainer container,
+                                                               const AudioCodec codec) {
+    const auto opts = compressionLevelOptions(container, codec);
+    QStringList labels;
+    for (const QString& opt : opts) {
+        labels.append(QStringLiteral("Level ") + opt);
+    }
+    return labels;
+}
+
+QStringList AudioFormatCatalog::sampleFormatOptionLabels(const AudioContainer container,
+                                                          const AudioCodec codec) {
+    const auto descriptor = target(container, codec);
+    if (!descriptor.has_value()) {
+        return {};
+    }
+    QStringList labels;
+    for (const AudioSampleFormat fmt : descriptor->validSampleFormats) {
+        switch (fmt) {
+        case AudioSampleFormat::SignedInt16: labels.append(QStringLiteral("16-bit PCM")); break;
+        case AudioSampleFormat::SignedInt24: labels.append(QStringLiteral("24-bit PCM")); break;
+        case AudioSampleFormat::SignedInt32: labels.append(QStringLiteral("32-bit PCM")); break;
+        case AudioSampleFormat::Float32: labels.append(QStringLiteral("32-bit Float")); break;
+        case AudioSampleFormat::UnsignedInt8: labels.append(QStringLiteral("8-bit PCM")); break;
+        case AudioSampleFormat::Float64: labels.append(QStringLiteral("64-bit Float")); break;
+        case AudioSampleFormat::Unknown: labels.append(QStringLiteral("Unknown Format")); break;
+        }
+    }
+    return labels;
 }
 
 bool AudioFormatCatalog::supportsExplicitSampleRate(const AudioContainer container,

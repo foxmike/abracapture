@@ -4,6 +4,7 @@
 #include "audio/PipeWireCaptureStream.hpp"
 #include "automation/AutoRecordController.hpp"
 #include "core/AudioFormat.hpp"
+#include "export/AudioFormatCatalog.hpp"
 #include "export/ExportManager.hpp"
 #include "pipewire/PipeWireContext.hpp"
 #include "pipewire/SourceCatalog.hpp"
@@ -611,17 +612,15 @@ int CliApp::runRecord(const QStringList& recordArgs) {
             abracapture::exporting::ExportManager exportManager;
             QList<abracapture::exporting::ExportRequest> exportRequests;
             for (const QString& fmt : formatList) {
-                const auto exportFormat = abracapture::exporting::exportFormatFromString(fmt);
-                if (!exportFormat.has_value()) {
+                const auto targetDesc = abracapture::exporting::AudioFormatCatalog::findTarget(fmt);
+                if (!targetDesc.has_value()) {
                     std::cerr << "Export error: Unsupported export format: "
                               << fmt.trimmed().toStdString() << "\n";
                     return 4;
                 }
-                const auto container = abracapture::exporting::containerForLegacyFormat(*exportFormat);
-                const auto codec = abracapture::exporting::codecForLegacyFormat(*exportFormat);
                 abracapture::exporting::ExportRequest request;
                 request.sourcePath = finalizeResult.finalPath;
-                request.profile = abracapture::exporting::defaultExportProfile(container, codec);
+                request.profile = abracapture::exporting::defaultExportProfile(targetDesc->container, targetDesc->codec);
                 request.sourceFormat.sampleRate = finalizeResult.sampleRate;
                 std::filesystem::path exportPath = finalizeResult.finalPath;
                 exportPath.replace_extension(

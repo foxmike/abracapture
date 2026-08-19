@@ -1,6 +1,7 @@
 #include "ExportTypes.hpp"
 
 #include "AudioFormatCatalog.hpp"
+#include "history/RecordingIndex.hpp"
 
 namespace abracapture::exporting {
 
@@ -83,7 +84,8 @@ std::optional<ExportFormat> legacyFormatFor(const AudioContainer container,
 // ---------------------------------------------------------------------------
 
 bool AudioEncodingTarget::validate(QString* const error) const {
-    if (!AudioFormatCatalog::isValidPairing(container, codec)) {
+    const auto descriptor = AudioFormatCatalog::target(container, codec);
+    if (!descriptor.has_value()) {
         return setValidationError(error, QStringLiteral("Invalid container/codec combination"));
     }
 
@@ -106,7 +108,7 @@ bool AudioEncodingTarget::validate(QString* const error) const {
         if (mp3->bitrateMode != Mp3BitrateMode::Constant) {
             return setValidationError(error, QStringLiteral("MP3 VBR export is not implemented"));
         }
-        if (!isSupportedMp3Bitrate(mp3->bitrateKbps)) {
+        if (!descriptor->validBitrates.contains(mp3->bitrateKbps)) {
             return setValidationError(
                 error, QStringLiteral("MP3 bitrate must be 128, 192, 256, or 320 kbps"));
         }
@@ -117,25 +119,30 @@ bool AudioEncodingTarget::validate(QString* const error) const {
         if (flac == nullptr) {
             return setValidationError(error, QStringLiteral("FLAC export requires FLAC options"));
         }
-        if (flac->bitDepth != 16 && flac->bitDepth != 24 && flac->bitDepth != 32) {
+        if (!descriptor->validBitDepths.contains(flac->bitDepth)) {
             return setValidationError(error, QStringLiteral("FLAC bit depth must be 16, 24, or 32"));
         }
-        if (flac->compressionLevel < 0 || flac->compressionLevel > 12) {
+        if (!descriptor->validCompressionLevels.contains(flac->compressionLevel)) {
             return setValidationError(error, QStringLiteral("FLAC compression level must be between 0 and 12"));
         }
         return true;
     }
-    case AudioCodec::Pcm:
-        if (!std::holds_alternative<PcmOptions>(codecOptions)) {
+    case AudioCodec::Pcm: {
+        const auto* const pcm = std::get_if<PcmOptions>(&codecOptions);
+        if (pcm == nullptr) {
             return setValidationError(error, QStringLiteral("WAV export requires PCM options"));
         }
+        if (!descriptor->validSampleFormats.contains(pcm->sampleFormat)) {
+            return setValidationError(error, QStringLiteral("Unsupported WAV sample format"));
+        }
         return true;
+    }
     case AudioCodec::Vorbis: {
         const auto* const vorbis = std::get_if<VorbisOptions>(&codecOptions);
         if (vorbis == nullptr) {
             return setValidationError(error, QStringLiteral("Ogg/Vorbis export requires Vorbis options"));
         }
-        if (vorbis->quality < -1 || vorbis->quality > 10) {
+        if (!descriptor->validVorbisQualities.contains(vorbis->quality)) {
             return setValidationError(error, QStringLiteral("Ogg/Vorbis quality must be between -1 and 10"));
         }
         return true;
@@ -221,6 +228,42 @@ ExportProfile migrateProfile(const LegacyExportProfile& legacy) {
     }
 
     return profile;
+}
+
+abracapture::history::DerivedExport createDerivedExportRecord(
+    const ExportJobId jobId,
+    const ExportRequest& request,
+    const QString& state,
+    const QString& outputPath,
+    const QString& error) {
+    abracapture::history::DerivedExport derived;
+    derived.jobId = jobId;
+    derived.container = audioContainerName(request.profile.target.container);
+    derived.codec = audioCodecName(request.profile.target.codec);
+    derived.format = request.profile.target.fileExtension();
+
+    if (request.profile.target.sampleRate.policy == SampleRatePolicy::Explicit) {
+        derived.sampleRate = request.profile.target.sampleRate.sampleRate;
+    } else {
+        derived.sampleRate = request.sourceFormat.sampleRate;
+    }
+
+    if (const auto* flac = std::get_if<FlacOptions>(&request.profile.target.codecOptions)) {
+        derived.bitDepth = flac->bitDepth;
+    } else if (const auto* pcm = std::get_if<PcmOptions>(&request.profile.target.codecOptions)) {
+        derived.bitDepth = audioSampleFormatBits(pcm->sampleFormat);
+    }
+
+    if (const auto* mp3 = std::get_if<Mp3Options>(&request.profile.target.codecOptions)) {
+        derived.bitrate = mp3->bitrateKbps;
+    }
+
+    derived.outputPath = outputPath.isEmpty()
+                             ? QString::fromStdString(request.destinationPath.string())
+                             : outputPath;
+    derived.state = state;
+    derived.error = error;
+    return derived;
 }
 
 } // namespace abracapture::exporting

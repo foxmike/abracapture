@@ -45,6 +45,14 @@ class SettingsViewModel : public QObject {
     Q_PROPERTY(QStringList automaticExportWavSampleFormatOptions READ automaticExportWavSampleFormatOptions CONSTANT)
     Q_PROPERTY(QStringList automaticExportSampleRateOptions READ automaticExportSampleRateOptions
                    NOTIFY automaticExportProfileChanged)
+    Q_PROPERTY(QStringList automaticExportPresetOptions READ automaticExportPresetOptions CONSTANT)
+    Q_PROPERTY(QStringList automaticExportPresetLabels READ automaticExportPresetLabels CONSTANT)
+    Q_PROPERTY(QStringList automaticExportSampleRateOptionLabels READ automaticExportSampleRateOptionLabels
+                   NOTIFY automaticExportProfileChanged)
+    Q_PROPERTY(QStringList automaticExportMp3BitrateOptionLabels READ automaticExportMp3BitrateOptionLabels CONSTANT)
+    Q_PROPERTY(QStringList automaticExportFlacBitDepthOptionLabels READ automaticExportFlacBitDepthOptionLabels CONSTANT)
+    Q_PROPERTY(QStringList automaticExportFlacCompressionOptionLabels READ automaticExportFlacCompressionOptionLabels CONSTANT)
+    Q_PROPERTY(QStringList automaticExportWavSampleFormatOptionLabels READ automaticExportWavSampleFormatOptionLabels CONSTANT)
     Q_PROPERTY(QString automaticExportDestinationPolicy READ automaticExportDestinationPolicy
                    WRITE setAutomaticExportDestinationPolicy NOTIFY automaticExportProfileChanged)
     Q_PROPERTY(QString automaticExportCustomDirectory READ automaticExportCustomDirectory
@@ -127,6 +135,13 @@ public:
     [[nodiscard]] QStringList automaticExportFlacCompressionOptions() const;
     [[nodiscard]] QStringList automaticExportWavSampleFormatOptions() const;
     [[nodiscard]] QStringList automaticExportSampleRateOptions() const;
+    [[nodiscard]] QStringList automaticExportPresetOptions() const;
+    [[nodiscard]] QStringList automaticExportPresetLabels() const;
+    [[nodiscard]] QStringList automaticExportSampleRateOptionLabels() const;
+    [[nodiscard]] QStringList automaticExportMp3BitrateOptionLabels() const;
+    [[nodiscard]] QStringList automaticExportFlacBitDepthOptionLabels() const;
+    [[nodiscard]] QStringList automaticExportFlacCompressionOptionLabels() const;
+    [[nodiscard]] QStringList automaticExportWavSampleFormatOptionLabels() const;
     [[nodiscard]] QString automaticExportDestinationPolicy() const;
     void setAutomaticExportDestinationPolicy(const QString& policy);
     [[nodiscard]] QString automaticExportCustomDirectory() const;

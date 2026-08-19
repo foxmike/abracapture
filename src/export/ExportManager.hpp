@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ExportTypes.hpp"
+#include "FfmpegCapabilities.hpp"
 
 #include <QHash>
 #include <QList>
@@ -33,6 +34,8 @@ public:
     [[nodiscard]] QList<ExportJob> jobs() const;
     [[nodiscard]] bool isBusy() const noexcept;
     [[nodiscard]] int queuedJobCount() const noexcept;
+    [[nodiscard]] const FfmpegCapabilities& capabilities() const noexcept;
+    [[nodiscard]] FfmpegCapabilities& capabilities() noexcept;
     Q_INVOKABLE QVariantMap currentJobSummary() const;
     Q_INVOKABLE QVariantList recentJobSummaries(int maximum = 5) const;
 
@@ -62,6 +65,7 @@ private:
     void releaseDestination(const ExportJob& job);
 
     QProcess process_;
+    FfmpegCapabilities capabilities_;
     QQueue<ExportJobId> queuedJobIds_;
     QHash<ExportJobId, ExportJob> jobsById_;
     QList<ExportJobId> jobOrder_;

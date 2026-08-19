@@ -32,12 +32,18 @@ class ManualExportViewModel : public QObject {
     Q_PROPERTY(QString manualWavSampleFormat READ manualWavSampleFormat WRITE setManualWavSampleFormat NOTIFY profileChanged)
     Q_PROPERTY(QString manualPreset READ manualPreset WRITE setManualPreset NOTIFY profileChanged)
     Q_PROPERTY(QStringList presetOptions READ presetOptions CONSTANT)
+    Q_PROPERTY(QStringList presetLabels READ presetLabels CONSTANT)
     Q_PROPERTY(QStringList formatOptions READ formatOptions CONSTANT)
     Q_PROPERTY(QStringList mp3BitrateOptions READ mp3BitrateOptions CONSTANT)
     Q_PROPERTY(QStringList flacBitDepthOptions READ flacBitDepthOptions CONSTANT)
     Q_PROPERTY(QStringList flacCompressionOptions READ flacCompressionOptions CONSTANT)
     Q_PROPERTY(QStringList wavSampleFormatOptions READ wavSampleFormatOptions CONSTANT)
     Q_PROPERTY(QStringList sampleRateOptions READ sampleRateOptions NOTIFY profileChanged)
+    Q_PROPERTY(QStringList sampleRateOptionLabels READ sampleRateOptionLabels NOTIFY profileChanged)
+    Q_PROPERTY(QStringList mp3BitrateOptionLabels READ mp3BitrateOptionLabels CONSTANT)
+    Q_PROPERTY(QStringList flacBitDepthOptionLabels READ flacBitDepthOptionLabels CONSTANT)
+    Q_PROPERTY(QStringList flacCompressionOptionLabels READ flacCompressionOptionLabels CONSTANT)
+    Q_PROPERTY(QStringList wavSampleFormatOptionLabels READ wavSampleFormatOptionLabels CONSTANT)
     Q_PROPERTY(QString profileSummary READ profileSummary NOTIFY profileChanged)
     Q_PROPERTY(QString destinationPolicy READ destinationPolicy WRITE setDestinationPolicy NOTIFY destinationChanged)
     Q_PROPERTY(QString customDestinationDirectory READ customDestinationDirectory WRITE setCustomDestinationDirectory NOTIFY destinationChanged)
@@ -85,12 +91,18 @@ public:
     [[nodiscard]] QString manualPreset() const;
     void setManualPreset(const QString& preset);
     [[nodiscard]] QStringList presetOptions() const;
+    [[nodiscard]] QStringList presetLabels() const;
     [[nodiscard]] QStringList formatOptions() const;
     [[nodiscard]] QStringList mp3BitrateOptions() const;
     [[nodiscard]] QStringList flacBitDepthOptions() const;
     [[nodiscard]] QStringList flacCompressionOptions() const;
     [[nodiscard]] QStringList wavSampleFormatOptions() const;
     [[nodiscard]] QStringList sampleRateOptions() const;
+    [[nodiscard]] QStringList sampleRateOptionLabels() const;
+    [[nodiscard]] QStringList mp3BitrateOptionLabels() const;
+    [[nodiscard]] QStringList flacBitDepthOptionLabels() const;
+    [[nodiscard]] QStringList flacCompressionOptionLabels() const;
+    [[nodiscard]] QStringList wavSampleFormatOptionLabels() const;
     [[nodiscard]] QString profileSummary() const;
 
     [[nodiscard]] QString destinationPolicy() const;

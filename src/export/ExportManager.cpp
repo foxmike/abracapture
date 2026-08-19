@@ -45,7 +45,9 @@ QString userFacingProcessError(const QString& diagnostics, const int exitCode) {
 
 ExportManager::ExportManager(QObject* const parent)
     : QObject(parent),
-      process_(this) {
+      process_(this),
+      capabilities_(this) {
+    capabilities_.probeAsync();
     connect(&process_, &QProcess::readyReadStandardError,
             this, &ExportManager::captureProcessStandardError);
     connect(&process_, &QProcess::finished, this,
@@ -176,6 +178,14 @@ bool ExportManager::isBusy() const noexcept {
 
 int ExportManager::queuedJobCount() const noexcept {
     return queuedJobIds_.size();
+}
+
+const FfmpegCapabilities& ExportManager::capabilities() const noexcept {
+    return capabilities_;
+}
+
+FfmpegCapabilities& ExportManager::capabilities() noexcept {
+    return capabilities_;
 }
 
 QVariantMap ExportManager::currentJobSummary() const {
