@@ -265,7 +265,7 @@ Item {
                             Text {
                                 text: modelData.fileName + "  •  " + modelData.codec + "  •  " +
                                       (modelData.sampleRate ? (Number(modelData.sampleRate) / 1000).toFixed(1) + " kHz" : "rate unknown") + "  •  " +
-                                      (modelData.channels ? modelData.channels + " ch" : "channels unknown") +
+                                      (modelData.channelLayout ? modelData.channelLayout : (modelData.channels ? modelData.channels + " ch" : "channels unknown")) +
                                       (modelData.sampleFormat ? "  •  " + modelData.sampleFormat : (modelData.bitDepth ? "  •  " + modelData.bitDepth + "-bit" : ""))
                                 font.pixelSize: 11; color: Theme.AbracaptureTheme.textSecondary; elide: Text.ElideMiddle; Layout.fillWidth: true
                             }
@@ -380,7 +380,7 @@ Item {
                             }
                         }
                         RowLayout {
-                            visible: root.manualExportViewModel && root.manualExportViewModel.manualFormat === "wav"
+                            visible: root.manualExportViewModel && (root.manualExportViewModel.manualFormat === "wav" || root.manualExportViewModel.manualFormat === "aiff" || root.manualExportViewModel.manualFormat === "caf")
                             Text { text: "Sample Format"; color: Theme.AbracaptureTheme.text; font.pixelSize: 13 }
                             Components.ThemedComboBox {
                                 id: manualWavFormatCombo

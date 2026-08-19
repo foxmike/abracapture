@@ -64,6 +64,7 @@ public:
     [[nodiscard]] spa_audio_format negotiatedFormat() const noexcept;
     [[nodiscard]] std::uint32_t negotiatedSampleRate() const noexcept;
     [[nodiscard]] std::uint32_t negotiatedChannels() const noexcept;
+    [[nodiscard]] abracapture::exporting::AudioChannelLayout negotiatedChannelLayout() const noexcept;
     [[nodiscard]] bool isNativeCapture() const noexcept;
     [[nodiscard]] CaptureMetricsSnapshot metricsSnapshot() const noexcept;
     [[nodiscard]] bool visualizationSnapshot(
@@ -86,6 +87,7 @@ private:
     CaptureMetrics metrics_;
     mutable std::mutex streamMutex_;
     std::unique_ptr<PipeWireCaptureStream> stream_;
+    abracapture::exporting::AudioChannelLayout lastNegotiatedChannelLayout_;
 
     SourceDescriptor stableSource_{};
     spa_audio_format requestedFormat_ = SPA_AUDIO_FORMAT_UNKNOWN;

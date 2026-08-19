@@ -147,6 +147,66 @@ bool AudioEncodingTarget::validate(QString* const error) const {
         }
         return true;
     }
+    case AudioCodec::Aac: {
+        const auto* const aac = std::get_if<AacOptions>(&codecOptions);
+        if (aac == nullptr) {
+            return setValidationError(error, QStringLiteral("AAC export requires AAC options"));
+        }
+        if (!descriptor->validBitrates.isEmpty() && !descriptor->validBitrates.contains(aac->bitrateKbps)) {
+            return setValidationError(error, QStringLiteral("Invalid AAC bitrate"));
+        }
+        return true;
+    }
+    case AudioCodec::Alac: {
+        const auto* const alac = std::get_if<AlacOptions>(&codecOptions);
+        if (alac == nullptr) {
+            return setValidationError(error, QStringLiteral("ALAC export requires ALAC options"));
+        }
+        if (!descriptor->validBitDepths.isEmpty() && !descriptor->validBitDepths.contains(alac->bitDepth)) {
+            return setValidationError(error, QStringLiteral("Invalid ALAC bit depth"));
+        }
+        return true;
+    }
+    case AudioCodec::WavPack: {
+        const auto* const wp = std::get_if<WavPackOptions>(&codecOptions);
+        if (wp == nullptr) {
+            return setValidationError(error, QStringLiteral("WavPack export requires WavPack options"));
+        }
+        if (!descriptor->validBitDepths.isEmpty() && !descriptor->validBitDepths.contains(wp->bitDepth)) {
+            return setValidationError(error, QStringLiteral("Invalid WavPack bit depth"));
+        }
+        return true;
+    }
+    case AudioCodec::Opus: {
+        const auto* const opus = std::get_if<OpusOptions>(&codecOptions);
+        if (opus == nullptr) {
+            return setValidationError(error, QStringLiteral("Opus export requires Opus options"));
+        }
+        if (!descriptor->validBitrates.isEmpty() && !descriptor->validBitrates.contains(opus->bitrateKbps)) {
+            return setValidationError(error, QStringLiteral("Invalid Opus bitrate"));
+        }
+        return true;
+    }
+    case AudioCodec::Ac3: {
+        const auto* const ac3 = std::get_if<Ac3Options>(&codecOptions);
+        if (ac3 == nullptr) {
+            return setValidationError(error, QStringLiteral("AC-3 export requires AC-3 options"));
+        }
+        if (!descriptor->validBitrates.isEmpty() && !descriptor->validBitrates.contains(ac3->bitrateKbps)) {
+            return setValidationError(error, QStringLiteral("Invalid AC-3 bitrate"));
+        }
+        return true;
+    }
+    case AudioCodec::Eac3: {
+        const auto* const eac3 = std::get_if<Eac3Options>(&codecOptions);
+        if (eac3 == nullptr) {
+            return setValidationError(error, QStringLiteral("E-AC-3 export requires E-AC-3 options"));
+        }
+        if (!descriptor->validBitrates.isEmpty() && !descriptor->validBitrates.contains(eac3->bitrateKbps)) {
+            return setValidationError(error, QStringLiteral("Invalid E-AC-3 bitrate"));
+        }
+        return true;
+    }
     }
     return setValidationError(error, QStringLiteral("Unsupported codec"));
 }
@@ -177,6 +237,24 @@ AudioEncodingTarget defaultEncodingTarget(const AudioContainer container, const 
         break;
     case AudioCodec::Vorbis:
         target.codecOptions = VorbisOptions{5};
+        break;
+    case AudioCodec::Aac:
+        target.codecOptions = AacOptions{256};
+        break;
+    case AudioCodec::Alac:
+        target.codecOptions = AlacOptions{24};
+        break;
+    case AudioCodec::WavPack:
+        target.codecOptions = WavPackOptions{24};
+        break;
+    case AudioCodec::Opus:
+        target.codecOptions = OpusOptions{160};
+        break;
+    case AudioCodec::Ac3:
+        target.codecOptions = Ac3Options{640};
+        break;
+    case AudioCodec::Eac3:
+        target.codecOptions = Eac3Options{768};
         break;
     }
     return target;
@@ -252,10 +330,22 @@ abracapture::history::DerivedExport createDerivedExportRecord(
         derived.bitDepth = flac->bitDepth;
     } else if (const auto* pcm = std::get_if<PcmOptions>(&request.profile.target.codecOptions)) {
         derived.bitDepth = audioSampleFormatBits(pcm->sampleFormat);
+    } else if (const auto* alac = std::get_if<AlacOptions>(&request.profile.target.codecOptions)) {
+        derived.bitDepth = alac->bitDepth;
+    } else if (const auto* wp = std::get_if<WavPackOptions>(&request.profile.target.codecOptions)) {
+        derived.bitDepth = wp->bitDepth;
     }
 
     if (const auto* mp3 = std::get_if<Mp3Options>(&request.profile.target.codecOptions)) {
         derived.bitrate = mp3->bitrateKbps;
+    } else if (const auto* aac = std::get_if<AacOptions>(&request.profile.target.codecOptions)) {
+        derived.bitrate = aac->bitrateKbps;
+    } else if (const auto* opus = std::get_if<OpusOptions>(&request.profile.target.codecOptions)) {
+        derived.bitrate = opus->bitrateKbps;
+    } else if (const auto* ac3 = std::get_if<Ac3Options>(&request.profile.target.codecOptions)) {
+        derived.bitrate = ac3->bitrateKbps;
+    } else if (const auto* eac3 = std::get_if<Eac3Options>(&request.profile.target.codecOptions)) {
+        derived.bitrate = eac3->bitrateKbps;
     }
 
     derived.outputPath = outputPath.isEmpty()

@@ -21,6 +21,7 @@ struct CaptureResult {
     ConversionProvenance provenance = ConversionProvenance::Native;
     SampleFormat sampleFormat = SampleFormat::Int16;
     std::uint32_t sampleRate = 0;
+    abracapture::exporting::AudioChannelLayout channelLayout;
     bool success = false;
     std::string error;
 };
@@ -58,6 +59,7 @@ private:
     ConversionProvenance provenance_ = ConversionProvenance::Native;
     SampleFormat sampleFormat_ = SampleFormat::Int16;
     std::uint32_t sampleRate_ = 0;
+    abracapture::exporting::AudioChannelLayout channelLayout_;
     bool active_ = false;
     bool errorState_ = false;
     std::string lastError_;

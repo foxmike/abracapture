@@ -9,6 +9,7 @@
 #include "export/PathSanitizer.hpp"
 #include "history/RecordingIndex.hpp"
 #include "recording/OutputPathPolicy.hpp"
+#include "recording/RecordingSink.hpp"
 #include "ui/ManualExportViewModel.hpp"
 #include "ui/SettingsViewModel.hpp"
 
@@ -21,7 +22,10 @@
 #include <QTemporaryDir>
 #include <QTimer>
 
+#include <sndfile.h>
+
 #include <iostream>
+#include <vector>
 
 namespace {
 
@@ -32,6 +36,40 @@ void expect(const bool condition, const char* const message) {
         std::cerr << "FAILED: " << message << "\n";
         ++failures;
     }
+}
+
+bool writeMultichannelSilenceWav(const std::filesystem::path& path, int channels, int sampleRate,
+                                 const QList<abracapture::exporting::AudioChannelPosition>& positions = {}) {
+    SF_INFO info{};
+    info.samplerate = sampleRate;
+    info.channels = channels;
+    info.format = SF_FORMAT_WAVEX | SF_FORMAT_PCM_24;
+    SNDFILE* const file = sf_open(path.string().c_str(), SFM_WRITE, &info);
+    if (!file) return false;
+    if (!positions.isEmpty() && positions.size() == channels) {
+        std::vector<int> channelMap;
+        for (const auto pos : positions) {
+            switch (pos) {
+            case abracapture::exporting::AudioChannelPosition::FrontLeft: channelMap.push_back(SF_CHANNEL_MAP_FRONT_LEFT); break;
+            case abracapture::exporting::AudioChannelPosition::FrontRight: channelMap.push_back(SF_CHANNEL_MAP_FRONT_RIGHT); break;
+            case abracapture::exporting::AudioChannelPosition::FrontCenter: channelMap.push_back(SF_CHANNEL_MAP_FRONT_CENTER); break;
+            case abracapture::exporting::AudioChannelPosition::Lfe: channelMap.push_back(SF_CHANNEL_MAP_LFE); break;
+            case abracapture::exporting::AudioChannelPosition::RearLeft: channelMap.push_back(SF_CHANNEL_MAP_REAR_LEFT); break;
+            case abracapture::exporting::AudioChannelPosition::RearRight: channelMap.push_back(SF_CHANNEL_MAP_REAR_RIGHT); break;
+            case abracapture::exporting::AudioChannelPosition::SideLeft: channelMap.push_back(SF_CHANNEL_MAP_SIDE_LEFT); break;
+            case abracapture::exporting::AudioChannelPosition::SideRight: channelMap.push_back(SF_CHANNEL_MAP_SIDE_RIGHT); break;
+            }
+        }
+        if (static_cast<int>(channelMap.size()) == channels) {
+            const int setResult = sf_command(file, SFC_SET_CHANNEL_MAP_INFO, channelMap.data(),
+                                             static_cast<int>(sizeof(int) * channelMap.size()));
+            static_cast<void>(setResult);
+        }
+    }
+    std::vector<int> silence(static_cast<std::size_t>(channels * sampleRate / 10), 0); // 0.1s
+    sf_write_int(file, silence.data(), static_cast<sf_count_t>(silence.size()));
+    sf_close(file);
+    return true;
 }
 
 abracapture::exporting::ExportRequest requestFor(
@@ -84,13 +122,20 @@ void testAudioContainerRoundTrip() {
     for (const auto container : {abracapture::exporting::AudioContainer::Wav,
                                   abracapture::exporting::AudioContainer::Flac,
                                   abracapture::exporting::AudioContainer::Ogg,
-                                  abracapture::exporting::AudioContainer::Mp3}) {
+                                  abracapture::exporting::AudioContainer::Mp3,
+                                  abracapture::exporting::AudioContainer::Aiff,
+                                  abracapture::exporting::AudioContainer::M4a,
+                                  abracapture::exporting::AudioContainer::WavPack,
+                                  abracapture::exporting::AudioContainer::Caf,
+                                  abracapture::exporting::AudioContainer::Opus,
+                                  abracapture::exporting::AudioContainer::Ac3,
+                                  abracapture::exporting::AudioContainer::Eac3}) {
         const auto name = abracapture::exporting::audioContainerName(container);
         const auto parsed = abracapture::exporting::audioContainerFromString(name);
         expect(parsed.has_value() && *parsed == container,
                "AudioContainer round-trips through name/fromString");
     }
-    expect(!abracapture::exporting::audioContainerFromString(QStringLiteral("aac")).has_value(),
+    expect(!abracapture::exporting::audioContainerFromString(QStringLiteral("invalid_container")).has_value(),
            "Unknown container string returns nullopt");
 }
 
@@ -98,7 +143,13 @@ void testAudioCodecRoundTrip() {
     for (const auto codec : {abracapture::exporting::AudioCodec::Pcm,
                               abracapture::exporting::AudioCodec::Flac,
                               abracapture::exporting::AudioCodec::Mp3,
-                              abracapture::exporting::AudioCodec::Vorbis}) {
+                              abracapture::exporting::AudioCodec::Vorbis,
+                              abracapture::exporting::AudioCodec::Alac,
+                              abracapture::exporting::AudioCodec::Aac,
+                              abracapture::exporting::AudioCodec::WavPack,
+                              abracapture::exporting::AudioCodec::Opus,
+                              abracapture::exporting::AudioCodec::Ac3,
+                              abracapture::exporting::AudioCodec::Eac3}) {
         const auto name = abracapture::exporting::audioCodecName(codec);
         const auto parsed = abracapture::exporting::audioCodecFromString(name);
         expect(parsed.has_value() && *parsed == codec,
@@ -108,8 +159,20 @@ void testAudioCodecRoundTrip() {
            "PCM is lossless");
     expect(abracapture::exporting::isLosslessCodec(abracapture::exporting::AudioCodec::Flac),
            "FLAC is lossless");
+    expect(abracapture::exporting::isLosslessCodec(abracapture::exporting::AudioCodec::Alac),
+           "ALAC is lossless");
+    expect(abracapture::exporting::isLosslessCodec(abracapture::exporting::AudioCodec::WavPack),
+           "WavPack is lossless");
     expect(!abracapture::exporting::isLosslessCodec(abracapture::exporting::AudioCodec::Mp3),
            "MP3 is lossy");
+    expect(!abracapture::exporting::isLosslessCodec(abracapture::exporting::AudioCodec::Aac),
+           "AAC is lossy");
+    expect(!abracapture::exporting::isLosslessCodec(abracapture::exporting::AudioCodec::Opus),
+           "Opus is lossy");
+    expect(!abracapture::exporting::isLosslessCodec(abracapture::exporting::AudioCodec::Ac3),
+           "AC-3 is lossy");
+    expect(!abracapture::exporting::isLosslessCodec(abracapture::exporting::AudioCodec::Eac3),
+           "E-AC-3 is lossy");
 }
 
 void testAudioSampleFormatRoundTrip() {
@@ -129,14 +192,40 @@ void testAudioSampleFormatRoundTrip() {
 
 void testAudioChannelLayout() {
     const auto mono = abracapture::exporting::AudioChannelLayout::mono();
-    expect(mono.channelCount() == 1 && mono.hasExplicitPositions(),
+    expect(mono.channelCount() == 1 && mono.hasExplicitPositions() && mono.isMono(),
            "Mono layout has 1 channel with explicit position");
+    expect(mono.displayName() == QStringLiteral("Mono"), "Mono displayName is 'Mono'");
+    expect(mono.ffmpegLayoutName() == QStringLiteral("mono"), "Mono ffmpegLayoutName is 'mono'");
+
     const auto stereo = abracapture::exporting::AudioChannelLayout::stereo();
-    expect(stereo.channelCount() == 2 && stereo.hasExplicitPositions(),
+    expect(stereo.channelCount() == 2 && stereo.hasExplicitPositions() && stereo.isStereo(),
            "Stereo layout has 2 channels with explicit positions");
-    const auto unknown = abracapture::exporting::AudioChannelLayout::unknown(6);
-    expect(unknown.channelCount() == 6 && !unknown.hasExplicitPositions(),
+    expect(stereo.displayName() == QStringLiteral("Stereo"), "Stereo displayName is 'Stereo'");
+    expect(stereo.ffmpegLayoutName() == QStringLiteral("stereo"), "Stereo ffmpegLayoutName is 'stereo'");
+
+    const auto surround51 = abracapture::exporting::AudioChannelLayout::surround51();
+    expect(surround51.channelCount() == 6 && surround51.hasExplicitPositions() && surround51.is5Point1(),
+           "5.1 surround layout has 6 channels with explicit positions");
+    expect(surround51.displayName() == QStringLiteral("5.1"), "5.1 displayName is '5.1'");
+    expect(surround51.ffmpegLayoutName() == QStringLiteral("5.1"), "5.1 ffmpegLayoutName is '5.1'");
+
+    const auto surround71 = abracapture::exporting::AudioChannelLayout::surround71();
+    expect(surround71.channelCount() == 8 && surround71.hasExplicitPositions() && surround71.is7Point1(),
+           "7.1 surround layout has 8 channels with explicit positions");
+    expect(surround71.displayName() == QStringLiteral("7.1"), "7.1 displayName is '7.1'");
+    expect(surround71.ffmpegLayoutName() == QStringLiteral("7.1"), "7.1 ffmpegLayoutName is '7.1'");
+
+    const auto unknown6 = abracapture::exporting::AudioChannelLayout::unknown(6);
+    expect(unknown6.channelCount() == 6 && !unknown6.hasExplicitPositions() && !unknown6.is5Point1(),
            "Unknown(6) has 6 channels without inferred positions");
+    expect(unknown6.displayName() == QStringLiteral("6 channels — layout unknown"),
+           "Unknown(6) displayName is '6 channels — layout unknown'");
+    expect(unknown6.ffmpegLayoutName().isEmpty(), "Unknown(6) ffmpegLayoutName is empty");
+
+    const auto fromNames = abracapture::exporting::AudioChannelLayout::fromPositionNames(
+        {QStringLiteral("FL"), QStringLiteral("FR"), QStringLiteral("FC"),
+         QStringLiteral("LFE"), QStringLiteral("RL"), QStringLiteral("RR")});
+    expect(fromNames.is5Point1(), "fromPositionNames reconstructs 5.1 layout");
 }
 
 void testAudioStreamFormat() {
@@ -202,6 +291,8 @@ void testAudioFormatCatalog() {
     const auto foundTarget = abracapture::exporting::AudioFormatCatalog::findTarget(QStringLiteral("MP3"));
     expect(foundTarget.has_value() && foundTarget->container == abracapture::exporting::AudioContainer::Mp3,
            "findTarget resolves MP3 format string");
+    expect(!abracapture::exporting::AudioFormatCatalog::findTarget(QStringLiteral("m4a")).has_value(),
+           "findTarget rejects ambiguous M4A container-only lookup");
 
     const auto presetTarget = abracapture::exporting::AudioFormatCatalog::targetFromPreset(QStringLiteral("mp3_320"));
     expect(presetTarget.has_value() && presetTarget->container == abracapture::exporting::AudioContainer::Mp3,
@@ -227,6 +318,26 @@ void testFfmpegCapabilities() {
     expect(mp3Encoder == QStringLiteral("libmp3lame"), "MP3 codec maps to libmp3lame");
     const auto flacMuxer = capabilities.muxerForContainer(abracapture::exporting::AudioContainer::Flac);
     expect(!flacMuxer.isEmpty(), "FLAC container maps to a muxer");
+
+    // E-AC-3 7.1 capability probe must return a structured report that
+    // never claims arbitrary support. We assert the report's status is
+    // one of the documented enum values, that its `supports71()` reflects
+    // the system FFmpeg's actual `Supported channel layouts` listing, and
+    // that `unsupportedReason()` is non-empty when 7.1 isn't available.
+    const auto& eac3 = capabilities.eac3Capability();
+    expect(eac3.statusName() != QStringLiteral("Unknown"),
+           "E-AC-3 capability probe status is one of the documented enum values");
+    if (!eac3.supports71()) {
+        expect(!eac3.unsupportedReason().isEmpty(),
+               "E-AC-3 capability probe produces an explicit reason when 7.1 is unavailable");
+        expect(eac3.ffmpegMaxChannels <= 8,
+               "E-AC-3 capability probe only reports max-channels it actually saw");
+    } else {
+        expect(eac3.ffmpegMaxChannels >= 8,
+               "E-AC-3 capability probe reports at least 8 max-channels when 7.1 is supported");
+        expect(abracapture::exporting::Eac3Capability::layoutSupports71(eac3.ffmpegSupportedLayouts),
+               "E-AC-3 capability probe's supports71() matches the parsed layout list");
+    }
 }
 
 // ---- Part 6: PathSanitizer ----
@@ -903,6 +1014,465 @@ void testDerivedExportSerialization() {
            "createDerivedExportRecord populates container, codec, and bitrate");
 }
 
+// ---- New Formats and Multichannel Surround Tests ----
+
+void testNewFormatArgumentBuilders() {
+    // 1. AIFF 24-bit PCM
+    {
+        auto profile = abracapture::exporting::defaultExportProfile(
+            abracapture::exporting::AudioContainer::Aiff, abracapture::exporting::AudioCodec::Pcm);
+        profile.target.codecOptions = abracapture::exporting::PcmOptions{
+            abracapture::exporting::AudioSampleFormat::SignedInt24};
+        QStringList args;
+        expect(build(requestFor(profile, "/exports/out.aiff"), &args), "AIFF 24-bit PCM builds");
+        expect(args.contains(QStringLiteral("pcm_s24be")), "AIFF uses big-endian PCM pcm_s24be");
+        expect(args.contains(QStringLiteral("aiff")), "AIFF specifies -f aiff");
+    }
+
+    // 2. ALAC Lossless (M4A)
+    {
+        auto profile = abracapture::exporting::defaultExportProfile(
+            abracapture::exporting::AudioContainer::M4a, abracapture::exporting::AudioCodec::Alac);
+        QStringList args;
+        expect(build(requestFor(profile, "/exports/out.m4a"), &args), "ALAC Lossless builds");
+        expect(args.contains(QStringLiteral("alac")), "ALAC specifies -c:a alac");
+        expect(args.contains(QStringLiteral("ipod")), "ALAC specifies -f ipod");
+    }
+
+    // 3. AAC 256k (M4A)
+    {
+        auto profile = abracapture::exporting::defaultExportProfile(
+            abracapture::exporting::AudioContainer::M4a, abracapture::exporting::AudioCodec::Aac);
+        profile.target.codecOptions = abracapture::exporting::AacOptions{256};
+        QStringList args;
+        expect(build(requestFor(profile, "/exports/out.m4a"), &args), "AAC 256k builds");
+        expect(args.contains(QStringLiteral("aac")), "AAC specifies -c:a aac");
+        expect(args.contains(QStringLiteral("256k")), "AAC specifies 256k bitrate");
+        expect(args.contains(QStringLiteral("ipod")), "AAC specifies -f ipod");
+    }
+
+    // 4. WavPack Lossless (WV)
+    {
+        auto profile = abracapture::exporting::defaultExportProfile(
+            abracapture::exporting::AudioContainer::WavPack, abracapture::exporting::AudioCodec::WavPack);
+        QStringList args;
+        expect(build(requestFor(profile, "/exports/out.wv"), &args), "WavPack Lossless builds");
+        expect(args.contains(QStringLiteral("wavpack")), "WavPack specifies -c:a wavpack");
+        expect(args.contains(QStringLiteral("wv")), "WavPack specifies -f wv");
+    }
+
+    // 5. CAF 24-bit PCM
+    {
+        auto profile = abracapture::exporting::defaultExportProfile(
+            abracapture::exporting::AudioContainer::Caf, abracapture::exporting::AudioCodec::Pcm);
+        profile.target.codecOptions = abracapture::exporting::PcmOptions{
+            abracapture::exporting::AudioSampleFormat::SignedInt24};
+        QStringList args;
+        expect(build(requestFor(profile, "/exports/out.caf"), &args), "CAF 24-bit PCM builds");
+        expect(args.contains(QStringLiteral("pcm_s24le")), "CAF specifies pcm_s24le");
+        expect(args.contains(QStringLiteral("caf")), "CAF specifies -f caf");
+    }
+
+    // 6. Opus 160k (OPUS)
+    {
+        auto profile = abracapture::exporting::defaultExportProfile(
+            abracapture::exporting::AudioContainer::Opus, abracapture::exporting::AudioCodec::Opus);
+        profile.target.codecOptions = abracapture::exporting::OpusOptions{160};
+        QStringList args;
+        expect(build(requestFor(profile, "/exports/out.opus"), &args), "Opus 160k builds");
+        expect(args.contains(QStringLiteral("libopus")), "Opus specifies -c:a libopus");
+        expect(args.contains(QStringLiteral("160k")), "Opus specifies 160k bitrate");
+        expect(args.contains(QStringLiteral("opus")), "Opus specifies -f opus");
+    }
+
+    // 7. AC-3 5.1 (640 kbps)
+    {
+        auto profile = abracapture::exporting::defaultExportProfile(
+            abracapture::exporting::AudioContainer::Ac3, abracapture::exporting::AudioCodec::Ac3);
+        profile.target.codecOptions = abracapture::exporting::Ac3Options{640};
+        auto req = requestFor(profile, "/exports/out.ac3");
+        req.sourceFormat.sampleRate = 48000;
+        req.sourceFormat.channelLayout = abracapture::exporting::AudioChannelLayout::surround51();
+        QStringList args;
+        expect(build(req, &args), "AC-3 5.1 request builds with explicit 5.1 layout");
+        expect(args.contains(QStringLiteral("ac3")), "AC-3 specifies -c:a ac3");
+        expect(args.contains(QStringLiteral("640k")), "AC-3 specifies 640k bitrate");
+    }
+
+    // 8. E-AC-3 5.1 (768 kbps)
+    {
+        auto profile = abracapture::exporting::defaultExportProfile(
+            abracapture::exporting::AudioContainer::Eac3, abracapture::exporting::AudioCodec::Eac3);
+        profile.target.codecOptions = abracapture::exporting::Eac3Options{768};
+        auto req = requestFor(profile, "/exports/out.eac3");
+        req.sourceFormat.sampleRate = 48000;
+        req.sourceFormat.channelLayout = abracapture::exporting::AudioChannelLayout::surround51();
+        QStringList args;
+        expect(build(req, &args), "E-AC-3 5.1 request builds with explicit 5.1 layout");
+        expect(args.contains(QStringLiteral("eac3")), "E-AC-3 specifies -c:a eac3");
+        expect(args.contains(QStringLiteral("768k")), "E-AC-3 specifies 768k bitrate");
+    }
+}
+
+void testMultichannelSurroundValidation() {
+    // AC-3: unknown layout with 6 channels must be rejected
+    {
+        auto profile = abracapture::exporting::defaultExportProfile(
+            abracapture::exporting::AudioContainer::Ac3, abracapture::exporting::AudioCodec::Ac3);
+        auto req = requestFor(profile, "/exports/out.ac3");
+        req.sourceFormat.sampleRate = 48000;
+        req.sourceFormat.channelLayout = abracapture::exporting::AudioChannelLayout::unknown(6);
+        QStringList args;
+        QString error;
+        const bool success = abracapture::exporting::FfmpegArgumentBuilder::build(req, &args, &error);
+        expect(!success, "AC-3 surround export with Unknown(6) is rejected");
+        expect(error.contains(QStringLiteral("surround export requires known speaker positions")),
+               "Rejection reason clearly identifies unknown speaker positions");
+    }
+
+    // AC-3: 7.1 surround must be rejected (AC-3 max 5.1)
+    {
+        auto profile = abracapture::exporting::defaultExportProfile(
+            abracapture::exporting::AudioContainer::Ac3, abracapture::exporting::AudioCodec::Ac3);
+        auto req = requestFor(profile, "/exports/out.ac3");
+        req.sourceFormat.sampleRate = 48000;
+        req.sourceFormat.channelLayout = abracapture::exporting::AudioChannelLayout::surround71();
+        QStringList args;
+        QString error;
+        const bool success = abracapture::exporting::FfmpegArgumentBuilder::build(req, &args, &error);
+        expect(!success, "AC-3 export with 7.1 surround is rejected");
+        expect(error.contains(QStringLiteral("does not support 7.1")),
+               "Rejection reason states AC-3 does not support 7.1");
+    }
+
+    // E-AC-3: 7.1 surround with explicit positions MUST be capability-gated.
+    //
+    // The bundled FFmpeg's eac3 encoder tops out at 5.1 in its open-source
+    // `acmod` table, and Dolby does not publish bit-allocation tables for 7.1
+    // in any free encoder. So a 7.1 E-AC-3 build attempt on this machine
+    // must FAIL with a precise backend-capability error, never a silent
+    // downgrade and never a claim of fake support. We exercise that path
+    // here by reading the live capability probe result — if it claims 7.1
+    // support (for example with a future backend integration), the build
+    // proceeds; otherwise it must fail loudly.
+    {
+        auto profile = abracapture::exporting::defaultExportProfile(
+            abracapture::exporting::AudioContainer::Eac3, abracapture::exporting::AudioCodec::Eac3);
+        auto req = requestFor(profile, "/exports/out.eac3");
+        req.sourceFormat.sampleRate = 48000;
+        req.sourceFormat.channelLayout = abracapture::exporting::AudioChannelLayout::surround71();
+        QStringList args;
+        QString error;
+        const auto capability = abracapture::exporting::Eac3Capability::probeNow();
+        const bool success = abracapture::exporting::FfmpegArgumentBuilder::build(
+            req, capability, &args, &error);
+        if (capability.supports71()) {
+            expect(success, "E-AC-3 export with 7.1 surround succeeds when capability proves support");
+            expect(args.contains(QStringLiteral("eac3")), "E-AC-3 7.1 path emits -c:a eac3");
+            expect(args.contains(QStringLiteral("7.1")), "E-AC-3 7.1 path emits explicit -channel_layout 7.1");
+            expect(args.contains(QStringLiteral("8")), "E-AC-3 7.1 path emits explicit -ac 8");
+        } else {
+            expect(!success,
+                   "E-AC-3 export with 7.1 surround is refused without proving real 8-channel support");
+            expect(!error.isEmpty(),
+                   "E-AC-3 export with 7.1 surround produces an explicit error explaining the external limitation");
+            expect(error.contains(QStringLiteral("7.1")) || error.contains(QStringLiteral("8-channel")),
+                   "E-AC-3 export with 7.1 surround error message names the missing 8-channel capability");
+            expect(!error.contains(QStringLiteral("downgrade")),
+                   "E-AC-3 export with 7.1 surround error never mentions a downgrade");
+        }
+    }
+
+    // AC-3: unsupported preserve-source rate (96 kHz) is rejected
+    {
+        auto profile = abracapture::exporting::defaultExportProfile(
+            abracapture::exporting::AudioContainer::Ac3, abracapture::exporting::AudioCodec::Ac3);
+        auto req = requestFor(profile, "/exports/out.ac3");
+        req.sourceFormat.sampleRate = 96000;
+        req.sourceFormat.channelLayout = abracapture::exporting::AudioChannelLayout::surround51();
+        QStringList args;
+        QString error;
+        const bool success = abracapture::exporting::FfmpegArgumentBuilder::build(req, &args, &error);
+        expect(!success, "AC-3 with 96 kHz source rate is rejected when preserving source rate");
+        expect(error.contains(QStringLiteral("requires a sample rate of 32, 44.1, or 48 kHz")),
+               "Rejection reason states valid AC-3 sample rates");
+    }
+}
+
+void testRealEncodingMatrix() {
+    QTemporaryDir dir;
+    expect(dir.isValid(), "Temporary directory created for real encoding matrix");
+    if (!dir.isValid()) return;
+
+    const std::filesystem::path root = dir.path().toStdString();
+    const std::filesystem::path sourceWav = root / "source_51.wav";
+
+    // Write a 48 kHz 6-channel 5.1 synthetic WAV
+    expect(writeMultichannelSilenceWav(sourceWav, 6, 48000,
+        {abracapture::exporting::AudioChannelPosition::FrontLeft,
+         abracapture::exporting::AudioChannelPosition::FrontRight,
+         abracapture::exporting::AudioChannelPosition::FrontCenter,
+         abracapture::exporting::AudioChannelPosition::Lfe,
+         abracapture::exporting::AudioChannelPosition::RearLeft,
+         abracapture::exporting::AudioChannelPosition::RearRight}),
+        "Synthetic 5.1 WAV written");
+
+    abracapture::exporting::FfmpegCapabilities capabilities;
+    static_cast<void>(capabilities.probe());
+    if (!capabilities.isProbed()) {
+        std::cerr << "  (skipping real encoding matrix — ffmpeg not probed)\n";
+        return;
+    }
+
+    struct TargetTest {
+        abracapture::exporting::AudioContainer container;
+        abracapture::exporting::AudioCodec codec;
+        QString expectedCodecName;
+        int expectedChannels;
+    };
+
+    const QList<TargetTest> testsToRun = {
+        {abracapture::exporting::AudioContainer::Aiff, abracapture::exporting::AudioCodec::Pcm, QStringLiteral("pcm_s16be"), 6},
+        {abracapture::exporting::AudioContainer::M4a, abracapture::exporting::AudioCodec::Alac, QStringLiteral("alac"), 6},
+        {abracapture::exporting::AudioContainer::M4a, abracapture::exporting::AudioCodec::Aac, QStringLiteral("aac"), 6},
+        {abracapture::exporting::AudioContainer::WavPack, abracapture::exporting::AudioCodec::WavPack, QStringLiteral("wavpack"), 6},
+        {abracapture::exporting::AudioContainer::Caf, abracapture::exporting::AudioCodec::Pcm, QStringLiteral("pcm_s16le"), 6},
+        {abracapture::exporting::AudioContainer::Opus, abracapture::exporting::AudioCodec::Opus, QStringLiteral("opus"), 6},
+        {abracapture::exporting::AudioContainer::Ac3, abracapture::exporting::AudioCodec::Ac3, QStringLiteral("ac3"), 6},
+        {abracapture::exporting::AudioContainer::Eac3, abracapture::exporting::AudioCodec::Eac3, QStringLiteral("eac3"), 6},
+        {abracapture::exporting::AudioContainer::Flac, abracapture::exporting::AudioCodec::Flac, QStringLiteral("flac"), 6},
+        {abracapture::exporting::AudioContainer::Wav, abracapture::exporting::AudioCodec::Pcm, QStringLiteral("pcm_s16le"), 6},
+        {abracapture::exporting::AudioContainer::Ogg, abracapture::exporting::AudioCodec::Vorbis, QStringLiteral("vorbis"), 6},
+    };
+
+    for (const auto& test : testsToRun) {
+        if (!capabilities.isTargetAvailable(test.container, test.codec)) {
+            std::cout << "  (skipping unsupported target: "
+                      << abracapture::exporting::audioContainerName(test.container).toStdString() << ")\n";
+            continue;
+        }
+
+        const auto profile = abracapture::exporting::defaultExportProfile(test.container, test.codec);
+        const std::filesystem::path dest = root / ("out_" + abracapture::exporting::audioContainerName(test.container).toStdString() +
+                                                   "." + profile.target.fileExtension().toStdString());
+        auto req = requestFor(profile, dest);
+        req.sourcePath = sourceWav;
+        req.sourceFormat.sampleRate = 48000;
+        req.sourceFormat.channelLayout = abracapture::exporting::AudioChannelLayout::surround51();
+
+        abracapture::exporting::ExportManager manager;
+        QEventLoop loop;
+        QTimer timeout;
+        timeout.setSingleShot(true);
+        bool completed = false;
+        bool failed = false;
+        QString outputPath;
+        QString failedError;
+
+        QObject::connect(&manager, &abracapture::exporting::ExportManager::jobCompleted,
+                         &loop, [&](const abracapture::exporting::ExportJobId, const QString& output) {
+                             completed = true;
+                             outputPath = output;
+                             loop.quit();
+                         });
+        QObject::connect(&manager, &abracapture::exporting::ExportManager::jobFailed,
+                         &loop, [&](const abracapture::exporting::ExportJobId, const QString& error) {
+                             failed = true;
+                             failedError = error;
+                             loop.quit();
+                         });
+        QObject::connect(&timeout, &QTimer::timeout, &loop, &QEventLoop::quit);
+
+        const auto jobId = manager.enqueue(req);
+        timeout.start(10000);
+        loop.exec();
+
+        if (failed) {
+            std::cerr << "Export failed for " << abracapture::exporting::audioContainerName(test.container).toStdString()
+                      << ": " << failedError.toStdString() << "\n";
+        }
+        expect(completed && !failed, ("Real ffmpeg encoding succeeds for " + abracapture::exporting::audioContainerName(test.container).toStdString()).c_str());
+        expect(QFileInfo::exists(outputPath) && QFileInfo(outputPath).size() > 0,
+               ("Export output is non-empty for " + abracapture::exporting::audioContainerName(test.container).toStdString()).c_str());
+
+        if (completed) {
+            QProcess ffprobe;
+            ffprobe.start(QStringLiteral("ffprobe"), {
+                QStringLiteral("-v"), QStringLiteral("error"),
+                QStringLiteral("-show_entries"), QStringLiteral("stream=codec_name,sample_rate,channels"),
+                QStringLiteral("-of"), QStringLiteral("default=noprint_wrappers=1"), outputPath
+            });
+            expect(ffprobe.waitForFinished(5000), "ffprobe inspects the generated output");
+            const QString probeOutput = QString::fromLocal8Bit(ffprobe.readAllStandardOutput());
+            expect(probeOutput.contains("codec_name=" + test.expectedCodecName),
+                   ("ffprobe verifies codec name " + test.expectedCodecName.toStdString()).c_str());
+            expect(probeOutput.contains(QStringLiteral("channels=6")),
+                   "ffprobe verifies 6 audio channels are preserved");
+        }
+    }
+}
+
+void testMultichannelWavPersistenceAndLayoutPropagation() {
+    QTemporaryDir dir;
+    expect(dir.isValid(), "Temporary directory created for persistence test");
+    if (!dir.isValid()) return;
+
+    const std::filesystem::path root = dir.path().toStdString();
+    const std::filesystem::path master51 = root / "multichannel_master.wav";
+    const std::filesystem::path master71 = root / "multichannel_71_master.wav";
+
+    expect(writeMultichannelSilenceWav(master51, 6, 48000,
+        {abracapture::exporting::AudioChannelPosition::FrontLeft,
+         abracapture::exporting::AudioChannelPosition::FrontRight,
+         abracapture::exporting::AudioChannelPosition::FrontCenter,
+         abracapture::exporting::AudioChannelPosition::Lfe,
+         abracapture::exporting::AudioChannelPosition::RearLeft,
+         abracapture::exporting::AudioChannelPosition::RearRight}),
+        "Multichannel 5.1 WAV written with channel map");
+
+    expect(writeMultichannelSilenceWav(master71, 8, 48000,
+        {abracapture::exporting::AudioChannelPosition::FrontLeft,
+         abracapture::exporting::AudioChannelPosition::FrontRight,
+         abracapture::exporting::AudioChannelPosition::FrontCenter,
+         abracapture::exporting::AudioChannelPosition::Lfe,
+         abracapture::exporting::AudioChannelPosition::RearLeft,
+         abracapture::exporting::AudioChannelPosition::RearRight,
+         abracapture::exporting::AudioChannelPosition::SideLeft,
+         abracapture::exporting::AudioChannelPosition::SideRight}),
+        "Multichannel 7.1 WAV written with channel map");
+
+    abracapture::history::RecordingIndex index((dir.path() + QStringLiteral("/history.json")));
+    expect(index.importDirectory(dir.path()), "RecordingIndex imports directory with multichannel files");
+    expect(index.count() == 2, "Two recording entries imported (5.1 and 7.1)");
+
+    abracapture::history::RecordingEntry entry51;
+    abracapture::history::RecordingEntry entry71;
+    for (qsizetype i = 0; i < index.count(); ++i) {
+        const auto entry = index.at(i);
+        expect(entry.has_value(), "Index entry retrieved");
+        if (!entry.has_value()) continue;
+        if (entry->channels == 6) {
+            entry51 = *entry;
+        } else if (entry->channels == 8) {
+            entry71 = *entry;
+        }
+    }
+    expect(entry51.channels == 6, "5.1 entry channels is 6");
+    expect(entry51.channelLayout == QStringLiteral("5.1"),
+           "5.1 entry channelLayout is recognized as 5.1");
+    expect(entry51.channelPositions.size() == 6,
+           "5.1 entry has 6 channel positions serialized");
+
+    expect(entry71.channels == 8, "7.1 entry channels is 8");
+    expect(entry71.channelLayout != QStringLiteral("7.1") && entry71.channelPositions.isEmpty(),
+           "Unsupported WAV 7.1 map is not falsely advertised as a known layout");
+
+    {
+        const auto json = entry71.toJson();
+        const auto restored = abracapture::history::RecordingEntry::fromJson(json);
+        expect(restored.channels == 8 && restored.channelLayout.isEmpty(),
+               "Unknown WAV 7.1 layout round-trips through JSON without invention");
+    }
+}
+
+void testRecordingSinkWavChannelLayoutPropagation() {
+    QTemporaryDir dir;
+    expect(dir.isValid(), "Temporary directory created for production layout propagation");
+    if (!dir.isValid()) return;
+
+    const std::filesystem::path indexPath = dir.path().toStdString() + "/history.json";
+    abracapture::recording::OutputPathPolicy policy(
+        dir.path().toStdString(), "production_master", "wav");
+    abracapture::recording::CaptureMetadata metadata;
+    metadata.source = "pipewire-test";
+    metadata.format = "wav";
+    metadata.channels = 6;
+    metadata.sampleRate = 48000;
+
+    const auto layout = abracapture::exporting::AudioChannelLayout::surround51();
+    const AudioFormat format{
+        .sampleRate = 48000,
+        .channels = 6,
+        .sampleFormat = SampleFormat::Int16,
+        .channelLayout = layout,
+    };
+
+    abracapture::recording::RecordingSink sink;
+    expect(sink.open(format, metadata, policy),
+           "RecordingSink opens a known 5.1 WAV master");
+    if (!sink.lastError().empty()) {
+        std::cerr << "RecordingSink error: " << sink.lastError() << "\n";
+    }
+    const std::vector<float> samples(6 * 4, 0.0F);
+    expect(sink.pushSamples(samples.data(), 4),
+           "RecordingSink writes production 5.1 samples");
+    const auto result = sink.finalize();
+    expect(result.success, "RecordingSink finalizes the production 5.1 master");
+    expect(result.channelLayout == layout,
+           "CaptureResult retains the negotiated 5.1 layout");
+    if (!result.success) return;
+
+    SF_INFO info{};
+    SNDFILE* const file = sf_open(result.finalPath.string().c_str(), SFM_READ, &info);
+    expect(file != nullptr, "Production WAV master reopens through libsndfile");
+    if (file != nullptr) {
+        std::vector<int> channelMap(6, SF_CHANNEL_MAP_INVALID);
+        const bool hasMap = sf_command(file, SFC_GET_CHANNEL_MAP_INFO, channelMap.data(),
+                                       static_cast<int>(sizeof(int) * channelMap.size())) == SF_TRUE;
+        expect(hasMap, "Reopened production WAV master exposes a channel map");
+        if (hasMap) {
+            expect(channelMap[0] == SF_CHANNEL_MAP_FRONT_LEFT || channelMap[0] == SF_CHANNEL_MAP_LEFT,
+                   "Reopened WAV channel 0 is front left");
+            expect(channelMap[1] == SF_CHANNEL_MAP_FRONT_RIGHT || channelMap[1] == SF_CHANNEL_MAP_RIGHT,
+                   "Reopened WAV channel 1 is front right");
+            expect(channelMap[2] == SF_CHANNEL_MAP_FRONT_CENTER || channelMap[2] == SF_CHANNEL_MAP_CENTER,
+                   "Reopened WAV channel 2 is front center");
+            expect(channelMap[3] == SF_CHANNEL_MAP_LFE &&
+                       channelMap[4] == SF_CHANNEL_MAP_REAR_LEFT &&
+                       channelMap[5] == SF_CHANNEL_MAP_REAR_RIGHT,
+                   "Reopened WAV preserves LFE and rear speaker identities");
+        }
+        sf_close(file);
+    }
+
+    abracapture::history::RecordingIndex index(QString::fromStdString(indexPath.string()));
+    expect(index.importDirectory(dir.path()),
+           "RecordingIndex imports the production WAV master");
+    expect(index.count() == 1, "RecordingIndex contains the production master");
+    const auto entry = index.at(0);
+    expect(entry.has_value(), "Production master index entry is available");
+    if (!entry.has_value()) return;
+    expect(entry->channelLayout == QStringLiteral("5.1") &&
+               entry->channelPositions == layout.positionNames(),
+           "RecordingIndex reconstructs the same 5.1 layout");
+
+    abracapture::exporting::ExportRequest request;
+    request.sourcePath = result.finalPath;
+    request.sourceFormat.sampleRate = entry->sampleRate;
+    request.sourceFormat.channelLayout =
+        abracapture::exporting::AudioChannelLayout::fromPositionNames(
+            entry->channelPositions, entry->channels);
+    request.profile = abracapture::exporting::defaultExportProfile(
+        abracapture::exporting::AudioContainer::Eac3,
+        abracapture::exporting::AudioCodec::Eac3);
+    expect(request.sourceFormat.channelLayout == layout,
+           "ExportRequest receives the persisted production 5.1 layout");
+
+    const AudioFormat unknownFormat{
+        .sampleRate = 48000,
+        .channels = 6,
+        .sampleFormat = SampleFormat::Int16,
+        .channelLayout = abracapture::exporting::AudioChannelLayout::unknown(6),
+    };
+    abracapture::recording::RecordingSink unknownSink;
+    abracapture::recording::OutputPathPolicy unknownPolicy(
+        dir.path().toStdString(), "unknown_master", "wav");
+    const bool unknownOpened = unknownSink.open(unknownFormat, metadata, unknownPolicy);
+    expect(!unknownOpened &&
+               QString::fromStdString(unknownSink.lastError()).contains(QStringLiteral("unknown"), Qt::CaseInsensitive),
+           "WAV recording refuses an unknown multichannel layout instead of inventing 5.1");
+}
+
 } // namespace
 
 int main(int argc, char* argv[]) {
@@ -934,5 +1504,10 @@ int main(int argc, char* argv[]) {
     testMetadataNaming();
     testManagerGeneratesMp3320();
     testDerivedExportSerialization();
+    testNewFormatArgumentBuilders();
+    testMultichannelSurroundValidation();
+    testRealEncodingMatrix();
+    testMultichannelWavPersistenceAndLayoutPropagation();
+    testRecordingSinkWavChannelLayoutPropagation();
     return failures == 0 ? 0 : 1;
 }

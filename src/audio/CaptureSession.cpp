@@ -92,6 +92,7 @@ bool CaptureSession::begin(const std::uint32_t sourceId,
             stream_->stop();
             stream_.reset();
         }
+        lastNegotiatedChannelLayout_ = {};
         ringBuffer_.reset();
         stableSource_ = *source;
         requestedFormat_ = format;
@@ -155,6 +156,10 @@ void CaptureSession::stop() noexcept {
         std::lock_guard streamLock(streamMutex_);
         if (stream_) {
             activeChannels_.store(stream_->negotiatedChannels(), std::memory_order_release);
+            const auto layout = stream_->negotiatedChannelLayout();
+            if (layout.channelCount() != 0) {
+                lastNegotiatedChannelLayout_ = layout;
+            }
             stream_->stop();
             stream_.reset();
         }
@@ -188,6 +193,14 @@ std::uint32_t CaptureSession::negotiatedSampleRate() const noexcept {
 std::uint32_t CaptureSession::negotiatedChannels() const noexcept {
     std::lock_guard lock(streamMutex_);
     return stream_ ? stream_->negotiatedChannels() : 0;
+}
+
+abracapture::exporting::AudioChannelLayout CaptureSession::negotiatedChannelLayout() const noexcept {
+    std::lock_guard lock(streamMutex_);
+    if (stream_) {
+        return stream_->negotiatedChannelLayout();
+    }
+    return lastNegotiatedChannelLayout_;
 }
 
 bool CaptureSession::isNativeCapture() const noexcept {
@@ -305,6 +318,10 @@ void CaptureSession::reconnectLoop() {
                          requestedObjectSerial_.c_str());
             suppressStreamStatus_.store(true, std::memory_order_release);
             if (stream_) {
+                const auto layout = stream_->negotiatedChannelLayout();
+                if (layout.channelCount() != 0) {
+                    lastNegotiatedChannelLayout_ = layout;
+                }
                 stream_->stop();
                 stream_.reset();
             }

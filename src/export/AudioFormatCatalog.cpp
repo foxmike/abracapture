@@ -68,6 +68,128 @@ const QList<AudioTargetDescriptor>& builtinTargets() {
             {-1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
             {0, 0, -1, AudioSampleFormat::Unknown, 5},
         },
+        {
+            AudioContainer::Aiff,
+            AudioCodec::Pcm,
+            QStringLiteral("AIFF"),
+            QStringLiteral("aiff"),
+            QStringLiteral("Lossless"),
+            true,
+            {44100, 48000, 88200, 96000, 176400, 192000},
+            {},
+            {},
+            {},
+            {AudioSampleFormat::SignedInt16, AudioSampleFormat::SignedInt24,
+             AudioSampleFormat::SignedInt32, AudioSampleFormat::Float32},
+            {},
+            {0, 0, -1, AudioSampleFormat::SignedInt24, -1},
+        },
+        {
+            AudioContainer::M4a,
+            AudioCodec::Alac,
+            QStringLiteral("ALAC (M4A)"),
+            QStringLiteral("m4a"),
+            QStringLiteral("Lossless"),
+            true,
+            {44100, 48000, 88200, 96000, 176400, 192000},
+            {},
+            {16, 24},
+            {},
+            {},
+            {},
+            {0, 24, -1, AudioSampleFormat::Unknown, -1},
+        },
+        {
+            AudioContainer::M4a,
+            AudioCodec::Aac,
+            QStringLiteral("AAC (M4A)"),
+            QStringLiteral("m4a"),
+            QStringLiteral("Lossy"),
+            false,
+            {44100, 48000, 88200, 96000},
+            {128, 192, 256, 320},
+            {},
+            {},
+            {},
+            {},
+            {256, 0, -1, AudioSampleFormat::Unknown, -1},
+        },
+        {
+            AudioContainer::WavPack,
+            AudioCodec::WavPack,
+            QStringLiteral("WavPack"),
+            QStringLiteral("wv"),
+            QStringLiteral("Lossless"),
+            true,
+            {44100, 48000, 88200, 96000, 176400, 192000},
+            {},
+            {16, 24, 32},
+            {},
+            {},
+            {},
+            {0, 24, -1, AudioSampleFormat::Unknown, -1},
+        },
+        {
+            AudioContainer::Caf,
+            AudioCodec::Pcm,
+            QStringLiteral("CAF"),
+            QStringLiteral("caf"),
+            QStringLiteral("Lossless"),
+            true,
+            {44100, 48000, 88200, 96000, 176400, 192000},
+            {},
+            {},
+            {},
+            {AudioSampleFormat::SignedInt16, AudioSampleFormat::SignedInt24,
+             AudioSampleFormat::SignedInt32, AudioSampleFormat::Float32},
+            {},
+            {0, 0, -1, AudioSampleFormat::SignedInt24, -1},
+        },
+        {
+            AudioContainer::Opus,
+            AudioCodec::Opus,
+            QStringLiteral("Opus"),
+            QStringLiteral("opus"),
+            QStringLiteral("Lossy"),
+            false,
+            {48000},
+            {96, 128, 160, 192, 256, 320},
+            {},
+            {},
+            {},
+            {},
+            {160, 0, -1, AudioSampleFormat::Unknown, -1},
+        },
+        {
+            AudioContainer::Ac3,
+            AudioCodec::Ac3,
+            QStringLiteral("AC-3"),
+            QStringLiteral("ac3"),
+            QStringLiteral("Surround"),
+            false,
+            {32000, 44100, 48000},
+            {192, 224, 384, 448, 640},
+            {},
+            {},
+            {},
+            {},
+            {640, 0, -1, AudioSampleFormat::Unknown, -1},
+        },
+        {
+            AudioContainer::Eac3,
+            AudioCodec::Eac3,
+            QStringLiteral("E-AC-3"),
+            QStringLiteral("eac3"),
+            QStringLiteral("Surround"),
+            false,
+            {32000, 44100, 48000},
+            {224, 384, 448, 640, 768, 1024},
+            {},
+            {},
+            {},
+            {},
+            {768, 0, -1, AudioSampleFormat::Unknown, -1},
+        },
     };
     return targets;
 }
@@ -86,6 +208,22 @@ const QList<PresetDescriptor>& builtinPresets() {
          AudioContainer::Wav, AudioCodec::Pcm, 0, 0, -1, AudioSampleFormat::SignedInt24, -1},
         {QStringLiteral("preserve_lossless"), QStringLiteral("WAV Float (Preserve)"),
          AudioContainer::Wav, AudioCodec::Pcm, 0, 0, -1, AudioSampleFormat::Float32, -1},
+        {QStringLiteral("aiff_24"), QStringLiteral("AIFF 24-bit"),
+         AudioContainer::Aiff, AudioCodec::Pcm, 0, 0, -1, AudioSampleFormat::SignedInt24, -1},
+        {QStringLiteral("alac_lossless"), QStringLiteral("ALAC Lossless"),
+         AudioContainer::M4a, AudioCodec::Alac, 0, 24, -1, AudioSampleFormat::Unknown, -1},
+        {QStringLiteral("wavpack_lossless"), QStringLiteral("WavPack Lossless"),
+         AudioContainer::WavPack, AudioCodec::WavPack, 0, 24, -1, AudioSampleFormat::Unknown, -1},
+        {QStringLiteral("caf_24"), QStringLiteral("CAF 24-bit"),
+         AudioContainer::Caf, AudioCodec::Pcm, 0, 0, -1, AudioSampleFormat::SignedInt24, -1},
+        {QStringLiteral("aac_256"), QStringLiteral("AAC 256 kbps"),
+         AudioContainer::M4a, AudioCodec::Aac, 256, 0, -1, AudioSampleFormat::Unknown, -1},
+        {QStringLiteral("opus_160"), QStringLiteral("Opus 160 kbps"),
+         AudioContainer::Opus, AudioCodec::Opus, 160, 0, -1, AudioSampleFormat::Unknown, -1},
+        {QStringLiteral("ac3_51"), QStringLiteral("AC-3 5.1 (640 kbps)"),
+         AudioContainer::Ac3, AudioCodec::Ac3, 640, 0, -1, AudioSampleFormat::Unknown, -1},
+        {QStringLiteral("eac3_51"), QStringLiteral("E-AC-3 5.1 (768 kbps)"),
+         AudioContainer::Eac3, AudioCodec::Eac3, 768, 0, -1, AudioSampleFormat::Unknown, -1},
     };
     return presets;
 }
@@ -111,11 +249,41 @@ std::optional<AudioTargetDescriptor> AudioFormatCatalog::findTarget(const QStrin
     if (normalized.isEmpty()) {
         return std::nullopt;
     }
-    if (normalized == QStringLiteral("wave")) {
+    if (normalized == QStringLiteral("wave") || normalized == QStringLiteral("wav")) {
         return target(AudioContainer::Wav, AudioCodec::Pcm);
     }
-    if (normalized == QStringLiteral("vorbis")) {
+    if (normalized == QStringLiteral("vorbis") || normalized == QStringLiteral("ogg")) {
         return target(AudioContainer::Ogg, AudioCodec::Vorbis);
+    }
+    if (normalized == QStringLiteral("aiff") || normalized == QStringLiteral("aif")) {
+        return target(AudioContainer::Aiff, AudioCodec::Pcm);
+    }
+    if (normalized == QStringLiteral("alac")) {
+        return target(AudioContainer::M4a, AudioCodec::Alac);
+    }
+    if (normalized == QStringLiteral("aac")) {
+        return target(AudioContainer::M4a, AudioCodec::Aac);
+    }
+    if (normalized == QStringLiteral("wavpack") || normalized == QStringLiteral("wv")) {
+        return target(AudioContainer::WavPack, AudioCodec::WavPack);
+    }
+    // M4A is a container shared by ALAC and AAC; require the codec-specific
+    // lookup name so the CLI never silently chooses one.
+    if (normalized == QStringLiteral("m4a") || normalized == QStringLiteral("mp4")) {
+        return std::nullopt;
+    }
+    if (normalized == QStringLiteral("caf")) {
+        return target(AudioContainer::Caf, AudioCodec::Pcm);
+    }
+    if (normalized == QStringLiteral("opus")) {
+        return target(AudioContainer::Opus, AudioCodec::Opus);
+    }
+    if (normalized == QStringLiteral("ac3") || normalized == QStringLiteral("ac-3")) {
+        return target(AudioContainer::Ac3, AudioCodec::Ac3);
+    }
+    if (normalized == QStringLiteral("eac3") || normalized == QStringLiteral("e-ac-3") ||
+        normalized == QStringLiteral("ec3")) {
+        return target(AudioContainer::Eac3, AudioCodec::Eac3);
     }
     for (const auto& descriptor : builtinTargets()) {
         if (QString::compare(descriptor.fileExtension, normalized, Qt::CaseInsensitive) == 0 ||
@@ -175,6 +343,36 @@ QString AudioFormatCatalog::findMatchingPreset(const AudioEncodingTarget& target
             if (options != nullptr && options->quality == preset.vorbisQuality) {
                 return preset.id;
             }
+        } else if (target.codec == AudioCodec::Aac) {
+            const auto* options = std::get_if<AacOptions>(&target.codecOptions);
+            if (options != nullptr && options->bitrateKbps == preset.bitrate) {
+                return preset.id;
+            }
+        } else if (target.codec == AudioCodec::Alac) {
+            const auto* options = std::get_if<AlacOptions>(&target.codecOptions);
+            if (options != nullptr && options->bitDepth == preset.bitDepth) {
+                return preset.id;
+            }
+        } else if (target.codec == AudioCodec::WavPack) {
+            const auto* options = std::get_if<WavPackOptions>(&target.codecOptions);
+            if (options != nullptr && options->bitDepth == preset.bitDepth) {
+                return preset.id;
+            }
+        } else if (target.codec == AudioCodec::Opus) {
+            const auto* options = std::get_if<OpusOptions>(&target.codecOptions);
+            if (options != nullptr && options->bitrateKbps == preset.bitrate) {
+                return preset.id;
+            }
+        } else if (target.codec == AudioCodec::Ac3) {
+            const auto* options = std::get_if<Ac3Options>(&target.codecOptions);
+            if (options != nullptr && options->bitrateKbps == preset.bitrate) {
+                return preset.id;
+            }
+        } else if (target.codec == AudioCodec::Eac3) {
+            const auto* options = std::get_if<Eac3Options>(&target.codecOptions);
+            if (options != nullptr && options->bitrateKbps == preset.bitrate) {
+                return preset.id;
+            }
         }
     }
     return QStringLiteral("custom");
@@ -190,15 +388,27 @@ std::optional<AudioEncodingTarget> AudioFormatCatalog::targetFromPreset(const QS
         return std::nullopt;
     }
     AudioEncodingTarget target = defaultEncodingTarget(descriptor->container, descriptor->codec);
-    if (descriptor->bitrate > 0) {
+    if (descriptor->codec == AudioCodec::Mp3 && descriptor->bitrate > 0) {
         target.codecOptions = Mp3Options{descriptor->bitrate, Mp3BitrateMode::Constant};
-    } else if (descriptor->bitDepth > 0) {
+    } else if (descriptor->codec == AudioCodec::Flac && descriptor->bitDepth > 0) {
         target.codecOptions = FlacOptions{
             descriptor->bitDepth, descriptor->compressionLevel >= 0 ? descriptor->compressionLevel : 5};
-    } else if (descriptor->sampleFormat != AudioSampleFormat::Unknown) {
+    } else if (descriptor->codec == AudioCodec::Pcm && descriptor->sampleFormat != AudioSampleFormat::Unknown) {
         target.codecOptions = PcmOptions{descriptor->sampleFormat};
-    } else if (descriptor->vorbisQuality >= -1) {
+    } else if (descriptor->codec == AudioCodec::Vorbis && descriptor->vorbisQuality >= -1) {
         target.codecOptions = VorbisOptions{descriptor->vorbisQuality};
+    } else if (descriptor->codec == AudioCodec::Aac && descriptor->bitrate > 0) {
+        target.codecOptions = AacOptions{descriptor->bitrate};
+    } else if (descriptor->codec == AudioCodec::Alac && descriptor->bitDepth > 0) {
+        target.codecOptions = AlacOptions{descriptor->bitDepth};
+    } else if (descriptor->codec == AudioCodec::WavPack && descriptor->bitDepth > 0) {
+        target.codecOptions = WavPackOptions{descriptor->bitDepth};
+    } else if (descriptor->codec == AudioCodec::Opus && descriptor->bitrate > 0) {
+        target.codecOptions = OpusOptions{descriptor->bitrate};
+    } else if (descriptor->codec == AudioCodec::Ac3 && descriptor->bitrate > 0) {
+        target.codecOptions = Ac3Options{descriptor->bitrate};
+    } else if (descriptor->codec == AudioCodec::Eac3 && descriptor->bitrate > 0) {
+        target.codecOptions = Eac3Options{descriptor->bitrate};
     }
     return target;
 }

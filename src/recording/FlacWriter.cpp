@@ -39,13 +39,22 @@ bool FlacWriter::open(const std::filesystem::path& path,
                       const std::uint16_t channels,
                       const std::uint32_t sampleRate,
                       const SampleFormat sampleFormat) {
+    return open(path, channels, sampleRate, sampleFormat,
+                abracapture::exporting::AudioChannelLayout{});
+}
+
+bool FlacWriter::open(const std::filesystem::path& path,
+                      const std::uint16_t channels,
+                      const std::uint32_t sampleRate,
+                      const SampleFormat sampleFormat,
+                      const abracapture::exporting::AudioChannelLayout& layout) {
     switch (sampleFormat) {
     case SampleFormat::Int16:
-        return open(path, channels, sampleRate, 16);
+        return open(path, channels, sampleRate, 16, layout);
     case SampleFormat::Int24:
-        return open(path, channels, sampleRate, 24);
+        return open(path, channels, sampleRate, 24, layout);
     case SampleFormat::Int32:
-        return open(path, channels, sampleRate, 32);
+        return open(path, channels, sampleRate, 32, layout);
     case SampleFormat::Float32:
     case SampleFormat::Float64:
         lastError_ = "FLAC supports integer samples only; floating-point sample formats are not supported";
@@ -60,6 +69,15 @@ bool FlacWriter::open(const std::filesystem::path& path,
                       const std::uint16_t channels,
                       const std::uint32_t sampleRate,
                       const std::uint32_t bitsPerSample) {
+    return open(path, channels, sampleRate, bitsPerSample,
+                abracapture::exporting::AudioChannelLayout{});
+}
+
+bool FlacWriter::open(const std::filesystem::path& path,
+                      const std::uint16_t channels,
+                      const std::uint32_t sampleRate,
+                      const std::uint32_t bitsPerSample,
+                      const abracapture::exporting::AudioChannelLayout& layout) {
     if (isOpen()) {
         lastError_ = "FLAC writer is already open";
         return false;
@@ -90,6 +108,12 @@ bool FlacWriter::open(const std::filesystem::path& path,
         encoder_ = nullptr;
         return false;
     }
+
+    // FLAC's ordinary multichannel stream stores ordered sample channels, but
+    // it has no universal speaker-position map. Keep the negotiated layout in
+    // the capture/index metadata; do not invent a WAVEFORMATEXTENSIBLE-style
+    // Vorbis comment and present it as a portable FLAC layout.
+    static_cast<void>(layout);
 
     const auto pathString = path.string();
     const auto initStatus = FLAC__stream_encoder_init_file(encoder_, pathString.c_str(), nullptr, nullptr);

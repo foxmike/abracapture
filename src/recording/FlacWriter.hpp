@@ -33,7 +33,17 @@ public:
     [[nodiscard]] bool open(const std::filesystem::path& path,
                             std::uint16_t channels,
                             std::uint32_t sampleRate,
+                            std::uint32_t bitsPerSample,
+                            const abracapture::exporting::AudioChannelLayout& layout);
+    [[nodiscard]] bool open(const std::filesystem::path& path,
+                            std::uint16_t channels,
+                            std::uint32_t sampleRate,
                             SampleFormat sampleFormat);
+    [[nodiscard]] bool open(const std::filesystem::path& path,
+                            std::uint16_t channels,
+                            std::uint32_t sampleRate,
+                            SampleFormat sampleFormat,
+                            const abracapture::exporting::AudioChannelLayout& layout);
     [[nodiscard]] bool write(const std::int32_t* interleavedFrames, std::size_t frameCount);
     [[nodiscard]] bool finalize();
     void abort();

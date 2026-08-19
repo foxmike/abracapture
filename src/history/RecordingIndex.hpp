@@ -41,6 +41,8 @@ struct RecordingEntry {
     std::uint32_t sampleRate = 0;
     std::uint32_t bitDepth = 0;
     std::uint16_t channels = 0;
+    QStringList channelPositions;
+    QString channelLayout;
     double duration = 0.0;
     QDateTime timestamp;
     bool isNative = true;
@@ -61,6 +63,8 @@ struct RecordingEntry {
                sampleRate == other.sampleRate &&
                bitDepth == other.bitDepth &&
                channels == other.channels &&
+               channelPositions == other.channelPositions &&
+               channelLayout == other.channelLayout &&
                duration == other.duration &&
                timestamp == other.timestamp &&
                isNative == other.isNative &&

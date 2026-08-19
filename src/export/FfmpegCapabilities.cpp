@@ -87,8 +87,16 @@ bool FfmpegCapabilities::probe() {
     encoders_ = std::move(res.encoders);
     muxers_ = std::move(res.muxers);
     probed_ = res.success;
+    eac3Capability_ = Eac3Capability::probeNow();
+    emit eac3CapabilityChanged();
     emit probeCompleted();
     return probed_;
+}
+
+Eac3CapabilityReport FfmpegCapabilities::refreshEac3Capability() {
+    eac3Capability_ = Eac3Capability::probeNow();
+    emit eac3CapabilityChanged();
+    return eac3Capability_;
 }
 
 void FfmpegCapabilities::probeAsync() {
@@ -101,8 +109,9 @@ void FfmpegCapabilities::probeAsync() {
     QPointer<FfmpegCapabilities> self(this);
     QThread* thread = QThread::create([self]() {
         ProbeResult res = executeProbe();
+        const Eac3CapabilityReport eac3Report = Eac3Capability::probeNow();
         if (QCoreApplication::instance() != nullptr) {
-            QMetaObject::invokeMethod(QCoreApplication::instance(), [self, res = std::move(res)]() mutable {
+            QMetaObject::invokeMethod(QCoreApplication::instance(), [self, res = std::move(res), eac3Report]() mutable {
                 if (!self) {
                     return;
                 }
@@ -111,8 +120,10 @@ void FfmpegCapabilities::probeAsync() {
                 self->encoders_ = std::move(res.encoders);
                 self->muxers_ = std::move(res.muxers);
                 self->probed_ = res.success;
+                self->eac3Capability_ = eac3Report;
                 self->probing_ = false;
                 emit self->probingChanged();
+                emit self->eac3CapabilityChanged();
                 emit self->probeCompleted();
             });
         }
@@ -151,6 +162,12 @@ QString FfmpegCapabilities::encoderForCodec(const AudioCodec codec) const {
     case AudioCodec::Flac: return QStringLiteral("flac");
     case AudioCodec::Mp3: return QStringLiteral("libmp3lame");
     case AudioCodec::Vorbis: return QStringLiteral("libvorbis");
+    case AudioCodec::Alac: return QStringLiteral("alac");
+    case AudioCodec::Aac: return QStringLiteral("aac");
+    case AudioCodec::WavPack: return QStringLiteral("wavpack");
+    case AudioCodec::Opus: return QStringLiteral("libopus");
+    case AudioCodec::Ac3: return QStringLiteral("ac3");
+    case AudioCodec::Eac3: return QStringLiteral("eac3");
     }
     return {};
 }
@@ -161,6 +178,13 @@ QString FfmpegCapabilities::muxerForContainer(const AudioContainer container) co
     case AudioContainer::Flac: return QStringLiteral("flac");
     case AudioContainer::Ogg: return QStringLiteral("ogg");
     case AudioContainer::Mp3: return QStringLiteral("mp3");
+    case AudioContainer::Aiff: return QStringLiteral("aiff");
+    case AudioContainer::M4a: return QStringLiteral("ipod");
+    case AudioContainer::WavPack: return QStringLiteral("wv");
+    case AudioContainer::Caf: return QStringLiteral("caf");
+    case AudioContainer::Opus: return QStringLiteral("opus");
+    case AudioContainer::Ac3: return QStringLiteral("ac3");
+    case AudioContainer::Eac3: return QStringLiteral("eac3");
     }
     return {};
 }
@@ -172,6 +196,18 @@ bool FfmpegCapabilities::isTargetAvailable(const AudioContainer container,
     }
     return isEncoderAvailable(encoderForCodec(codec)) &&
            isMuxerAvailable(muxerForContainer(container));
+}
+
+const Eac3CapabilityReport& FfmpegCapabilities::eac3Capability() const noexcept {
+    return eac3Capability_;
+}
+
+bool FfmpegCapabilities::eac3Supports71() const noexcept {
+    return eac3Capability_.supports71();
+}
+
+QString FfmpegCapabilities::eac3UnsupportedReason() const {
+    return eac3Capability_.unsupportedReason();
 }
 
 } // namespace abracapture::exporting

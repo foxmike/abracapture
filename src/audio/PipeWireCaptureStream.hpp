@@ -1,6 +1,7 @@
 #pragma once
 
 #include "audio/AudioRingBuffer.hpp"
+#include "export/AudioDomainTypes.hpp"
 
 #include <spa/param/audio/raw.h>
 #include <spa/utils/hook.h>
@@ -64,6 +65,7 @@ public:
     [[nodiscard]] spa_audio_format negotiatedFormat() const noexcept;
     [[nodiscard]] std::uint32_t negotiatedSampleRate() const noexcept;
     [[nodiscard]] std::uint32_t negotiatedChannels() const noexcept;
+    [[nodiscard]] abracapture::exporting::AudioChannelLayout negotiatedChannelLayout() const noexcept;
     [[nodiscard]] bool isNativeCapture() const noexcept;
     [[nodiscard]] StreamStatus status() const noexcept;
 
@@ -106,6 +108,7 @@ private:
     std::atomic<spa_audio_format> negotiatedFormat_{SPA_AUDIO_FORMAT_UNKNOWN};
     std::atomic<std::uint32_t> negotiatedSampleRate_{0};
     std::atomic<std::uint32_t> negotiatedChannels_{0};
+    std::array<std::atomic<std::uint32_t>, SPA_AUDIO_MAX_CHANNELS> negotiatedPositions_{};
     std::atomic<std::uint32_t> diagnosticBuffersLogged_{0};
     std::atomic<StreamStatus> status_{StreamStatus::Disconnected};
 

@@ -34,6 +34,8 @@ add_executable(abracapture
     src/export/AudioDomainTypes.hpp
     src/export/AudioFormatCatalog.cpp
     src/export/AudioFormatCatalog.hpp
+    src/export/Eac3Capability.cpp
+    src/export/Eac3Capability.hpp
     src/export/ExportOutputPlanner.cpp
     src/export/ExportOutputPlanner.hpp
     src/export/ExportManager.cpp
@@ -122,6 +124,8 @@ if(BUILD_TESTING)
         tests/export/test_export.cpp
         src/export/AudioDomainTypes.cpp
         src/export/AudioDomainTypes.hpp
+        src/export/Eac3Capability.cpp
+        src/export/Eac3Capability.hpp
         src/export/AudioFormatCatalog.cpp
         src/export/AudioFormatCatalog.hpp
         src/export/ExportOutputPlanner.cpp
@@ -140,6 +144,12 @@ if(BUILD_TESTING)
         src/export/PathSanitizer.hpp
         src/recording/OutputPathPolicy.cpp
         src/recording/OutputPathPolicy.hpp
+        src/recording/RecordingSink.cpp
+        src/recording/RecordingSink.hpp
+        src/recording/WavWriter.cpp
+        src/recording/WavWriter.hpp
+        src/recording/FlacWriter.cpp
+        src/recording/FlacWriter.hpp
         src/config/AppSettings.cpp
         src/config/AppSettings.hpp
         src/history/RecordingIndex.cpp
@@ -150,7 +160,7 @@ if(BUILD_TESTING)
         src/ui/SettingsViewModel.hpp
     )
     target_include_directories(test_export PRIVATE src)
-    target_link_libraries(test_export PRIVATE Qt6::Core PkgConfig::SNDFILE)
+    target_link_libraries(test_export PRIVATE Qt6::Core PkgConfig::SNDFILE PkgConfig::FLAC)
     add_test(NAME export COMMAND test_export)
 endif()
 

@@ -331,6 +331,56 @@ std::uint32_t PipeWireCaptureStream::negotiatedChannels() const noexcept {
     return negotiatedChannels_.load(std::memory_order_acquire);
 }
 
+abracapture::exporting::AudioChannelLayout PipeWireCaptureStream::negotiatedChannelLayout() const noexcept {
+    const std::uint32_t channels = negotiatedChannels_.load(std::memory_order_acquire);
+    if (channels == 0) {
+        return abracapture::exporting::AudioChannelLayout::unknown(0);
+    }
+    QList<abracapture::exporting::AudioChannelPosition> positions;
+    positions.reserve(static_cast<int>(channels));
+    bool allKnown = true;
+    for (std::uint32_t i = 0; i < channels && i < SPA_AUDIO_MAX_CHANNELS; ++i) {
+        const std::uint32_t pos = negotiatedPositions_[i].load(std::memory_order_acquire);
+        switch (pos) {
+        case SPA_AUDIO_CHANNEL_FL:
+            positions.append(abracapture::exporting::AudioChannelPosition::FrontLeft);
+            break;
+        case SPA_AUDIO_CHANNEL_FR:
+            positions.append(abracapture::exporting::AudioChannelPosition::FrontRight);
+            break;
+        case SPA_AUDIO_CHANNEL_FC:
+        case SPA_AUDIO_CHANNEL_MONO:
+            positions.append(abracapture::exporting::AudioChannelPosition::FrontCenter);
+            break;
+        case SPA_AUDIO_CHANNEL_LFE:
+            positions.append(abracapture::exporting::AudioChannelPosition::Lfe);
+            break;
+        case SPA_AUDIO_CHANNEL_RL:
+            positions.append(abracapture::exporting::AudioChannelPosition::RearLeft);
+            break;
+        case SPA_AUDIO_CHANNEL_RR:
+            positions.append(abracapture::exporting::AudioChannelPosition::RearRight);
+            break;
+        case SPA_AUDIO_CHANNEL_SL:
+            positions.append(abracapture::exporting::AudioChannelPosition::SideLeft);
+            break;
+        case SPA_AUDIO_CHANNEL_SR:
+            positions.append(abracapture::exporting::AudioChannelPosition::SideRight);
+            break;
+        default:
+            allKnown = false;
+            break;
+        }
+        if (!allKnown) {
+            break;
+        }
+    }
+    if (allKnown && positions.size() == static_cast<int>(channels)) {
+        return abracapture::exporting::AudioChannelLayout::fromPositions(std::move(positions));
+    }
+    return abracapture::exporting::AudioChannelLayout::unknown(static_cast<std::uint16_t>(channels));
+}
+
 bool PipeWireCaptureStream::isNativeCapture() const noexcept {
     return negotiatedFormat() == sourceFormat_.format &&
            negotiatedSampleRate() == sourceFormat_.rate &&
@@ -551,6 +601,11 @@ void PipeWireCaptureStream::handleParamChanged(const std::uint32_t id,
         setStatus(StreamStatus::Error);
         return;
     }
+    for (std::uint32_t i = 0; i < negotiated.channels && i < SPA_AUDIO_MAX_CHANNELS; ++i) {
+        negotiatedPositions_[i].store(negotiated.position[i], std::memory_order_release);
+    }
+    // Publish the channel count last so readers never treat a partially
+    // published position array as a negotiated layout.
     negotiatedFormat_.store(negotiated.format, std::memory_order_release);
     negotiatedSampleRate_.store(negotiated.rate, std::memory_order_release);
     negotiatedChannels_.store(negotiated.channels, std::memory_order_release);

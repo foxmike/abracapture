@@ -56,6 +56,93 @@ std::int32_t floatToInt32(const float sample) {
     return static_cast<std::int32_t>(std::lrint(static_cast<double>(clamped) * -static_cast<double>(kInt32Min)));
 }
 
+// Convert our exporting::AudioChannelPosition into the closest SF_CHANNEL_MAP_*
+// value. Returns -1 when the position has no direct libsndfile equivalent.
+int sndfileChannelFor(const abracapture::exporting::AudioChannelPosition position) {
+    switch (position) {
+    case abracapture::exporting::AudioChannelPosition::FrontLeft:   return SF_CHANNEL_MAP_FRONT_LEFT;
+    case abracapture::exporting::AudioChannelPosition::FrontRight:  return SF_CHANNEL_MAP_FRONT_RIGHT;
+    case abracapture::exporting::AudioChannelPosition::FrontCenter: return SF_CHANNEL_MAP_FRONT_CENTER;
+    case abracapture::exporting::AudioChannelPosition::Lfe:         return SF_CHANNEL_MAP_LFE;
+    case abracapture::exporting::AudioChannelPosition::RearLeft:    return SF_CHANNEL_MAP_REAR_LEFT;
+    case abracapture::exporting::AudioChannelPosition::RearRight:   return SF_CHANNEL_MAP_REAR_RIGHT;
+    case abracapture::exporting::AudioChannelPosition::SideLeft:    return SF_CHANNEL_MAP_SIDE_LEFT;
+    case abracapture::exporting::AudioChannelPosition::SideRight:   return SF_CHANNEL_MAP_SIDE_RIGHT;
+    }
+    return -1;
+}
+
+// Apply the negotiated channel layout to a freshly-opened libsndfile handle.
+// Unknown layouts are handled by the caller, which rejects a backend that
+// would infer a speaker map from channel count alone.
+bool applyChannelLayout(SNDFILE* handle, const std::uint16_t channels,
+                        const abracapture::exporting::AudioChannelLayout& layout,
+                        std::string& error) {
+    if (handle == nullptr) {
+        return true;
+    }
+    if (!layout.hasExplicitPositions()) {
+        return true;
+    }
+    if (layout.channelCount() != channels) {
+        error = "WAV channel layout count does not match the audio channel count";
+        return false;
+    }
+    const auto& positions = layout.positions();
+    if (static_cast<std::uint16_t>(positions.size()) != channels) {
+        error = "WAV channel layout does not contain one position per channel";
+        return false;
+    }
+    std::vector<int> channelMap;
+    channelMap.reserve(channels);
+    for (const auto pos : positions) {
+        const int code = sndfileChannelFor(pos);
+        if (code < 0) {
+            error = "WAV channel layout contains a speaker position unsupported by libsndfile";
+            return false;
+        }
+        channelMap.push_back(code);
+    }
+
+    // libsndfile documents this command as boolean, but its RF64/WAVEX
+    // implementation returns zero after accepting the map. Treat the setter's
+    // return value as advisory and verify the persisted map through the getter
+    // before accepting the file. The vector remains alive for both calls.
+    static_cast<void>(sf_command(handle, SFC_SET_CHANNEL_MAP_INFO, channelMap.data(),
+                                 static_cast<int>(sizeof(int) * channelMap.size())));
+
+    // Mono and stereo already have unambiguous PCM identities and retain the
+    // existing writer behavior across libsndfile versions. For multichannel
+    // files, accepting a channel count without a matching reopened map would
+    // silently turn an unknown or custom layout into a guessed one.
+    if (channels <= 2) {
+        return true;
+    }
+
+    std::vector<int> persistedMap(channelMap.size(), SF_CHANNEL_MAP_INVALID);
+    if (sf_command(handle, SFC_GET_CHANNEL_MAP_INFO, persistedMap.data(),
+                   static_cast<int>(sizeof(int) * persistedMap.size())) != SF_TRUE) {
+        error = "WAV/RF64 cannot persist the requested multichannel speaker map";
+        return false;
+    }
+
+    const auto sameSpeaker = [](const int expected, const int actual) {
+        if (expected == actual) {
+            return true;
+        }
+        return (expected == SF_CHANNEL_MAP_FRONT_LEFT && actual == SF_CHANNEL_MAP_LEFT) ||
+               (expected == SF_CHANNEL_MAP_FRONT_RIGHT && actual == SF_CHANNEL_MAP_RIGHT) ||
+               (expected == SF_CHANNEL_MAP_FRONT_CENTER && actual == SF_CHANNEL_MAP_CENTER);
+    };
+    for (std::size_t index = 0; index < channelMap.size(); ++index) {
+        if (!sameSpeaker(channelMap[index], persistedMap[index])) {
+            error = "WAV/RF64 cannot persist the requested multichannel speaker map";
+            return false;
+        }
+    }
+    return true;
+}
+
 } // namespace
 
 WavWriter::~WavWriter() {
@@ -66,6 +153,15 @@ bool WavWriter::open(const std::filesystem::path& path,
                      const std::uint16_t channels,
                      const std::uint32_t sampleRate,
                      const SampleFormat sampleFormat) {
+    return open(path, channels, sampleRate, sampleFormat,
+                abracapture::exporting::AudioChannelLayout{});
+}
+
+bool WavWriter::open(const std::filesystem::path& path,
+                     const std::uint16_t channels,
+                     const std::uint32_t sampleRate,
+                     const SampleFormat sampleFormat,
+                     const abracapture::exporting::AudioChannelLayout& layout) {
     if (isOpen()) {
         lastError_ = "WAV writer is already open";
         return false;
@@ -78,6 +174,14 @@ bool WavWriter::open(const std::filesystem::path& path,
     const auto encoding = sndfileEncoding(sampleFormat);
     if (encoding == 0) {
         lastError_ = "Unsupported WAV sample format";
+        return false;
+    }
+    if (!layout.hasExplicitPositions() && channels > 2) {
+        // This libsndfile/WAVEX path writes a channel mask from the count when
+        // the header is finalized, even though GET_CHANNEL_MAP_INFO is empty
+        // immediately after open. Refuse the capture rather than allow
+        // Unknown(6) or Unknown(8) to become a guessed surround layout.
+        lastError_ = "WAV/RF64 cannot preserve an unknown multichannel layout";
         return false;
     }
 
@@ -95,6 +199,14 @@ bool WavWriter::open(const std::filesystem::path& path,
         return false;
     }
 
+    std::string layoutError;
+    if (!applyChannelLayout(handle_, channels, layout, layoutError)) {
+        lastError_ = std::move(layoutError);
+        sf_close(handle_);
+        handle_ = nullptr;
+        return false;
+    }
+
     path_ = path;
     channels_ = channels;
     sampleFormat_ = sampleFormat;
@@ -105,6 +217,14 @@ bool WavWriter::open(const std::filesystem::path& path,
     audioBytesWritten_ = 0;
     lastError_.clear();
     return true;
+}
+
+bool WavWriter::open(const std::filesystem::path& path, const AudioFormat& format) {
+    if (format.channels == 0 || format.sampleRate == 0) {
+        lastError_ = "WAV writer requires channels and sample rate";
+        return false;
+    }
+    return open(path, format.channels, format.sampleRate, format.sampleFormat, format.channelLayout);
 }
 
 bool WavWriter::write(const float* const interleavedFrames, const std::size_t frameCount) {

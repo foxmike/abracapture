@@ -622,6 +622,15 @@ int main(int argc, char *argv[]) {
                                                              ? 16
                                                              : (result.sampleFormat == SampleFormat::Int24 ? 24 : 32));
                                  entry.channels = recordingChannels;
+                                 const auto negotiatedLayout = result.channelLayout;
+                                 if (negotiatedLayout.hasExplicitPositions() &&
+                                     negotiatedLayout.channelCount() == entry.channels) {
+                                     entry.channelPositions = negotiatedLayout.positionNames();
+                                     entry.channelLayout = negotiatedLayout.displayName();
+                                 } else {
+                                     entry.channelLayout = QStringLiteral("%1 channels — layout unknown")
+                                                             .arg(entry.channels);
+                                 }
                                  entry.duration = result.duration.count();
                                  entry.timestamp = QFileInfo(entry.filePath).lastModified();
                                  entry.isNative = result.provenance == ConversionProvenance::Native;
@@ -645,6 +654,7 @@ int main(int argc, char *argv[]) {
                                      request.profile = automaticProfile.profile;
                                      request.captureSessionId = entry.captureSessionId;
                                      request.sourceFormat.sampleRate = result.sampleRate;
+                                     request.sourceFormat.channelLayout = result.channelLayout;
                                      request.destinationPath = automaticExportDestinationPath(
                                          result.finalPath, automaticProfile);
 
@@ -734,10 +744,12 @@ int main(int argc, char *argv[]) {
                                  }
                                  metadata.sampleRate = rate;
                                  metadata.channels = static_cast<std::uint16_t>(channels);
+                                 const auto negotiatedLayout = captureSession->negotiatedChannelLayout();
                                  const AudioFormat fileFormat{
                                      .sampleRate = rate,
                                      .channels = static_cast<std::uint16_t>(channels),
                                      .sampleFormat = recordingSampleFormat,
+                                     .channelLayout = negotiatedLayout,
                                  };
                                  recordingSinkOpen = recordingSink.open(fileFormat, metadata,
                                                                         outputPathPolicy);

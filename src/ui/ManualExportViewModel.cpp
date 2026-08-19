@@ -633,6 +633,15 @@ abracapture::exporting::ManualExportSource ManualExportViewModel::sourceFromVari
     abracapture::exporting::ManualExportSource source;
     source.path = entry.value(QStringLiteral("filePath")).toString().toStdString();
     source.sourceFormat.sampleRate = entry.value(QStringLiteral("sampleRate")).toUInt();
+    const QStringList posNames = entry.value(QStringLiteral("channelPositions")).toStringList();
+    const auto chCount = static_cast<std::uint16_t>(entry.value(QStringLiteral("channels")).toUInt());
+    if (!posNames.isEmpty()) {
+        source.sourceFormat.channelLayout =
+            abracapture::exporting::AudioChannelLayout::fromPositionNames(posNames, chCount);
+    } else {
+        source.sourceFormat.channelLayout =
+            abracapture::exporting::AudioChannelLayout::unknown(chCount);
+    }
     source.captureSessionId = entry.value(QStringLiteral("captureSessionId")).toString();
     source.trackTitle = entry.value(QStringLiteral("trackTitle")).toString();
     source.albumTitle = entry.value(QStringLiteral("albumTitle")).toString();
@@ -646,6 +655,7 @@ QVariantMap ManualExportViewModel::sourceDetails(
     int channels = 0;
     int bitDepth = 0;
     QString sampleFormat;
+    QString channelLayoutName;
     QString codec = info.suffix().toUpper();
     SF_INFO audioInfo{};
     SNDFILE* const audio = sf_open(info.absoluteFilePath().toUtf8().constData(), SFM_READ, &audioInfo);
@@ -657,7 +667,48 @@ QVariantMap ManualExportViewModel::sourceDetails(
         else if (subFormat == SF_FORMAT_PCM_24) { bitDepth = 24; sampleFormat = QStringLiteral("24-bit PCM"); }
         else if (subFormat == SF_FORMAT_PCM_32) { bitDepth = 32; sampleFormat = QStringLiteral("32-bit PCM"); }
         else if (subFormat == SF_FORMAT_FLOAT) { bitDepth = 32; sampleFormat = QStringLiteral("32-bit Float"); }
+        if (audioInfo.channels > 0 && audioInfo.channels <= 64) {
+            std::vector<int> channelMap(static_cast<std::size_t>(audioInfo.channels), 0);
+            if (sf_command(audio, SFC_GET_CHANNEL_MAP_INFO, channelMap.data(),
+                           static_cast<int>(sizeof(int) * channelMap.size())) == SF_TRUE) {
+                QStringList positions;
+                for (int i = 0; i < audioInfo.channels; ++i) {
+                    switch (channelMap[static_cast<std::size_t>(i)]) {
+                    case SF_CHANNEL_MAP_LEFT:
+                    case SF_CHANNEL_MAP_FRONT_LEFT:
+                        positions.append(QStringLiteral("FL")); break;
+                    case SF_CHANNEL_MAP_RIGHT:
+                    case SF_CHANNEL_MAP_FRONT_RIGHT:
+                        positions.append(QStringLiteral("FR")); break;
+                    case SF_CHANNEL_MAP_CENTER:
+                    case SF_CHANNEL_MAP_FRONT_CENTER:
+                    case SF_CHANNEL_MAP_MONO:
+                        positions.append(QStringLiteral("FC")); break;
+                    case SF_CHANNEL_MAP_LFE: positions.append(QStringLiteral("LFE")); break;
+                    case SF_CHANNEL_MAP_REAR_LEFT: positions.append(QStringLiteral("RL")); break;
+                    case SF_CHANNEL_MAP_REAR_RIGHT: positions.append(QStringLiteral("RR")); break;
+                    case SF_CHANNEL_MAP_SIDE_LEFT: positions.append(QStringLiteral("SL")); break;
+                    case SF_CHANNEL_MAP_SIDE_RIGHT: positions.append(QStringLiteral("SR")); break;
+                    default: break;
+                    }
+                }
+                if (positions.size() == audioInfo.channels) {
+                    channelLayoutName = abracapture::exporting::AudioChannelLayout::fromPositionNames(positions).displayName();
+                }
+            }
+        }
         sf_close(audio);
+    }
+    if (channelLayoutName.isEmpty()) {
+        if (source.sourceFormat.channelLayout.channelCount() > 0) {
+            channelLayoutName = source.sourceFormat.channelLayout.displayName();
+        } else if (channels == 2) {
+            channelLayoutName = QStringLiteral("Stereo");
+        } else if (channels == 1) {
+            channelLayoutName = QStringLiteral("Mono");
+        } else if (channels > 0) {
+            channelLayoutName = QStringLiteral("%1 channels — layout unknown").arg(channels);
+        }
     }
     return {
         {QStringLiteral("filePath"), info.absoluteFilePath()},
@@ -665,6 +716,7 @@ QVariantMap ManualExportViewModel::sourceDetails(
         {QStringLiteral("codec"), codec},
         {QStringLiteral("sampleRate"), sampleRate},
         {QStringLiteral("channels"), channels},
+        {QStringLiteral("channelLayout"), channelLayoutName},
         {QStringLiteral("bitDepth"), bitDepth},
         {QStringLiteral("sampleFormat"), sampleFormat},
         {QStringLiteral("trackTitle"), source.trackTitle},

@@ -35,6 +35,9 @@ bool RecordingSink::open(const FormatConversion& format,
     totalFrames_ = 0;
     sampleFormat_ = format.target.sampleFormat;
     sampleRate_ = format.target.sampleRate;
+    channelLayout_ = format.target.channelLayout.hasExplicitPositions()
+                         ? format.target.channelLayout
+                         : abracapture::exporting::AudioChannelLayout::unknown(format.target.channels);
     errorState_ = false;
     lastError_.clear();
 
@@ -106,14 +109,16 @@ bool RecordingSink::open(const FormatConversion& format,
     if (container == "wav" || container == "wave" || container == "rf64") {
         auto& writer = writer_.emplace<WavWriter>();
         opened = writer.open(temporaryPath_, format.target.channels,
-                             format.target.sampleRate, format.target.sampleFormat);
+                             format.target.sampleRate, format.target.sampleFormat,
+                             format.target.channelLayout);
         if (!opened || !writer.lastError().empty()) {
             lastError_ = writer.lastError();
         }
     } else if (container == "flac") {
         auto& writer = writer_.emplace<FlacWriter>();
         opened = writer.open(temporaryPath_, format.target.channels,
-                             format.target.sampleRate, format.target.sampleFormat);
+                             format.target.sampleRate, format.target.sampleFormat,
+                             format.target.channelLayout);
         if (!opened || !writer.lastError().empty()) {
             lastError_ = writer.lastError();
         }
@@ -212,6 +217,7 @@ CaptureResult RecordingSink::finalize() {
     result.provenance = provenance_;
     result.sampleFormat = sampleFormat_;
     result.sampleRate = sampleRate_;
+    result.channelLayout = channelLayout_;
 
     if (!active_) {
         result.error = lastError_.empty() ? "Recording sink is not open" : lastError_;

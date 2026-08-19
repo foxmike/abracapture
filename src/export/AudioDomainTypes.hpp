@@ -2,6 +2,7 @@
 
 #include <QList>
 #include <QString>
+#include <QStringList>
 
 #include <cstdint>
 #include <optional>
@@ -13,6 +14,13 @@ enum class AudioContainer : std::uint8_t {
     Flac,
     Ogg,
     Mp3,
+    Aiff,
+    M4a,
+    WavPack,
+    Caf,
+    Opus,
+    Ac3,
+    Eac3,
 };
 
 [[nodiscard]] std::optional<AudioContainer> audioContainerFromString(const QString& name);
@@ -24,6 +32,12 @@ enum class AudioCodec : std::uint8_t {
     Flac,
     Mp3,
     Vorbis,
+    Alac,
+    Aac,
+    WavPack,
+    Opus,
+    Ac3,
+    Eac3,
 };
 
 [[nodiscard]] std::optional<AudioCodec> audioCodecFromString(const QString& name);
@@ -55,6 +69,9 @@ enum class AudioChannelPosition : std::uint8_t {
     SideRight,
 };
 
+[[nodiscard]] QString audioChannelPositionName(AudioChannelPosition position);
+[[nodiscard]] std::optional<AudioChannelPosition> audioChannelPositionFromString(const QString& name);
+
 class AudioChannelLayout {
 public:
     AudioChannelLayout() = default;
@@ -62,11 +79,24 @@ public:
     [[nodiscard]] static AudioChannelLayout unknown(std::uint16_t channelCount);
     [[nodiscard]] static AudioChannelLayout mono();
     [[nodiscard]] static AudioChannelLayout stereo();
+    [[nodiscard]] static AudioChannelLayout surround51();
+    [[nodiscard]] static AudioChannelLayout surround71();
     [[nodiscard]] static AudioChannelLayout fromPositions(QList<AudioChannelPosition> positions);
+    [[nodiscard]] static AudioChannelLayout fromPositionNames(const QStringList& names,
+                                                              std::uint16_t fallbackCount = 0);
 
     [[nodiscard]] std::uint16_t channelCount() const noexcept;
     [[nodiscard]] bool hasExplicitPositions() const noexcept;
     [[nodiscard]] const QList<AudioChannelPosition>& positions() const noexcept;
+
+    [[nodiscard]] bool isMono() const noexcept;
+    [[nodiscard]] bool isStereo() const noexcept;
+    [[nodiscard]] bool is5Point1() const noexcept;
+    [[nodiscard]] bool is7Point1() const noexcept;
+
+    [[nodiscard]] QString displayName() const;
+    [[nodiscard]] QString ffmpegLayoutName() const;
+    [[nodiscard]] QStringList positionNames() const;
 
     friend bool operator==(const AudioChannelLayout& a, const AudioChannelLayout& b) noexcept {
         return a.channelCount_ == b.channelCount_ &&

@@ -6,6 +6,7 @@
 #include "core/AudioFormat.hpp"
 #include "export/AudioFormatCatalog.hpp"
 #include "export/ExportManager.hpp"
+#include "history/RecordingIndex.hpp"
 #include "pipewire/PipeWireContext.hpp"
 #include "pipewire/SourceCatalog.hpp"
 #include "recording/CaptureIntegrity.hpp"
@@ -76,6 +77,38 @@ SampleFormat sampleFormatFromSpa(const spa_audio_format format) {
     default:
         return SampleFormat::Int16;
     }
+}
+
+// Maps the master recording sample format (defined in core/AudioFormat.hpp)
+// into the matching AudioSampleFormat enum used by the export pipeline.
+// ABI-equivalent mappings stay explicit because the two enums are in
+// different subdomains with differing vocabulary (Float32 in core, f32 in
+// exporting's AudioSampleFormat).
+abracapture::exporting::AudioSampleFormat sampleFormatToExporting(const SampleFormat format) {
+    using abracapture::exporting::AudioSampleFormat;
+    switch (format) {
+    case SampleFormat::Int16: return AudioSampleFormat::SignedInt16;
+    case SampleFormat::Int24: return AudioSampleFormat::SignedInt24;
+    case SampleFormat::Int32: return AudioSampleFormat::SignedInt32;
+    case SampleFormat::Float32: return AudioSampleFormat::Float32;
+    case SampleFormat::Float64: return AudioSampleFormat::Float64;
+    }
+    return AudioSampleFormat::Unknown;
+}
+
+// Convert to the bit depth that the index records. Matching the importer's
+// convention (libsndfile's sub-format identifiers) keeps the index layout
+// consistent whether the entry was written by the CLI or materialized by a
+// later `importDirectory()` scan.
+std::uint32_t bitDepthFromSampleFormat(const SampleFormat format) {
+    switch (format) {
+    case SampleFormat::Int16: return 16;
+    case SampleFormat::Int24: return 24;
+    case SampleFormat::Int32: return 32;
+    case SampleFormat::Float32: return 32;
+    case SampleFormat::Float64: return 64;
+    }
+    return 0;
 }
 
 } // namespace
@@ -425,6 +458,7 @@ int CliApp::runRecord(const QStringList& recordArgs) {
     const spa_audio_format negotiatedSpaFormat = stream.negotiatedFormat();
     const std::uint32_t captureRate = stream.negotiatedSampleRate();
     const std::uint32_t captureChannels = stream.negotiatedChannels();
+    const auto negotiatedLayout = stream.negotiatedChannelLayout();
     if (negotiatedSpaFormat == SPA_AUDIO_FORMAT_UNKNOWN || captureRate == 0 ||
         captureChannels == 0) {
         std::cerr << "Capture error: PipeWire did not negotiate a capture format\n";
@@ -449,6 +483,7 @@ int CliApp::runRecord(const QStringList& recordArgs) {
         .sampleRate = captureRate,
         .channels = static_cast<std::uint16_t>(captureChannels),
         .sampleFormat = fileSampleFormat,
+        .channelLayout = negotiatedLayout,
     };
     if (!sink.open(targetAudioFormat, captureMeta, pathPolicy)) {
         std::cerr << "Capture error: Unable to open recording sink\n";
@@ -579,9 +614,13 @@ int CliApp::runRecord(const QStringList& recordArgs) {
                 const float clamped = std::clamp(sampleBuffer[i], -1.0F, 1.0F);
                 intBuffer[i] = static_cast<std::int32_t>(clamped * 32767.0F);
             }
-            sink.pushSamples(intBuffer.data(), readFrames);
+            if (!sink.pushSamples(intBuffer.data(), readFrames)) {
+                break;
+            }
         } else {
-            sink.pushSamples(sampleBuffer.data(), readFrames);
+            if (!sink.pushSamples(sampleBuffer.data(), readFrames)) {
+                break;
+            }
         }
     }
 
@@ -605,12 +644,43 @@ int CliApp::runRecord(const QStringList& recordArgs) {
 
     std::cout << integrity.summary() << "\n";
 
+    // Append the freshly-finalized capture (with channel layout and rate
+    // intact) to the persistent RecordingIndex. This makes the channel
+    // layout immediately visible to exporters and the recordings UI without
+    // having to re-scan the output directory.
+    {
+        abracapture::history::RecordingIndex index;
+        if (!index.load()) {
+            std::cerr << "Recording index warning: could not read the existing index at "
+                      << index.indexPath().toStdString() << "\n";
+        }
+        abracapture::history::RecordingEntry entry;
+        entry.filePath = QString::fromStdString(finalizeResult.finalPath.string());
+        entry.format = QString::fromStdString(formatArg.toStdString());
+        entry.sampleRate = captureRate;
+        entry.bitDepth = bitDepthFromSampleFormat(finalizeResult.sampleFormat);
+        entry.channels = static_cast<std::uint16_t>(captureChannels);
+        entry.channelPositions = finalizeResult.channelLayout.positionNames();
+        entry.channelLayout = finalizeResult.channelLayout.displayName();
+        entry.duration = finalizeResult.duration.count();
+        entry.timestamp = QDateTime::currentDateTimeUtc();
+        entry.captureSessionId = QStringLiteral("cli-session");
+        entry.mediaName = QString::fromStdString(selectedSource->displayName);
+        entry.applicationName = QString::fromStdString(selectedSource->appName);
+        entry.isNative = stream.isNativeCapture();
+        if (!index.append(entry)) {
+            std::cerr << "Recording index warning: could not append the new entry\n";
+        }
+    }
+
     if (parser.isSet(exportOption)) {
         const QString exportFormatsRaw = parser.value(exportOption).trimmed();
         const QStringList formatList = exportFormatsRaw.split(QLatin1Char(','), Qt::SkipEmptyParts);
         if (!formatList.isEmpty()) {
             abracapture::exporting::ExportManager exportManager;
             QList<abracapture::exporting::ExportRequest> exportRequests;
+            const abracapture::exporting::AudioSampleFormat sampleFormatEnum =
+                sampleFormatToExporting(finalizeResult.sampleFormat);
             for (const QString& fmt : formatList) {
                 const auto targetDesc = abracapture::exporting::AudioFormatCatalog::findTarget(fmt);
                 if (!targetDesc.has_value()) {
@@ -622,6 +692,9 @@ int CliApp::runRecord(const QStringList& recordArgs) {
                 request.sourcePath = finalizeResult.finalPath;
                 request.profile = abracapture::exporting::defaultExportProfile(targetDesc->container, targetDesc->codec);
                 request.sourceFormat.sampleRate = finalizeResult.sampleRate;
+                request.sourceFormat.sampleFormat = sampleFormatEnum;
+                request.sourceFormat.channelLayout = finalizeResult.channelLayout;
+                request.captureSessionId = QStringLiteral("cli-session");
                 std::filesystem::path exportPath = finalizeResult.finalPath;
                 exportPath.replace_extension(
                     "." + request.profile.target.fileExtension().toStdString());

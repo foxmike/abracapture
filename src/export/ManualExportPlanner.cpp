@@ -210,6 +210,18 @@ QString ManualExportPlanner::profileSummary(const ExportProfile& profile) {
         }
     } else if (const auto* options = std::get_if<VorbisOptions>(&target.codecOptions)) {
         summary += QStringLiteral(" • quality %1").arg(options->quality);
+    } else if (const auto* options = std::get_if<AacOptions>(&target.codecOptions)) {
+        summary += QStringLiteral(" • %1 kbps").arg(options->bitrateKbps);
+    } else if (const auto* options = std::get_if<AlacOptions>(&target.codecOptions)) {
+        summary += QStringLiteral(" • %1-bit Lossless").arg(options->bitDepth);
+    } else if (const auto* options = std::get_if<WavPackOptions>(&target.codecOptions)) {
+        summary += QStringLiteral(" • %1-bit Lossless").arg(options->bitDepth);
+    } else if (const auto* options = std::get_if<OpusOptions>(&target.codecOptions)) {
+        summary += QStringLiteral(" • %1 kbps").arg(options->bitrateKbps);
+    } else if (const auto* options = std::get_if<Ac3Options>(&target.codecOptions)) {
+        summary += QStringLiteral(" • %1 kbps").arg(options->bitrateKbps);
+    } else if (const auto* options = std::get_if<Eac3Options>(&target.codecOptions)) {
+        summary += QStringLiteral(" • %1 kbps").arg(options->bitrateKbps);
     }
     return summary;
 }

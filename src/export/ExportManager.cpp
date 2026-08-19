@@ -315,7 +315,8 @@ void ExportManager::startNextExport() {
         ExportRequest processRequest = jobIt->request;
         processRequest.destinationPath = jobIt->temporaryOutputPath;
         QStringList arguments;
-        if (!FfmpegArgumentBuilder::build(processRequest, &arguments, &error)) {
+        if (!FfmpegArgumentBuilder::build(processRequest, capabilities_.eac3Capability(),
+                                          &arguments, &error)) {
             failJob(jobId, error);
             continue;
         }

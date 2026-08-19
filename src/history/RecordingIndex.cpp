@@ -1,4 +1,5 @@
 #include "RecordingIndex.hpp"
+#include "export/AudioDomainTypes.hpp"
 
 #include <QDir>
 #include <QFile>
@@ -64,6 +65,16 @@ QJsonObject RecordingEntry::toJson() const {
     obj[QStringLiteral("sampleRate")] = static_cast<qint64>(sampleRate);
     obj[QStringLiteral("bitDepth")] = static_cast<qint64>(bitDepth);
     obj[QStringLiteral("channels")] = static_cast<int>(channels);
+    if (!channelPositions.isEmpty()) {
+        QJsonArray posArray;
+        for (const QString& pos : channelPositions) {
+            posArray.append(pos);
+        }
+        obj[QStringLiteral("channelPositions")] = posArray;
+    }
+    if (!channelLayout.isEmpty()) {
+        obj[QStringLiteral("channelLayout")] = channelLayout;
+    }
     obj[QStringLiteral("duration")] = duration;
     obj[QStringLiteral("timestamp")] = timestamp.isValid() ? timestamp.toString(Qt::ISODateWithMs) : QString{};
     obj[QStringLiteral("isNative")] = isNative;
@@ -88,6 +99,13 @@ RecordingEntry RecordingEntry::fromJson(const QJsonObject& json) {
     entry.sampleRate = static_cast<std::uint32_t>(json.value(QStringLiteral("sampleRate")).toInteger(0));
     entry.bitDepth = static_cast<std::uint32_t>(json.value(QStringLiteral("bitDepth")).toInteger(0));
     entry.channels = static_cast<std::uint16_t>(json.value(QStringLiteral("channels")).toInteger(0));
+    const QJsonValue posVal = json.value(QStringLiteral("channelPositions"));
+    if (posVal.isArray()) {
+        for (const QJsonValue& v : posVal.toArray()) {
+            entry.channelPositions.append(v.toString());
+        }
+    }
+    entry.channelLayout = json.value(QStringLiteral("channelLayout")).toString();
     entry.duration = json.value(QStringLiteral("duration")).toDouble(0.0);
 
     const QString tsStr = json.value(QStringLiteral("timestamp")).toString();
@@ -279,6 +297,44 @@ bool RecordingIndex::importDirectory(const QString& directoryPath) {
             case SF_FORMAT_PCM_32:
             case SF_FORMAT_FLOAT: entry.bitDepth = 32; break;
             default: break;
+            }
+            if (info.channels > 0 && info.channels <= 64) {
+                std::vector<int> channelMap(static_cast<std::size_t>(info.channels), 0);
+                if (sf_command(audio, SFC_GET_CHANNEL_MAP_INFO, channelMap.data(),
+                               static_cast<int>(sizeof(int) * channelMap.size())) == SF_TRUE) {
+                    QStringList positions;
+                    for (int i = 0; i < info.channels; ++i) {
+                        switch (channelMap[static_cast<std::size_t>(i)]) {
+                        case SF_CHANNEL_MAP_LEFT:
+                        case SF_CHANNEL_MAP_FRONT_LEFT:
+                            positions.append(QStringLiteral("FL")); break;
+                        case SF_CHANNEL_MAP_RIGHT:
+                        case SF_CHANNEL_MAP_FRONT_RIGHT:
+                            positions.append(QStringLiteral("FR")); break;
+                        case SF_CHANNEL_MAP_CENTER:
+                        case SF_CHANNEL_MAP_FRONT_CENTER:
+                        case SF_CHANNEL_MAP_MONO:
+                            positions.append(QStringLiteral("FC")); break;
+                        case SF_CHANNEL_MAP_LFE: positions.append(QStringLiteral("LFE")); break;
+                        case SF_CHANNEL_MAP_REAR_LEFT: positions.append(QStringLiteral("RL")); break;
+                        case SF_CHANNEL_MAP_REAR_RIGHT: positions.append(QStringLiteral("RR")); break;
+                        case SF_CHANNEL_MAP_SIDE_LEFT: positions.append(QStringLiteral("SL")); break;
+                        case SF_CHANNEL_MAP_SIDE_RIGHT: positions.append(QStringLiteral("SR")); break;
+                        default: break;
+                        }
+                    }
+                    if (positions.size() == info.channels) {
+                        entry.channelPositions = positions;
+                        entry.channelLayout =
+                            abracapture::exporting::AudioChannelLayout::fromPositionNames(positions).displayName();
+                    }
+                } else if (info.channels == 2 && entry.channelPositions.isEmpty()) {
+                    entry.channelPositions = {QStringLiteral("FL"), QStringLiteral("FR")};
+                    entry.channelLayout = QStringLiteral("Stereo");
+                } else if (info.channels == 1 && entry.channelPositions.isEmpty()) {
+                    entry.channelPositions = {QStringLiteral("FC")};
+                    entry.channelLayout = QStringLiteral("Mono");
+                }
             }
             sf_close(audio);
         }

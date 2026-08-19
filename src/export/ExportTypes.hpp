@@ -85,7 +85,41 @@ struct VorbisOptions {
     int quality = 5;
 };
 
-using CodecOptions = std::variant<Mp3Options, FlacOptions, PcmOptions, VorbisOptions>;
+struct AacOptions {
+    std::uint32_t bitrateKbps = 256;
+};
+
+struct AlacOptions {
+    std::uint32_t bitDepth = 24;
+};
+
+struct WavPackOptions {
+    std::uint32_t bitDepth = 24;
+};
+
+struct OpusOptions {
+    std::uint32_t bitrateKbps = 160;
+};
+
+struct Ac3Options {
+    std::uint32_t bitrateKbps = 640;
+};
+
+struct Eac3Options {
+    std::uint32_t bitrateKbps = 768;
+};
+
+using CodecOptions = std::variant<
+    Mp3Options,
+    FlacOptions,
+    PcmOptions,
+    VorbisOptions,
+    AacOptions,
+    AlacOptions,
+    WavPackOptions,
+    OpusOptions,
+    Ac3Options,
+    Eac3Options>;
 
 // ---------------------------------------------------------------------------
 // AudioEncodingTarget — container + codec + codec-specific options
