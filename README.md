@@ -16,6 +16,14 @@ Abracapture is a Linux audio-capture utility for discovering PipeWire applicatio
 
 Capture is not unconditionally bit-perfect. A PipeWire format negotiation can change the stream format, and writing a selected master can quantize or convert samples. Upsampling does not create higher-resolution source material; derived files retain the provenance of the source and conversion path.
 
+### Streaming Audio Capture
+
+Abracapture can record audio played through your computer, including audio from popular streaming services such as Spotify, Qobuz, Amazon Music, Apple Music, TIDAL, YouTube Music, and Deezer.
+
+This capability is useful for capturing your own music, authorized recordings, and other audio content you have permission to reproduce.
+
+Users are responsible for complying with applicable copyright laws and the terms of the services they use.
+
 ## Build requirements
 
 - A C++20 compiler
